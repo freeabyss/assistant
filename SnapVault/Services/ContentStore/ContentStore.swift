@@ -14,7 +14,7 @@ extension Notification.Name {
 /// 1. Receive `ClipboardEvent` from `ClipboardMonitor`.
 /// 2. De-duplicate via `ContentRepository.findByHash` (database-level check).
 /// 3. Build a `ClipboardItem` and persist it.
-/// 4. For images, hand off to `OCRService` (stub until US-006).
+/// 4. For images, run OCR via `OCRService` to extract searchable text.
 /// 5. Post `clipboardItemSaved` so the UI can refresh.
 final class ContentStore {
     private let logger = Logger.clipboard
@@ -52,7 +52,7 @@ final class ContentStore {
         let id = try repository.save(item)
         logger.info("Saved new clipboard item: id=\(id), type=\(event.contentType.rawValue, privacy: .public)")
 
-        // Image OCR (stub until US-006 – logs only).
+        // Image OCR: recognize text from screenshots/images for searchability.
         if event.contentType == .image, let data = event.imageData {
             await performOCR(imageData: data, itemId: id)
         }
@@ -63,41 +63,51 @@ final class ContentStore {
         return id
     }
 
-    // MARK: - OCR (stub)
+    // MARK: - OCR
 
     /// Run OCR on an image and store the result.
     ///
-    /// Currently a stub — OCRService returns empty text.
-    /// Will be fully implemented in US-006.
+    /// Checks the `ocr_enabled` setting before processing.
+    /// OCR runs on a background thread; results are written back to the database
+    /// and automatically synced to the FTS5 index via the UPDATE trigger.
     private func performOCR(imageData: Data, itemId: Int64) async {
+        // Check OCR enabled setting.
+        guard isOCREnabled() else {
+            logger.debug("OCR is disabled, skipping for item \(itemId)")
+            return
+        }
+
         do {
-            let result = try await ocrService.recognizeText(from: imageData, languages: ["en-US", "zh-Hans"])
+            let result = try await ocrService.recognizeText(from: imageData, languages: ["zh-Hans", "en"])
             guard !result.text.isEmpty else {
                 logger.debug("OCR returned empty text for item \(itemId)")
                 return
             }
 
-            // Update the item with OCR text.
-            if var item = try repository.fetch(id: itemId) {
-                item.ocrText = result.text
-                item.updatedAt = Date()
-                // Re-save with OCR text (update existing row).
-                try updateItem(item)
-                logger.info("OCR text saved for item \(itemId), length=\(result.text.count)")
-            }
+            // Update only the ocr_text field. The FTS5 UPDATE trigger
+            // automatically syncs the new text to the search index.
+            try repository.updateOCRText(id: itemId, ocrText: result.text)
+            logger.info("OCR text saved for item \(itemId), length=\(result.text.count)")
         } catch {
             logger.error("OCR failed for item \(itemId): \(error.localizedDescription, privacy: .public)")
         }
     }
 
-    /// Update an existing item in the database.
-    private func updateItem(_ item: ClipboardItem) throws {
+    /// Check if OCR is enabled in app settings.
+    private func isOCREnabled() -> Bool {
         guard let dbQueue = DatabaseManager.shared.dbQueue else {
-            throw RepositoryError.databaseNotReady
+            return true // Default to enabled if DB not ready
         }
-        try dbQueue.write { db in
-            var record = item
-            try record.update(db)
+        do {
+            return try dbQueue.read { db in
+                if let setting = try AppSetting.fetchOne(db, key: SettingKey.ocrEnabled) {
+                    return setting.value == "1"
+                }
+                return true // Default to enabled
+            }
+        } catch {
+            logger.error("Failed to read OCR setting: \(error.localizedDescription)")
+            return true
         }
     }
 

@@ -87,7 +87,7 @@
       "id": "US-006",
       "title": "OCR 图片文字识别",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": ["US-003"],
       "steps": [

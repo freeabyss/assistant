@@ -238,6 +238,22 @@ final class ContentRepository {
 
     // MARK: - Update
 
+    /// Update only the ocr_text field for an item.
+    /// The FTS5 sync trigger automatically updates the search index.
+    func updateOCRText(id: Int64, ocrText: String) throws {
+        guard let dbQueue = dbQueue else {
+            throw RepositoryError.databaseNotReady
+        }
+
+        try dbQueue.write { db in
+            try db.execute(
+                sql: "UPDATE clipboard_items SET ocr_text = ?, updated_at = ? WHERE id = ?",
+                arguments: [ocrText, Date(), id]
+            )
+            logger.debug("Updated OCR text for item id=\(id), length=\(ocrText.count)")
+        }
+    }
+
     /// Toggle pinned state of an item.
     func togglePin(id: Int64) throws {
         guard let dbQueue = dbQueue else {

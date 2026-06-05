@@ -368,3 +368,52 @@
 - US-007（置顶）的排序逻辑已集成到搜索结果中（置顶始终排最前）
 - 如果需要更精确的中文分词，可考虑替换 unicode61 tokenizer 为自定义 tokenizer 或使用 jieba 分词
 - SearchService 的 Spotlight 部分是可选的，即使 Spotlight 不可用，FTS5 搜索仍然完整工作
+
+## 2026-06-05 - US-006 OCR 图片文字识别
+
+### 完成内容
+1. **OCRService 完整实现（VNRecognizeTextRequest）**
+   - 使用 Vision 框架的 VNRecognizeTextRequest 进行文字识别
+   - 支持中英文混合识别：`recognitionLanguages: ["zh-Hans", "en"]`
+   - 设置 `recognitionLevel = .accurate`（准确模式）
+   - 设置 `usesLanguageCorrection = true`（语言纠正）
+   - 过滤低置信度结果：confidence < 0.5 的文本块丢弃
+   - 拼接所有有效文本块为完整文本（换行分隔）
+   - 图片尺寸检查：小于 50x50 像素的图片跳过 OCR（避免对图标做无意义识别）
+   - OCR 在后台线程执行（DispatchQueue.global），不阻塞主线程
+   - 使用 CGImageSource 解码图片并获取尺寸
+
+2. **ContentRepository 新增 updateOCRText 方法**
+   - 新增 `updateOCRText(id:ocrText:)` 方法，仅更新 ocr_text 和 updated_at 字段
+   - 使用原生 SQL UPDATE，效率优于完整 GRDB update
+   - FTS5 UPDATE 触发器自动同步 ocr_text 变更到搜索索引
+
+3. **ContentStore OCR 流程增强**
+   - 新增 `isOCREnabled()` 方法，从 app_settings 表读取 ocr_enabled 设置
+   - OCR 执行前检查设置开关（默认启用）
+   - 使用 ContentRepository.updateOCRText() 替代之前的 fetch+updateItem 流程
+   - 移除了不再需要的 updateItem() 方法
+
+4. **FTS5 索引自动同步验证**
+   - 确认 clipboard_items_au UPDATE 触发器正确：先删除旧 FTS 条目，再插入新条目
+   - updateOCRText 更新 clipboard_items.ocr_text 后，触发器自动同步到 clipboard_items_fts
+   - 搜索图片 OCR 文本通过 FTS5 MATCH 正常工作
+
+### 修改文件清单
+- SnapVault/Services/OCRService/OCRService.swift（完整重写：VNRecognizeTextRequest 实现）
+- SnapVault/Services/ContentStore/ContentStore.swift（OCR 设置检查 + 使用 updateOCRText）
+- SnapVault/Database/Repositories/ContentRepository.swift（新增 updateOCRText 方法）
+
+### 技术决策记录
+1. OCR 使用 CGImageSource 而非 NSImage 来解码图片，因为 Vision 的 VNImageRequestHandler 直接接受 CGImage
+2. 使用 withCheckedThrowingContinuation 将同步的 Vision perform() 包装为 async/await
+3. 后台线程使用 .userInitiated QoS，确保 OCR 能及时完成
+4. updateOCRText 使用原生 SQL 而非 GRDB 的 fetch+update 模式，减少一次数据库读取
+5. 置信度阈值 0.5 是经验值，平衡准确率和召回率
+
+### 留给后续 Agent 的提示
+- US-007（置顶）可直接使用，无需等待 OCR
+- US-009（偏好设置）需要添加 OCR 开关的 UI 控制，对应的数据库键为 `ocr_enabled`
+- OCR 是耗时操作（大图片可能需要数秒），UI 层可考虑添加 OCR 状态指示
+- 如果需要支持更多语言，修改 OCRService.recognizeText() 的 languages 参数即可
+- FTS5 unicode61 tokenizer 对中文按单字分词，OCR 文本的中文搜索依赖短语匹配
