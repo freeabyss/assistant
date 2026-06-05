@@ -28,6 +28,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Periodic data cleanup service (expiry + storage limits).
     private let cleanupService = DataCleanupService()
 
+    /// Auto-update service (Sparkle).
+    private let updateService = UpdateService()
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         logger.info("SnapVault launching")
 
@@ -53,6 +56,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Register global keyboard shortcut for panel toggle
         registerGlobalShortcuts()
+
+        // Set up Sparkle auto-update (Sparkle handles launch delay + periodic checks internally)
+        updateService.setup()
+
+        // Listen for manual update check requests from MenuBarView
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleCheckForUpdates),
+            name: .checkForUpdates,
+            object: nil
+        )
 
         logger.info("SnapVault launched successfully")
     }
@@ -236,6 +250,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         logger.info("Clipboard monitoring started")
+    }
+
+    // MARK: - Update
+
+    @objc private func handleCheckForUpdates() {
+        logger.info("Manual update check triggered from UI")
+        updateService.checkNow()
     }
 
     // MARK: - Private

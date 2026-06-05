@@ -30,7 +30,8 @@ let package = Package(
             exclude: [
                 "Info.plist",
                 "SnapVault.entitlements",
-                "Resources/Assets.xcassets"
+                "Resources/Assets.xcassets",
+                "Resources/appcast.xml"
             ]
         ),
         .testTarget(

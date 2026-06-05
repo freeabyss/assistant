@@ -34,6 +34,7 @@
 		A10001000000000000000019 /* ToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001C; };
 		A1000100000000000000001A /* DataCleanupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001D; };
 		A1000100000000000000001B /* KeyboardShortcuts+Names.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001E; };
+		A1000100000000000000001C /* appcast.xml in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001F; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -67,6 +68,7 @@
 		A1000000000000000000001C /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
 		A1000000000000000000001D /* DataCleanupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataCleanupService.swift; sourceTree = "<group>"; };
 		A1000000000000000000001E /* KeyboardShortcuts+Names.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "KeyboardShortcuts+Names.swift"; sourceTree = "<group>"; };
+		A1000000000000000000001F /* appcast.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = appcast.xml; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -185,6 +187,7 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000018 /* Assets.xcassets */,
+				A1000000000000000000001F /* appcast.xml */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -377,6 +380,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10001000000000000000018 /* Assets.xcassets in Resources */,
+				A1000100000000000000001C /* appcast.xml in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

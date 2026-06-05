@@ -332,6 +332,12 @@ struct AboutSettingsView: View {
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
 
+            // Check for Updates button
+            Button("Check for Updates...") {
+                NotificationCenter.default.post(name: .checkForUpdates, object: nil)
+            }
+            .buttonStyle(.bordered)
+
             Divider()
 
             VStack(spacing: 4) {

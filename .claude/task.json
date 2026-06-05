@@ -151,7 +151,7 @@
       "id": "US-010",
       "title": "自动更新（Sparkle）",
       "priority": "low",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": ["US-001"],
       "steps": [

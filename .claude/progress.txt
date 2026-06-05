@@ -611,3 +611,72 @@
 - 如果需要添加更多快捷键，在 KeyboardShortcuts+Names.swift 中扩展，ShortcutsSettingsView 中添加对应 Recorder
 - ClipboardMonitor 的 readPollIntervalFromSettings() 使用 repository 实例读取设置，每次设置变更都会触发一次 DB 查询（开销可忽略）
 - 设置窗口通过 NSApp.sendAction(Selector("showSettingsWindow:")) 打开，这是 macOS 标准偏好设置入口
+
+## 2026-06-05 - US-010 自动更新（Sparkle）
+
+### 完成内容
+1. **UpdateService 完整实现（Sparkle 2.x 集成）**
+   - `UpdateServiceProtocol` 定义：`checkForUpdates() async throws -> UpdateInfo?` + `checkNow()`
+   - `UpdateInfo` 结构体：version, releaseNotes, downloadURL, isCritical
+   - `UpdateService` 继承 `NSObject`，实现 `SPUUpdaterDelegate`
+   - `setup()` 方法创建 `SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: self)`
+   - 使用 Combine KVO 订阅 `updater.canCheckForUpdates`，暴露给 UI 层
+   - `checkNow()` 调用 `updaterController?.checkForUpdates(nil)` 显示 Sparkle 更新对话框
+   - 实现 6 个 SPUUpdaterDelegate 方法：didAbortWithError, didFindValidUpdate, updaterDidNotFindUpdate, updaterDidFinishLoading, allowedChannels, userDidMake choice
+
+2. **Info.plist 配置**
+   - `SUFeedURL`: https://snapvault.app/appcast.xml
+   - `SUPublicEDKey`: REPLACE_WITH_YOUR_EDDSA_PUBLIC_KEY（占位符，需开发者生成实际密钥）
+   - `SUEnableAutomaticChecks`: true
+   - `SUScheduledCheckInterval`: 86400（24 小时）
+
+3. **appcast.xml 模板**
+   - 创建 `SnapVault/Resources/appcast.xml`，包含完整的 XML 结构和发布说明注释
+   - 详细注释说明如何生成 EdDSA 密钥、签名更新包、填写 appcast 条目
+   - 包含 v0.1.0 初始版本条目（占位 URL 和签名）
+
+4. **AppDelegate 集成**
+   - 新增 `updateService` 属性（UpdateService 实例）
+   - `applicationDidFinishLaunching` 中调用 `updateService.setup()`
+   - 注册 `.checkForUpdates` 通知观察者，转发给 `updateService.checkNow()`
+
+5. **手动检查更新 UI**
+   - MenuBarView header 新增刷新图标按钮（arrow.triangle.2.circlepath），点击发送 `.checkForUpdates` 通知
+   - AboutSettingsView 新增 "Check for Updates..." 按钮，同样通过通知触发
+   - 定义 `Notification.Name.checkForUpdates` 通知名称
+
+6. **Xcode 项目更新**
+   - 添加 appcast.xml 的 PBXFileReference（A1000000000000000000001F）
+   - 添加 PBXBuildFile（A1000100000000000000001C）到 Resources 编译阶段
+   - 添加到 Resources 组
+
+7. **Package.swift 更新**
+   - 在 exclude 列表中添加 "Resources/appcast.xml"
+
+### 修改文件清单
+- SnapVault/Services/UpdateService/UpdateService.swift（完整重写：Sparkle SPUStandardUpdaterController + SPUUpdaterDelegate）
+- SnapVault/App/AppDelegate.swift（集成 updateService + checkForUpdates 通知）
+- SnapVault/Views/MenuBar/MenuBarView.swift（添加检查更新按钮 + Notification.Name.checkForUpdates）
+- SnapVault/Views/Settings/SettingsView.swift（About 页面添加检查更新按钮）
+- SnapVault/Info.plist（添加 SUPublicEDKey, SUEnableAutomaticChecks, SUScheduledCheckInterval）
+- SnapVault/Resources/appcast.xml（新建：appcast 模板）
+- SnapVault.xcodeproj/project.pbxproj（添加 appcast.xml 引用）
+- Package.swift（排除 appcast.xml）
+
+### 技术决策记录
+1. Sparkle 的自动检查由框架内置管理（启动延迟 + 定时检查），无需自定义 Timer
+2. 使用 Combine KVO 订阅 `updater.canCheckForUpdates`，通过 `@objc dynamic` 属性暴露给 SwiftUI
+3. MenuBarView 和 SettingsView 通过 NotificationCenter 与 AppDelegate 通信，避免直接依赖 UpdateService
+4. UpdateService 继承 NSObject 以满足 SPUUpdaterDelegate 的 AnyObject 要求
+5. appcast.xml 包含详细注释说明发布流程，降低后续维护门槛
+
+### 已知限制
+- `SUPublicEDKey` 为占位符，实际发布前需要使用 Sparkle 的 `generate_keys` 工具生成 EdDSA 密钥对
+- appcast.xml 的 URL 和签名为占位值，首次发布时需替换
+- Sparkle 的更新 UI 由框架自行管理，无法深度自定义外观
+
+### 留给后续 Agent 的提示
+- US-011（数据导入导出）可独立进行
+- 实际发布时需要：1) 生成 EdDSA 密钥对 2) 替换 Info.plist 中的 SUPublicEDKey 3) 构建并签名更新包 4) 填写 appcast.xml 5) 托管 appcast.xml 到 SUFeedURL
+- Sparkle 2.x 要求 macOS 10.13+，与项目的 macOS 13 最低要求兼容
+- canCheckForUpdates 属性可用于在 UI 中禁用/启用检查更新按钮（当前未使用此状态）

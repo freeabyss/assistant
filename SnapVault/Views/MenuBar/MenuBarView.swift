@@ -4,6 +4,7 @@ import SwiftUI
 /// requesting the search field to receive keyboard focus.
 extension Notification.Name {
     static let focusSearchField = Notification.Name("SnapVault.focusSearchField")
+    static let checkForUpdates = Notification.Name("SnapVault.checkForUpdates")
 }
 
 /// Main container view shown in the floating panel.
@@ -47,6 +48,15 @@ struct MenuBarView: View {
                 .fontWeight(.semibold)
 
             Spacer()
+
+            // Check for Updates button
+            Button(action: requestUpdateCheck) {
+                Image(systemName: "arrow.triangle.2.circlepath")
+                    .font(.system(size: 13))
+                    .foregroundColor(.secondary)
+            }
+            .buttonStyle(.plain)
+            .help("Check for Updates")
 
             // Settings button
             Button(action: openSettings) {
@@ -125,6 +135,10 @@ struct MenuBarView: View {
             NSApp.activate(ignoringOtherApps: true)
         }
         NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+    }
+
+    private func requestUpdateCheck() {
+        NotificationCenter.default.post(name: .checkForUpdates, object: nil)
     }
 }
 

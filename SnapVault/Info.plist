@@ -26,8 +26,14 @@
     <key>LSMinimumSystemVersion</key>
     <string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 
-    <!-- Sparkle update feed URL (placeholder) -->
+    <!-- Sparkle auto-update configuration -->
     <key>SUFeedURL</key>
     <string>https://snapvault.app/appcast.xml</string>
+    <key>SUPublicEDKey</key>
+    <string>REPLACE_WITH_YOUR_EDDSA_PUBLIC_KEY</string>
+    <key>SUEnableAutomaticChecks</key>
+    <true/>
+    <key>SUScheduledCheckInterval</key>
+    <integer>86400</integer>
 </dict>
 </plist>
