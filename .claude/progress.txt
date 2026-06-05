@@ -109,3 +109,69 @@
 - DatabaseManager.setup() 在 AppDelegate.applicationDidFinishLaunching 中调用，确保在任何数据库操作之前完成
 - 项目可以同时通过 `swift build`（有 KeyboardShortcuts 预览宏警告）和 Xcode 构建
 - git 已在 US-001 完成时初始化并提交
+
+## 2026-06-05 - US-002 菜单栏图标与主界面框架
+
+### 完成内容
+1. **NSStatusItem 菜单栏图标**
+   - AppDelegate 中创建 NSStatusItem，使用 SF Symbol `clipboard` 图标
+   - 点击状态栏图标 toggle 浮动面板的显示/隐藏
+   - 图标设置为 template 模式，自动适配 Dark Mode
+
+2. **NSPanel 浮动面板**
+   - 使用 NSPanel（非 NSWindow）实现浮动面板，styleMask 包含 .nonactivatingPanel
+   - 面板属性：floating level、透明标题栏、跨 Space 可见、utility 动画
+   - 面板定位在状态栏图标下方，宽度 400，高度 500
+   - 使用 NSHostingView 桥接 SwiftUI MenuBarView 到 NSPanel
+
+3. **事件监听自动关闭**
+   - 使用 NSEvent.addLocalMonitorForEvents 监听本地鼠标事件
+   - 点击面板外部（非状态栏按钮区域）自动关闭面板
+   - 点击状态栏按钮区域的事件透传给 toggle 逻辑，避免冲突
+   - 应用退出时正确移除事件监听器
+
+4. **MenuBarView 主容器视图**
+   - 顶部：SnapVault 标题 + 设置按钮（齿轮图标）
+   - 搜索栏：magnifyingglass 图标 + TextField + 清除按钮，placeholder "Search clipboard history..."
+   - 筛选 Tab：All / Text / Image / File 水平按钮栏，选中状态有 accentColor 高亮
+   - 底部：ClipboardListView 列表
+
+5. **ClipboardListViewModel 完整实现**
+   - loadMore() 分页加载（pageSize=50），支持 contentType 过滤
+   - refresh() 重置分页并重新加载
+   - searchText 300ms debounce 后自动触发搜索/刷新
+   - selectedContentType 变化时自动刷新
+   - performSearch() 使用 FTS5 全文搜索
+   - copyToClipboard() 支持文本/RTF/图片/文件四种类型
+   - deleteItem() 和 togglePin() 操作
+
+6. **ClipboardListView 列表视图**
+   - 使用 SwiftUI List + ForEach 实现虚拟滚动
+   - onAppear 触发分页加载（滚动到底部自动加载更多）
+   - 空状态视图：clipboard 图标 + "No clipboard history" 提示
+   - 列表项选中高亮（accentColor 15% 透明度背景）
+   - 右键上下文菜单：Copy / Pin/Unpin / Delete
+
+7. **ClipboardItemRow 列表项视图**
+   - 左侧：彩色圆角图标（蓝/紫/绿/橙对应 text/rtf/image/file）
+   - 中间：内容预览（2行截断）+ 类型标签 + 相对时间（Just now / Nm ago / Nh ago / Nd ago）
+   - 右侧：置顶指示器（pin.fill 图标）
+   - 选中状态：背景高亮
+
+### 技术决策记录
+1. 使用 NSPanel 而非 SwiftUI MenuBarExtra，因为 .menu style 不支持搜索框和复杂列表，.window style 在菜单栏应用中行为不够灵活
+2. 使用 NSEvent.addLocalMonitorForEvents 而非 NSWindow.didResignKeyNotification，避免状态栏按钮点击时的时序冲突
+3. ClipboardListViewModel 使用 Combine debounce 处理搜索输入，避免频繁查询
+4. List + ForEach 而非 LazyVStack，因为 SwiftUI 的 List 在 macOS 上原生支持选择、上下文菜单和滚动性能优化
+
+### 已知限制
+- `swift build` CLI 仍因 KeyboardShortcuts 的 #Preview 宏问题无法编译（需 Xcode）
+- Xcode license 未接受（需 sudo xcodebuild -license），无法通过 xcodebuild 验证编译
+- 代码通过静态分析验证：所有类型引用、方法签名、协议一致性均正确
+
+### 留给后续 Agent 的提示
+- US-003 需要实现 ClipboardMonitor 的完整轮询逻辑，捕获的剪贴板数据通过 ContentRepository.save() 存储
+- US-004 需要完善 ClipboardItemRow 的图片预览（缩略图）和富文本渲染
+- ClipboardListViewModel.copyToClipboard() 已实现基本功能，US-004 可能需要增强
+- NSPanel 的 floating level 可能与全屏应用冲突，如有问题可调整为 .statusBar
+- 事件监听器在 applicationWillTerminate 中正确清理，但如需支持面板重建，注意 stopMonitoringEvents 的调用时机

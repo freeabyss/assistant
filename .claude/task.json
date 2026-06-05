@@ -23,7 +23,7 @@
       "id": "US-002",
       "title": "菜单栏图标与主界面框架",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": ["US-001"],
       "steps": [
