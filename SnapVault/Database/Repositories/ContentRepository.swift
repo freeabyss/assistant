@@ -104,25 +104,135 @@ final class ContentRepository {
 
     // MARK: - Search
 
-    /// Full-text search using FTS5 MATCH query.
+    /// Sanitize a user query string for safe use in FTS5 MATCH.
+    ///
+    /// - Splits by whitespace into segments
+    /// - Escapes embedded double-quote characters
+    /// - Wraps each segment in double quotes for phrase matching
+    /// - Joins segments with AND for multi-keyword search
+    ///
+    /// Example: "hello world" -> '"hello" AND "world"'
+    /// Example: "你好世界" -> '"你好世界"' (single segment, all chars adjacent)
+    private static func sanitizeFTS5Query(_ query: String) -> String {
+        let segments = query
+            .components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+            .map { segment -> String in
+                // Escape double quotes inside the segment
+                let escaped = segment.replacingOccurrences(of: "\"", with: "\"\"")
+                return "\"\(escaped)\""
+            }
+
+        // Single segment: just the quoted phrase
+        // Multiple segments: AND logic (all must match)
+        return segments.joined(separator: " AND ")
+    }
+
+    /// A structured search result with relevance score and matched field info.
+    struct FTS5SearchResult {
+        let item: ClipboardItem
+        let score: Double
+        let matchedField: String
+        let snippet: String
+    }
+
+    /// Full-text search using FTS5 MATCH query. Returns plain items (legacy interface).
     func search(query: String, limit: Int = 50) throws -> [ClipboardItem] {
+        return try searchStructured(query: query, limit: limit).map { $0.item }
+    }
+
+    /// Full-text search with bm25 scoring, scope filtering, and snippet extraction.
+    ///
+    /// - Parameters:
+    ///   - query: FTS5 query string (supports AND/OR/NEAR operators)
+    ///   - limit: Maximum number of results
+    ///   - scope: Search scope filter (all, textOnly, imageOCR)
+    /// - Returns: Results sorted by relevance (pinned first, then bm25 score)
+    func searchStructured(
+        query: String,
+        limit: Int = 50,
+        scope: SearchScope = .all
+    ) throws -> [FTS5SearchResult] {
         guard let dbQueue = dbQueue else {
             throw RepositoryError.databaseNotReady
         }
 
+        // Build FTS5 MATCH query with optional column-specific scope filtering.
+        // FTS5 column filter syntax: column_name : query
+        //
+        // For Chinese text with unicode61 tokenizer, each character is a separate token.
+        // We wrap each whitespace-separated segment in double quotes for phrase matching,
+        // and join multiple segments with AND for multi-keyword search.
+        // Example: "你好 世界" -> '"你好" AND "世界"' (implicit phrase adjacency per segment)
+        let sanitized = Self.sanitizeFTS5Query(query)
+        let matchQuery: String
+        switch scope {
+        case .all:
+            matchQuery = sanitized
+        case .textOnly:
+            matchQuery = "text_content : \(sanitized)"
+        case .imageOCR:
+            matchQuery = "ocr_text : \(sanitized)"
+        }
+
         return try dbQueue.read { db in
-            try ClipboardItem
-                .filter(sql: """
-                    id IN (
-                        SELECT rowid FROM clipboard_items_fts
-                        WHERE clipboard_items_fts MATCH ?
-                    )
-                    """,
-                    arguments: [query]
+            // Use raw SQL for bm25() ranking and snippet() extraction.
+            // bm25() returns negative scores (lower = more relevant), we negate for intuitive ordering.
+            // snippet() extracts matching text with configurable markers.
+            let sql = """
+                SELECT
+                    ci.*,
+                    -bm25(clipboard_items_fts) AS relevance_score,
+                    snippet(clipboard_items_fts, 0, '**', '**', '...', 32) AS text_snippet,
+                    snippet(clipboard_items_fts, 1, '**', '**', '...', 32) AS ocr_snippet
+                FROM clipboard_items_fts
+                JOIN clipboard_items ci ON ci.id = clipboard_items_fts.rowid
+                WHERE clipboard_items_fts MATCH ?
+                ORDER BY ci.is_pinned DESC, relevance_score DESC, ci.created_at DESC
+                LIMIT ?
+                """
+
+            let rows = try Row.fetchAll(db, sql: sql, arguments: [matchQuery, limit])
+
+            return rows.compactMap { row -> FTS5SearchResult? in
+                // Decode the ClipboardItem from the joined row
+                guard let item = try? ClipboardItem(row: row) else { return nil }
+
+                let score = row["relevance_score"] as? Double ?? 0.0
+                let textSnippet = row["text_snippet"] as? String ?? ""
+                let ocrSnippet = row["ocr_snippet"] as? String ?? ""
+
+                // Determine which field matched based on scope and snippet content
+                let matchedField: String
+                let snippet: String
+                switch scope {
+                case .textOnly:
+                    matchedField = "text_content"
+                    snippet = textSnippet
+                case .imageOCR:
+                    matchedField = "ocr_text"
+                    snippet = ocrSnippet
+                case .all:
+                    // Use the snippet that contains highlight markers
+                    if textSnippet.contains("**") {
+                        matchedField = "text_content"
+                        snippet = textSnippet
+                    } else if ocrSnippet.contains("**") {
+                        matchedField = "ocr_text"
+                        snippet = ocrSnippet
+                    } else {
+                        matchedField = "text_content"
+                        snippet = textSnippet
+                    }
+                }
+
+                return FTS5SearchResult(
+                    item: item,
+                    score: score,
+                    matchedField: matchedField,
+                    snippet: snippet
                 )
-                .order(Column("created_at").desc)
-                .limit(limit)
-                .fetchAll(db)
+            }
         }
     }
 

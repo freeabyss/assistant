@@ -295,3 +295,76 @@
 - RTF 预览依赖 rtfContent 字段存储的 RTF 数据格式，如果 ClipboardMonitor 存储的格式有变化需同步调整
 - MagnificationGesture 在 macOS 上主要响应触控板捏合手势，鼠标滚轮缩放需要额外处理
 - ToastView 位于 Views/Components/ 目录，可复用于其他需要短暂提示的场景
+
+## 2026-06-05 - US-005 搜索与 Spotlight 集成
+
+### 完成内容
+1. **ContentRepository FTS5 搜索增强**
+   - 新增 `searchStructured()` 方法，支持 bm25() 相关度排序和 snippet() 片段提取
+   - 支持 SearchScope 过滤：all（全字段）、textOnly（仅 text_content）、imageOCR（仅 ocr_text）
+   - FTS5 列级过滤使用 `column_name : query` 语法
+   - 新增 `sanitizeFTS5Query()` 方法，对用户输入进行安全处理：
+     - 按空格分词，每段用双引号包裹（短语匹配）
+     - 转义内部双引号防止 FTS5 注入
+     - 多关键词使用 AND 逻辑连接
+   - 搜索结果排序：置顶优先 → bm25 分数降序 → 时间倒序
+   - `search()` 旧接口委托给 `searchStructured()` 保持向后兼容
+
+2. **SearchService 完整实现**
+   - 主搜索引擎：GRDB FTS5（快速、本地、始终可用）
+   - 补充搜索：NSMetadataQuery / Spotlight（覆盖系统索引内容）
+   - Spotlight 集成：
+     - 查询 kMDItemTextContent 属性，CONTAINS[cd] 不区分大小写
+     - 在 RunLoop 上启动 NSMetadataQuery
+     - 2 秒超时保护，超时返回空结果（不阻塞主搜索）
+     - 通过 contentHash 匹配 Spotlight 结果与数据库记录
+   - 结果合并策略：FTS5 优先（始终最新），Spotlight 补充去重
+   - 最终排序：置顶 → 相关度分数 → 时间
+   - 新增 `highlightRanges: [NSRange]` 到 SearchResult 结构体
+
+3. **搜索结果高亮**
+   - `computeHighlightRanges()` 方法：按空格拆分关键词，在文本中定位所有匹配位置
+   - 支持中文搜索：caseInsensitive + diacriticInsensitive 匹配
+   - ClipboardItemRow 新增 `highlightRanges` 参数
+   - 文本内容：黄色背景（40% 透明度）高亮匹配区域
+   - OCR 文本：同样支持高亮显示
+   - 使用 NSMutableAttributedString → AttributedString 转换
+
+4. **ClipboardListViewModel 集成**
+   - 新增 `searchService: SearchServiceProtocol` 属性（依赖注入）
+   - 新增 `searchHighlights: [Int64: [NSRange]]` 发布属性
+   - `performSearch()` 改用 SearchService，支持 scope 映射：
+     - .image → .imageOCR
+     - .text/.rtf → .textOnly
+     - .none/.file → .all
+   - 搜索结果中的 highlightRanges 映射到 searchHighlights 字典
+   - 刷新时清空 searchHighlights
+
+5. **ClipboardListView 更新**
+   - ForEach 中将 `viewModel.searchHighlights[item.id]` 传递给 ClipboardItemRow
+   - 无搜索高亮时传空数组，不影响普通列表显示
+
+### 修改文件清单
+- SnapVault/Database/Repositories/ContentRepository.swift（新增 searchStructured + sanitizeFTS5Query）
+- SnapVault/Services/SearchEngine/SearchService.swift（完整重写：FTS5 + Spotlight + 高亮）
+- SnapVault/ViewModels/ClipboardListViewModel.swift（集成 SearchService + searchHighlights）
+- SnapVault/Views/ClipboardList/ClipboardItemRow.swift（高亮渲染 + highlightedAttributedString）
+- SnapVault/Views/ClipboardList/ClipboardListView.swift（传递 highlightRanges）
+
+### 技术决策记录
+1. FTS5 查询使用短语匹配（双引号包裹）而非单词匹配，提高中文搜索精度
+2. Spotlight 超时设为 2 秒，作为补充搜索源不影响主搜索性能
+3. 搜索结果高亮使用 NSMutableAttributedString 方案，比 SwiftUI Text 插值更灵活
+4. searchHighlights 通过 Dictionary<Int64, [NSRange]> 传递，避免修改 ClipboardItem 模型
+5. bm25() 返回值取反（`-bm25()`）以获得正数分数，越大越相关
+
+### 已知限制
+- Spotlight 匹配依赖 contentHash，RTF 内容的 hash 基于 RTF 二进制数据而非纯文本，Spotlight 可能无法匹配 RTF 项
+- unicode61 tokenizer 对中文的分词粒度为单字，连续中文短语搜索依赖短语匹配（双引号包裹）
+- `swift build` CLI 仍因 KeyboardShortcuts 的 #Preview 宏问题无法编译（需 Xcode）
+
+### 留给后续 Agent 的提示
+- US-006（OCR）完成后，图片中的文字将自动同步到 FTS5 索引，搜索图片 OCR 文本将更有效
+- US-007（置顶）的排序逻辑已集成到搜索结果中（置顶始终排最前）
+- 如果需要更精确的中文分词，可考虑替换 unicode61 tokenizer 为自定义 tokenizer 或使用 jieba 分词
+- SearchService 的 Spotlight 部分是可选的，即使 Spotlight 不可用，FTS5 搜索仍然完整工作

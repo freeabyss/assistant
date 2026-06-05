@@ -71,7 +71,7 @@
       "id": "US-005",
       "title": "搜索与 Spotlight 集成",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": ["US-003"],
       "steps": [

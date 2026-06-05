@@ -46,7 +46,11 @@ struct ClipboardListView: View {
     private var listView: some View {
         List(selection: $selectedItemID) {
             ForEach(viewModel.items) { item in
-                ClipboardItemRow(item: item, isSelected: selectedItemID == item.id)
+                ClipboardItemRow(
+                    item: item,
+                    isSelected: selectedItemID == item.id,
+                    highlightRanges: item.id.flatMap { viewModel.searchHighlights[$0] } ?? []
+                )
                     .tag(item.id)
                     .id(item.id)
                     .onTapGesture {

@@ -3,9 +3,13 @@ import AppKit
 
 /// A single row in the clipboard history list.
 /// Renders content-type-specific previews: monospace text, RTF, image thumbnail, file info.
+/// Supports search result keyword highlighting via highlightRanges.
 struct ClipboardItemRow: View {
     let item: ClipboardItem
     let isSelected: Bool
+    /// Ranges of matched search keywords within the content text.
+    /// When non-empty, matched regions are rendered with a yellow background.
+    var highlightRanges: [NSRange] = []
 
     var body: some View {
         HStack(spacing: 10) {
@@ -115,11 +119,17 @@ struct ClipboardItemRow: View {
     private var contentPreview: some View {
         switch item.contentType {
         case .text:
-            // Monospace font for plain text
-            Text(item.textContent ?? "Empty content")
-                .font(.system(size: 13, design: .monospaced))
-                .foregroundColor(.primary)
-                .lineLimit(2)
+            // Monospace font for plain text, with search highlight if available
+            if !highlightRanges.isEmpty, let text = item.textContent {
+                Text(highlightedAttributedString(text: text, ranges: highlightRanges))
+                    .font(.system(size: 13, design: .monospaced))
+                    .lineLimit(2)
+            } else {
+                Text(item.textContent ?? "Empty content")
+                    .font(.system(size: 13, design: .monospaced))
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
+            }
 
         case .rtf:
             // Render RTF preview
@@ -127,7 +137,7 @@ struct ClipboardItemRow: View {
                 .lineLimit(2)
 
         case .image:
-            // Image: show dimensions + OCR text if available
+            // Image: show dimensions + OCR text if available (with highlight)
             VStack(alignment: .leading, spacing: 2) {
                 if let data = item.imageData, let nsImage = NSImage(data: data) {
                     Text("\(Int(nsImage.size.width)) x \(Int(nsImage.size.height))")
@@ -135,10 +145,16 @@ struct ClipboardItemRow: View {
                         .foregroundColor(.primary)
                 }
                 if let ocr = item.ocrText, !ocr.isEmpty {
-                    Text(ocr)
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-                        .lineLimit(1)
+                    if !highlightRanges.isEmpty {
+                        Text(highlightedAttributedString(text: ocr, ranges: highlightRanges))
+                            .font(.system(size: 11))
+                            .lineLimit(1)
+                    } else {
+                        Text(ocr)
+                            .font(.system(size: 11))
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
                 }
             }
 
@@ -159,6 +175,27 @@ struct ClipboardItemRow: View {
     }
 
     // MARK: - Helpers
+
+    /// Build an AttributedString with yellow background highlight at the specified ranges.
+    private func highlightedAttributedString(text: String, ranges: [NSRange]) -> AttributedString {
+        let nsString = text as NSString
+        let nsAttr = NSMutableAttributedString(string: text, attributes: [
+            .foregroundColor: NSColor.labelColor,
+            .font: NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
+        ])
+
+        for range in ranges {
+            // Clamp range to valid bounds
+            let clampedRange = NSIntersectionRange(range, NSRange(location: 0, length: nsString.length))
+            guard clampedRange.length > 0 else { continue }
+            nsAttr.addAttributes([
+                .backgroundColor: NSColor.systemYellow.withAlphaComponent(0.4),
+                .foregroundColor: NSColor.labelColor
+            ], range: clampedRange)
+        }
+
+        return AttributedString(nsAttr)
+    }
 
     /// Formatted file size string for file-type items.
     private var fileSizeString: String? {

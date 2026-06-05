@@ -16,9 +16,14 @@ final class ClipboardListViewModel: ObservableObject {
     @Published var showToast: Bool = false
     @Published var toastMessage: String = ""
 
+    /// Highlight ranges for search results, keyed by item id.
+    /// Views use this to render keyword highlighting.
+    @Published var searchHighlights: [Int64: [NSRange]] = [:]
+
     // MARK: - Private
 
     private let repository = ContentRepository()
+    private let searchService: SearchServiceProtocol = SearchService()
     private let logger = Logger.ui
     private let pageSize = 50
     private var currentPage = 0
@@ -87,6 +92,7 @@ final class ClipboardListViewModel: ObservableObject {
         currentPage = 0
         hasMore = true
         items = []
+        searchHighlights = [:]
         await loadMore()
     }
 
@@ -171,13 +177,34 @@ final class ClipboardListViewModel: ObservableObject {
 
     private func performSearch(query: String) async {
         do {
-            let results = try repository.search(query: query, limit: pageSize)
-            items = results
+            // Map selectedContentType to SearchScope
+            let scope: SearchScope
+            switch selectedContentType {
+            case .image:
+                scope = .imageOCR
+            case .text, .rtf:
+                scope = .textOnly
+            case .none:
+                scope = .all
+            case .file:
+                scope = .all
+            }
+
+            let results = try await searchService.search(query: query, limit: pageSize, scope: scope)
+
+            items = results.map { $0.item }
+            searchHighlights = [:]
+            for result in results {
+                if let id = result.item.id, !result.highlightRanges.isEmpty {
+                    searchHighlights[id] = result.highlightRanges
+                }
+            }
             hasMore = false // Search results don't paginate in this version
-            logger.debug("Search '\(query, privacy: .public)' returned \(results.count) results")
+            logger.debug("Search '\(query, privacy: .public)' returned \(results.count) results via SearchService")
         } catch {
             logger.error("Search failed: \(error.localizedDescription, privacy: .public)")
             items = []
+            searchHighlights = [:]
         }
     }
 
