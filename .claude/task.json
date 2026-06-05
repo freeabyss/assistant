@@ -181,6 +181,22 @@
     },
     {
       "id": "US-012",
+      "title": "截图功能（ScreenCaptureKit）",
+      "priority": "high",
+      "passes": false,
+      "blocked": false,
+      "depends_on": ["US-006"],
+      "steps": [
+        "实现 ScreenshotService（区域截图 + 窗口截图）",
+        "集成 ScreenCaptureKit 捕获 API",
+        "截图后自动存入剪贴板历史",
+        "截图后自动触发 OCR 文字识别",
+        "注册截图快捷键（⌘+Shift+S 区域 / ⌘+Shift+W 窗口）"
+      ],
+      "done_definition": "按快捷键可截图，截图自动存入历史并触发 OCR，搜索可找到截图中的文字"
+    },
+    {
+      "id": "US-013",
       "title": "统一搜索框架（SearchSource 协议）",
       "priority": "high",
       "passes": false,
@@ -196,12 +212,12 @@
       "done_definition": "统一搜索框架可运行，三个搜索源可独立注册和调用"
     },
     {
-      "id": "US-013",
+      "id": "US-014",
       "title": "应用搜索（AppSearchSource）",
       "priority": "high",
       "passes": false,
       "blocked": false,
-      "depends_on": ["US-012"],
+      "depends_on": ["US-013"],
       "steps": [
         "实现 /Applications 和 ~/Applications 目录递归扫描",
         "构建内存索引：name/bundleID/path/icon",
@@ -212,12 +228,12 @@
       "done_definition": "输入应用名前几个字母即可匹配，回车启动应用，< 10ms 响应"
     },
     {
-      "id": "US-014",
+      "id": "US-015",
       "title": "文件搜索（FileSearchSource）",
       "priority": "high",
       "passes": false,
       "blocked": false,
-      "depends_on": ["US-012"],
+      "depends_on": ["US-013"],
       "steps": [
         "实现 NSMetadataQuery 封装（FileSearchSource）",
         "配置搜索范围（默认用户主目录）",
@@ -228,12 +244,12 @@
       "done_definition": "输入文件名关键词可搜索 Spotlight 索引的文件，支持打开和 Finder 定位"
     },
     {
-      "id": "US-015",
+      "id": "US-016",
       "title": "统一搜索 UI 重构",
       "priority": "high",
       "passes": false,
       "blocked": false,
-      "depends_on": ["US-012", "US-013", "US-014"],
+      "depends_on": ["US-013", "US-014", "US-015"],
       "steps": [
         "重构主界面为 Spotlight 风格搜索框",
         "搜索结果分组展示（应用/文件/剪贴板 Tab 或分段）",

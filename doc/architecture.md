@@ -9,22 +9,28 @@
 
 ## 系统概述
 
-SnapVault（暂存区）是一款 **macOS 快速启动器**，集应用搜索、文件搜索、剪贴板历史于一体。用户通过全局快捷键唤起一个类似 Spotlight 的搜索面板，输入关键词即可：
+SnapVault 是一款 **macOS 统一效率入口**，将应用启动、文件搜索、截图 OCR、剪贴板管理四大高频能力集成到一个轻量级桌面工具中。
 
-1. **搜索已安装应用** — 即时启动 App（类似 Spotlight / Alfred）
-2. **搜索本地文件** — 基于 Spotlight 索引的文件名/内容搜索，快速打开文件或定位 Finder
-3. **检索剪贴板历史** — 搜索所有复制过的文本、图片、文件记录
+当前 Mac 用户通常需要安装多个工具（Alfred、Shottr、CleanShot X、Maccy）来完成日常效率操作，存在学习成本高、快捷键冲突、数据分散、资源占用增加等问题。SnapVault 通过一个全局搜索面板 + 快捷键体系，替代上述工具 80% 的核心使用场景：
 
-面向需要高效工作流的开发者、设计师和文字工作者，替代频繁切换 Finder、Spotlight、剪贴板工具的碎片化操作。
+| 能力           | 说明                                         | 替代产品              |
+| :------------- | :------------------------------------------- | :-------------------- |
+| **应用启动**   | 搜索已安装应用，即时启动                     | Alfred                |
+| **文件搜索**   | 基于 Spotlight 索引的文件名/内容搜索         | Alfred、Finder        |
+| **截图 OCR**   | 区域截图、窗口截图、OCR 文字识别             | Shottr、CleanShot X   |
+| **剪贴板管理** | 历史记录、全文搜索、置顶、去重               | Maccy、Paste          |
+
+面向普通办公人员、产品经理、开发者等所有 Mac 用户，解决"文件难找、OCR 步骤繁琐、剪贴板记录缺失"的核心痛点。
 
 ## 设计目标
 
 - **即时响应**：搜索结果 < 200ms 返回，快捷键唤起面板 < 150ms，应用启动 < 500ms
-- **低资源占用**：常驻内存 < 80MB，CPU 空闲占用 < 1%，数据库文件 < 500MB（默认保留 30 天）
+- **低资源占用**：常驻内存 < 50MB，CPU 空闲占用 < 1%，数据库文件 < 500MB（默认保留 30 天）
 - **统一入口**：一个搜索框同时匹配应用、文件、剪贴板，结果按类型分组展示
+- **截图能力**：支持区域截图、窗口截图，截图后自动 OCR 并存入剪贴板历史
 - **原生体验**：100% SwiftUI 构建，遵循 macOS Human Interface Guidelines，支持 Dark Mode、VoiceOver
 - **数据安全**：所有数据仅存本地 SQLite，不联网传输；数据库文件使用 macOS Data Protection
-- **可扩展性**：模块化架构，各子系统（搜索源、OCR、存储）独立可替换
+- **可扩展性**：模块化架构，各子系统（搜索源、OCR、截图、存储）独立可替换
 
 ## 整体架构
 
@@ -60,6 +66,7 @@ SnapVault（暂存区）是一款 **macOS 快速启动器**，集应用搜索、
 | **AppSearchSource**    | 已安装应用搜索，基于 /Applications 索引        | `AppSearchSource`                |
 | **FileSearchSource**   | 本地文件搜索，基于 Spotlight NSMetadataQuery   | `FileSearchSource`               |
 | **ClipboardSearchSource** | 剪贴板历史搜索，基于 GRDB FTS5              | `ClipboardSearchSource`          |
+| **ScreenshotService**  | 区域截图、窗口截图，截图后自动触发 OCR        | `ScreenshotService`              |
 | **ClipboardMonitor**   | 监听系统剪贴板变化，去重过滤，触发存储         | `ClipboardMonitor`               |
 | **ContentStore**       | 数据持久化、查询、清理过期数据                 | `ContentRepository`              |
 | **OCRService**         | 图片文字识别，提取可搜索文本                   | `OCRProcessor`                   |
@@ -89,7 +96,7 @@ enum SearchResultType: String, CaseIterable {
 **核心数据流 —— 统一搜索：**
 
 ```
-用户输入快捷键 ⌘+Space ──> 浮动搜索面板
+用户输入快捷键 ⌘+Shift+V ──> 浮动搜索面板
                               │
                               ├─ 输入关键词 ──> UnifiedSearchService.search()
                               │                      │
@@ -112,7 +119,21 @@ enum SearchResultType: String, CaseIterable {
                                     └─ 剪贴板 → NSPasteboard.write() + 粘贴
 ```
 
-**核心数据流 —— 剪贴板捕获（不变）：**
+**核心数据流 —— 截图 OCR：**
+
+```
+用户按快捷键 ⌘+Shift+S ──> ScreenshotService
+                              │
+                              ├─ 区域截图 ──> ScreenCaptureKit.capture()
+                              ├─ 窗口截图 ──> ScreenCaptureKit.captureWindow()
+                              │
+                              └─> 截图完成
+                                    ├─ 图片 ──> OCRService ──> 提取文字
+                                    ├─ 存入剪贴板历史（imageData + ocrText）
+                                    └─ 可选：复制到系统剪贴板
+```
+
+**核心数据流 —— 剪贴板捕获：**
 
 ```
 NSPasteboard ──poll/changeCount──> ClipboardMonitor
@@ -220,9 +241,21 @@ UnifiedSearchService
          ──> 同步到 FTS5 索引
 ```
 
-### 7. 搜索结果排序策略
+### 7. 截图方案：ScreenCaptureKit
 
-三种搜索源的结果合并后，按以下规则排序：
+采用 **ScreenCaptureKit** 实现截图能力：
+
+- **区域截图**：用户框选屏幕区域，捕获为 PNG 图片
+- **窗口截图**：自动检测鼠标所在窗口，一键捕获
+- **截图后流程**：图片自动存入剪贴板历史 → 触发 OCR → 文本存入 ocr_text
+- **快捷键**：`⌘+Shift+S`（区域截图）、`⌘+Shift+W`（窗口截图）
+- **截图编辑**：v1 不做标注编辑，后续版本可考虑
+
+理由：ScreenCaptureKit 是 macOS 12.3+ 原生 API，性能优于 CGWindowListCreateImage，支持高质量捕获。
+
+### 8. 搜索结果排序策略
+
+四种搜索源的结果合并后，按以下规则排序：
 
 1. **类型权重**：应用 > 文件 > 剪贴板（应用启动最常用）
 2. **相关度分数**：各源内部的匹配分数归一化到 0-1
@@ -236,4 +269,5 @@ UnifiedSearchService
 | 日期       | 变更内容 |
 | :--------- | :------- |
 | 2026-06-05 | 初始版本：基于 PRD 创建总体架构设计 |
-| 2026-06-05 | v2：重构为 Spotlight 类启动器，增加应用搜索（内存索引）、文件搜索（NSMetadataQuery）、统一搜索管线（SearchSource 协议）、搜索结果排序策略 |
+| 2026-06-05 | v2：重构为统一效率入口，增加应用搜索、文件搜索、统一搜索管线 |
+| 2026-06-05 | v3：对齐 PRD 产品定位，增加截图模块（ScreenCaptureKit），修正系统概述为"统一效率入口"，修正默认快捷键为 ⌘+Shift+V，内存指标统一为 < 50MB |

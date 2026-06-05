@@ -292,6 +292,37 @@ struct FileInfo {
 }
 ```
 
+### ScreenshotServiceProtocol
+
+**职责**：截图功能，支持区域截图和窗口截图。
+
+```swift
+protocol ScreenshotServiceProtocol {
+    /// 区域截图（用户框选屏幕区域）
+    func captureRegion() async throws -> ScreenshotResult
+
+    /// 窗口截图（捕获鼠标所在窗口）
+    func captureWindow() async throws -> ScreenshotResult
+
+    /// 全屏截图
+    func captureScreen() async throws -> ScreenshotResult
+}
+
+struct ScreenshotResult {
+    let imageData: Data           // PNG 图片数据
+    let width: Int                // 图片宽度
+    let height: Int               // 图片高度
+    let captureDate: Date         // 截图时间
+    let sourceType: CaptureSource // 来源类型
+}
+
+enum CaptureSource {
+    case region                   // 区域截图
+    case window                   // 窗口截图
+    case screen                   // 全屏截图
+}
+```
+
 ### ExportServiceProtocol
 
 **职责**：数据导出功能。
@@ -417,6 +448,9 @@ graph TD
     E[ClipboardMonitor] --> REPO
     E --> OCR[OCRService]
     OCR --> VN[Vision Framework]
+    SS[ScreenshotService] --> SC[ScreenCaptureKit]
+    SS --> OCR
+    SS --> REPO
     REPO --> DB[(SQLite / GRDB)]
     I[SettingsView] --> J[SettingsViewModel]
     J --> REPO
@@ -429,3 +463,4 @@ graph TD
 | :--------- | :------- |
 | 2026-06-05 | 初始版本：核心 Protocol 定义、ViewModel 接口、依赖关系 |
 | 2026-06-05 | v2：增加 SearchSource 统一协议、AppSearchSource、FileSearchSource、UnifiedSearchService、UnifiedSearchViewModel，重构依赖关系图 |
+| 2026-06-05 | v3：增加 ScreenshotServiceProtocol（区域截图/窗口截图/全屏截图） |

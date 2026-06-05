@@ -19,6 +19,7 @@ erDiagram
         text ocr_text
         text content_hash
         boolean is_pinned
+        integer use_count
         datetime created_at
         datetime updated_at
     }
@@ -54,6 +55,7 @@ erDiagram
 | ocr_text      | TEXT     |                              | OCR 识别出的文字（image 类型时填充）  |
 | content_hash  | TEXT     | NOT NULL, INDEX              | 内容 SHA256 哈希，用于去重            |
 | is_pinned     | INTEGER  | NOT NULL, DEFAULT 0          | 是否置顶（0=否, 1=是）               |
+| use_count     | INTEGER  | NOT NULL, DEFAULT 0          | 被复制使用的次数（搜索排序权重）      |
 | created_at    | TEXT     | NOT NULL, DEFAULT CURRENT_TIMESTAMP | 创建时间（ISO 8601）            |
 | updated_at    | TEXT     | NOT NULL, DEFAULT CURRENT_TIMESTAMP | 最后更新时间                    |
 
@@ -65,6 +67,7 @@ erDiagram
 | idx_clipboard_created_at    | created_at DESC           | BTREE | 按时间倒序查询（最常用）        |
 | idx_clipboard_content_type  | content_type              | BTREE | 按类型筛选                     |
 | idx_clipboard_is_pinned     | is_pinned                 | BTREE | 置顶项查询                     |
+| idx_clipboard_use_count     | use_count DESC            | BTREE | 按使用频率排序                  |
 
 ### clipboard_items_fts
 
@@ -193,3 +196,4 @@ migrator.registerMigration("v1") { db in
 | 日期       | 变更内容 |
 | :--------- | :------- |
 | 2026-06-05 | 初始版本：核心表结构、FTS5 全文搜索、数据生命周期策略 |
+| 2026-06-05 | v2：clipboard_items 表增加 use_count 字段（搜索排序权重），增加 idx_clipboard_use_count 索引 |
