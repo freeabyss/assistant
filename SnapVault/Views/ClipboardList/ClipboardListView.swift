@@ -57,6 +57,15 @@ struct ClipboardListView: View {
                         selectedItemID = item.id
                         previewItem = item
                     }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button(role: .destructive) {
+                            Task {
+                                await viewModel.deleteItem(item)
+                            }
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                    }
                     .contextMenu {
                         itemContextMenu(item)
                     }

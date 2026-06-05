@@ -417,3 +417,66 @@
 - OCR 是耗时操作（大图片可能需要数秒），UI 层可考虑添加 OCR 状态指示
 - 如果需要支持更多语言，修改 OCRService.recognizeText() 的 languages 参数即可
 - FTS5 unicode61 tokenizer 对中文按单字分词，OCR 文本的中文搜索依赖短语匹配
+
+## 2026-06-05 - US-007 置顶与数据管理
+
+### 完成内容
+1. **置顶/取消置顶功能验证与增强**
+   - togglePin 已在 ContentRepository 和 ClipboardListViewModel 中正确实现
+   - 置顶状态持久化到数据库（is_pinned 字段）
+   - fetchHistory 查询已按 `is_pinned DESC, created_at DESC` 排序，置顶记录始终在最前
+   - ClipboardItemRow 已有旋转图钉图标显示置顶标记
+   - ClipboardListView 右键菜单已有 Pin/Unpin 选项
+   - 新增：togglePin 后立即对本地 items 数组 re-sort，确保 UI 即时反映排序变化
+
+2. **滑动删除**
+   - ClipboardListView 中为每个列表行添加 `.swipeActions(edge: .trailing, allowsFullSwipe: true)`
+   - 左滑显示红色 Delete 按钮（使用 .destructive role）
+   - 允许 FullSwipe 快速删除
+   - 与右键菜单中的 Delete 功能一致，都调用 viewModel.deleteItem()
+
+3. **自动过期清理**
+   - 新建 `DataCleanupService`（SnapVault/Services/DataCleanup/DataCleanupService.swift）
+   - 应用启动时立即执行一次清理（Task.detached priority: .utility，不阻塞 UI）
+   - 之后每小时执行一次（Timer.scheduledTimer interval: 3600）
+   - 从 app_settings 读取 retention_days（默认 30），删除超过保留天数的记录
+   - 仅删除 is_pinned = 0 的记录（置顶保护）
+   - 使用 OSLog 记录清理操作（删除条数、保留天数）
+
+4. **存储空间限制**
+   - ContentRepository 新增 `cleanupStorage(maxStorageMB:)` 方法
+   - 使用 FileManager.attributesOfItem(atPath:) 检查数据库文件大小
+   - 超过 max_storage_mb（默认 500MB）时，按 created_at ASC 删除最旧的非置顶记录
+   - 每批删除 50 条，循环直到空间降到限制以下
+   - 无更多非置顶记录可删时发出警告日志并停止
+   - 使用原生 SQL 查询最旧 ID（比 GRDB select 更可靠）
+
+5. **置顶记录永不自动删除**
+   - cleanupExpired 和 cleanupStorage 中均使用 `filter(Column("is_pinned") == 0)` 排除置顶记录
+   - 手动删除不受限制（用户可通过右键菜单或滑动删除置顶记录）
+
+6. **设置读取**
+   - ContentRepository 新增 `readSetting(key:)` 方法，从 app_settings 表读取单个设置值
+   - DataCleanupService 使用此方法读取 retention_days 和 max_storage_mb
+
+### 修改文件清单
+- SnapVault/Database/Repositories/ContentRepository.swift（新增 cleanupExpired、cleanupStorage、readSetting；重构 cleanup 为组合方法）
+- SnapVault/Services/DataCleanup/DataCleanupService.swift（新建：定时清理服务）
+- SnapVault/App/AppDelegate.swift（集成 DataCleanupService 的 start/stop）
+- SnapVault/Views/ClipboardList/ClipboardListView.swift（添加 swipeActions 滑动删除）
+- SnapVault/ViewModels/ClipboardListViewModel.swift（togglePin 后 re-sort 列表）
+- SnapVault.xcodeproj/project.pbxproj（添加 DataCleanupService.swift 文件引用）
+
+### 技术决策记录
+1. DataCleanupService 使用 Task.detached(priority: .utility) 执行清理，不阻塞主线程
+2. 存储清理使用原生 SQL 查询最旧 ID，避免 GRDB QueryInterfaceRequest 在 select+compactMap 中的 Row 访问歧义
+3. isCleaning 标志位防止并发清理，但不做严格锁（清理操作是幂等的，最坏情况是重复执行）
+4. cleanup() 组合方法先执行过期清理再执行存储限制，顺序合理（过期清理可能释放足够空间，避免不必要的存储清理）
+5. swipeActions 使用 allowsFullSwipe: true 支持快速滑动删除
+
+### 留给后续 Agent 的提示
+- US-008（快捷键）可直接进行，不依赖 US-007
+- US-009（偏好设置）需要为 retention_days 和 max_storage_mb 添加 UI 控制，对应数据库键已在 app_settings 表中
+- DataCleanupService 的 Timer 在主线程 RunLoop 上运行，如果需要后台运行需调整
+- 存储清理的 batchSize=50 是经验值，如果单条记录很大（如图片）可能需要调整
+- swipeActions 在 macOS 14+ 上效果最佳，macOS 13 上可能有细微差异

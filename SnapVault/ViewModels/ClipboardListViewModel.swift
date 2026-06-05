@@ -118,6 +118,13 @@ final class ClipboardListViewModel: ObservableObject {
                 items[index].isPinned.toggle()
                 items[index].updatedAt = Date()
             }
+            // Re-sort: pinned first, then by created_at descending
+            items.sort { lhs, rhs in
+                if lhs.isPinned != rhs.isPinned {
+                    return lhs.isPinned && !rhs.isPinned
+                }
+                return lhs.createdAt > rhs.createdAt
+            }
             logger.debug("Toggled pin for item id=\(id)")
         } catch {
             logger.error("Failed to toggle pin: \(error.localizedDescription, privacy: .public)")

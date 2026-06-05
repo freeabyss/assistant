@@ -302,7 +302,7 @@ final class ContentRepository {
     // MARK: - Cleanup
 
     /// Delete expired non-pinned items. Returns count of deleted items.
-    func cleanup(retentionDays: Int, maxStorageMB: Int) throws -> Int {
+    func cleanupExpired(retentionDays: Int) throws -> Int {
         guard let dbQueue = dbQueue else {
             throw RepositoryError.databaseNotReady
         }
@@ -310,14 +310,89 @@ final class ContentRepository {
         return try dbQueue.write { db in
             let cutoffDate = Calendar.current.date(byAdding: .day, value: -retentionDays, to: Date())!
 
-            // Delete expired non-pinned items
+            // Delete expired non-pinned items (pinned items are protected)
             let deleted = try ClipboardItem
                 .filter(Column("created_at") < cutoffDate)
                 .filter(Column("is_pinned") == 0)
                 .deleteAll(db)
 
-            logger.info("Cleanup: deleted \(deleted) expired items")
+            logger.info("Cleanup: deleted \(deleted) expired items (retention=\(retentionDays) days)")
             return deleted
+        }
+    }
+
+    /// Delete oldest non-pinned items until database size is under the limit.
+    /// Returns count of deleted items.
+    func cleanupStorage(maxStorageMB: Int) throws -> Int {
+        guard let dbQueue = dbQueue else {
+            throw RepositoryError.databaseNotReady
+        }
+
+        let dbPath = DatabaseManager.databaseURL().path
+        let maxBytes = Int64(maxStorageMB) * 1024 * 1024
+        var totalDeleted = 0
+        let batchSize = 50
+
+        // Loop: check size, delete a batch if over limit, repeat
+        while true {
+            // Check current DB file size
+            guard let attrs = try? FileManager.default.attributesOfItem(atPath: dbPath),
+                  let fileSize = attrs[.size] as? Int64 else {
+                break
+            }
+
+            if fileSize <= maxBytes {
+                break
+            }
+
+            // Delete a batch of oldest non-pinned items
+            let deleted = try dbQueue.write { db -> Int in
+                let oldestIDs = try Int64.fetchAll(db,
+                    sql: "SELECT id FROM clipboard_items WHERE is_pinned = 0 ORDER BY created_at ASC LIMIT ?",
+                    arguments: [batchSize]
+                )
+
+                guard !oldestIDs.isEmpty else { return 0 }
+
+                for id in oldestIDs {
+                    try ClipboardItem.deleteOne(db, id: id)
+                }
+                return oldestIDs.count
+            }
+
+            totalDeleted += deleted
+
+            // If we couldn't delete anything, break to avoid infinite loop
+            if deleted == 0 {
+                logger.warning("Storage cleanup: no more non-pinned items to delete, but size still exceeds limit")
+                break
+            }
+        }
+
+        if totalDeleted > 0 {
+            logger.info("Storage cleanup: deleted \(totalDeleted) items to stay under \(maxStorageMB)MB limit")
+        }
+        return totalDeleted
+    }
+
+    /// Combined cleanup: first remove expired items, then enforce storage limit.
+    /// Returns total count of deleted items.
+    func cleanup(retentionDays: Int, maxStorageMB: Int) throws -> Int {
+        let expired = try cleanupExpired(retentionDays: retentionDays)
+        let storage = try cleanupStorage(maxStorageMB: maxStorageMB)
+        return expired + storage
+    }
+
+    // MARK: - Settings
+
+    /// Read a single setting value from app_settings table.
+    func readSetting(key: String) throws -> String? {
+        guard let dbQueue = dbQueue else {
+            throw RepositoryError.databaseNotReady
+        }
+
+        return try dbQueue.read { db in
+            try AppSetting.fetchOne(db, id: key)?.value
         }
     }
 

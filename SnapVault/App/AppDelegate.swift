@@ -24,6 +24,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Task that consumes clipboard events from the monitor stream.
     private var monitorTask: Task<Void, Never>?
 
+    /// Periodic data cleanup service (expiry + storage limits).
+    private let cleanupService = DataCleanupService()
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         logger.info("SnapVault launching")
 
@@ -44,11 +47,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Start clipboard monitoring
         startClipboardMonitoring()
 
+        // Start data cleanup service (immediate + hourly)
+        cleanupService.start()
+
         logger.info("SnapVault launched successfully")
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         logger.info("SnapVault terminating")
+        cleanupService.stop()
         clipboardMonitor.stop()
         monitorTask?.cancel()
         if let monitor = localEventMonitor {

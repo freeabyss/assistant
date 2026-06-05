@@ -103,7 +103,7 @@
       "id": "US-007",
       "title": "置顶与数据管理",
       "priority": "medium",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": ["US-004"],
       "steps": [
