@@ -102,8 +102,8 @@ struct ClipboardItem: Identifiable, Codable, FetchableRecord, MutablePersistable
     static let fts = hasOne(ClipboardItemFTS.self)
 }
 
-/// FTS5 virtual table record.
-struct ClipboardItemFTS: FetchableRecord, PersistableRecord {
+/// FTS5 virtual table record (read-only, writes handled by triggers).
+struct ClipboardItemFTS: Decodable, TableRecord, FetchableRecord {
     static let databaseTableName = "clipboard_items_fts"
 
     var rowid: Int64

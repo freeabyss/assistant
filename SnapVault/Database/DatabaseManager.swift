@@ -80,7 +80,8 @@ final class DatabaseManager {
             try db.create(virtualTable: "clipboard_items_fts", using: FTS5()) { t in
                 t.column("text_content")
                 t.column("ocr_text")
-                t.content(table: "clipboard_items", rowID: "id")
+                t.content = "clipboard_items"
+                t.contentRowID = "id"
                 t.tokenizer = .unicode61()
             }
 

@@ -2,11 +2,13 @@ import Foundation
 import GRDB
 
 /// Application settings stored as key-value pairs in the database.
-struct AppSetting: Codable, FetchableRecord, PersistableRecord {
+struct AppSetting: Codable, FetchableRecord, PersistableRecord, Identifiable {
     static let databaseTableName = "app_settings"
 
     var key: String
     var value: String
+
+    var id: String { key }
 }
 
 /// Well-known setting keys with their default values.
