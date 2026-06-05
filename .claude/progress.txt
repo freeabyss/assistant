@@ -234,3 +234,64 @@
 - ContentStore.performOCR() 已预留 OCR 结果更新到数据库的逻辑，US-006 只需实现 OCRService
 - ClipboardMonitor 的 onNewContent 是冷流（cold stream），每次访问属性都会创建新的 AsyncStream；当前只在 AppDelegate 中访问一次，如需多消费者需改为共享流
 - NSPasteboard.fileURL 类型在 macOS 上可能需要 com.apple.security.files.user-selected.read-only entitlement
+
+## 2026-06-05 - US-004 内容展示与多类型渲染
+
+### 完成内容
+1. **ClipboardItemRow 增强**
+   - 纯文本：等宽字体（monospaced）显示前 2 行预览
+   - RTF：使用 NSAttributedString 解析 RTF 数据，渲染富文本预览（保留粗体/斜体/颜色），最多 2 行
+   - 图片：左侧显示 40x40 缩略图（从 imageData 解码），右侧显示尺寸（宽 x 高）+ OCR 文本（如有）
+   - 文件：显示文件名（粗体）+ 文件大小（通过 FileManager 获取属性，ByteCountFormatter 格式化）
+   - 所有类型显示中文相对时间："刚刚" / "N分钟前" / "N小时前" / "N天前" / "MM/dd"
+   - 置顶标记（pin.fill 图标，旋转 45 度）在右上角
+   - 内容类型颜色：text=蓝色, rtf=橙色, image=绿色, file=灰色（与 SF Symbols 图标对应）
+
+2. **PreviewPanel 完整实现**
+   - 点击列表项时弹出 Sheet 预览面板（minWidth 450, minHeight 400）
+   - 顶部 Header：类型图标 + 类型名 + 相对时间 + 关闭按钮
+   - 纯文本：完整显示，monospaced 字体，支持文本选择（.textSelection(.enabled)）
+   - RTF：使用 RTFTextView（NSViewRepresentable 包装 NSTextView）渲染完整富文本格式，支持文本选择
+   - 图片：按比例缩放显示（最大高度 400），支持 MagnificationGesture 缩放，显示尺寸/像素/文件大小信息，OCR 文本区域
+   - 文件：64x64 文件图标（NSWorkspace.shared.icon）+ 信息表（文件名、路径、大小、类型、修改时间）+ "Show in Finder" 按钮
+   - 底部操作栏：Delete 按钮（红色）+ Copy 按钮（borderedProminent）
+   - 支持 ESC 关闭（.keyboardShortcut(.cancelAction)，兼容 macOS 13+）
+
+3. **ClipboardListViewModel 增强**
+   - copyToClipboard() 增强：
+     - 纯文本：写入 NSPasteboard.PasteboardType.string
+     - RTF：同时写入 .rtf（RTF 二进制数据）和 .string（纯文本降级）
+     - 图片：写入 .tiff
+     - 文件：写入 fileURL（NSPasteboardWriting）
+   - 新增 showToast/toastMessage 状态，showCopyToast() 方法（1.5 秒自动消失）
+
+4. **ClipboardListView 更新**
+   - 单击列表项打开 PreviewPanel（.sheet），不再直接复制
+   - 右键菜单新增 "Preview" 选项
+   - Toast 叠加层显示复制成功反馈
+
+5. **新建 ToastView 组件**
+   - Views/Components/ToastView.swift：居中半透明黑底白字提示
+   - ToastModifier：ViewModifier 封装，支持 .toast() 扩展方法
+
+### 修改文件清单
+- SnapVault/Views/ClipboardList/ClipboardItemRow.swift（重写：四种类型预览、中文相对时间、缩略图）
+- SnapVault/Views/Preview/PreviewPanel.swift（重写：完整预览面板实现）
+- SnapVault/ViewModels/ClipboardListViewModel.swift（增强 copyToClipboard + Toast 状态）
+- SnapVault/Views/ClipboardList/ClipboardListView.swift（集成 Sheet 预览 + Toast）
+- SnapVault/Views/Components/ToastView.swift（新建：Toast 提示组件）
+- SnapVault.xcodeproj/project.pbxproj（添加 ToastView.swift 文件引用和编译目标）
+
+### 技术决策记录
+1. PreviewPanel 使用 SwiftUI .sheet 呈现，而非独立 NSWindow，简化窗口管理
+2. RTF 渲染使用 NSViewRepresentable 包装 NSTextView，因为 SwiftUI 的 Text(AttributedString) 对复杂 RTF 支持有限
+3. ESC 关闭使用 .keyboardShortcut(.cancelAction) 替代 onKeyPress（后者需要 macOS 14+）
+4. 图片缩略图在列表行中直接解码（40x40 尺寸开销可控），预览面板中按比例缩放
+5. 单击打开预览而非直接复制，符合"点击可预览"的需求定义；快速复制可通过右键菜单
+
+### 留给后续 Agent 的提示
+- US-005（搜索）可以直接使用已有的 FTS5 搜索能力
+- US-007（置顶）的 togglePin 已在 ViewModel 中实现，UI 层面的滑动删除需要额外实现
+- RTF 预览依赖 rtfContent 字段存储的 RTF 数据格式，如果 ClipboardMonitor 存储的格式有变化需同步调整
+- MagnificationGesture 在 macOS 上主要响应触控板捏合手势，鼠标滚轮缩放需要额外处理
+- ToastView 位于 Views/Components/ 目录，可复用于其他需要短暂提示的场景

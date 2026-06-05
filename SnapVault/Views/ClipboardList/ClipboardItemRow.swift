@@ -1,26 +1,36 @@
 import SwiftUI
+import AppKit
 
 /// A single row in the clipboard history list.
+/// Renders content-type-specific previews: monospace text, RTF, image thumbnail, file info.
 struct ClipboardItemRow: View {
     let item: ClipboardItem
     let isSelected: Bool
 
     var body: some View {
         HStack(spacing: 10) {
-            // Content type icon
+            // Content type icon / thumbnail
             contentTypeIcon
 
             // Content preview
             VStack(alignment: .leading, spacing: 3) {
                 contentPreview
                     .lineLimit(2)
-                    .font(.system(size: 13))
 
                 HStack(spacing: 6) {
                     // Content type label
                     Text(item.contentType.displayName)
                         .font(.system(size: 10))
                         .foregroundColor(.secondary)
+
+                    // File size for file type
+                    if item.contentType == .file, let size = fileSizeString {
+                        Text(size)
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary.opacity(0.7))
+                    }
+
+                    Spacer(minLength: 0)
 
                     // Relative time
                     Text(relativeTime)
@@ -29,13 +39,12 @@ struct ClipboardItemRow: View {
                 }
             }
 
-            Spacer(minLength: 0)
-
-            // Pin indicator
+            // Pin indicator (right-aligned)
             if item.isPinned {
                 Image(systemName: "pin.fill")
                     .font(.system(size: 10))
                     .foregroundColor(.accentColor)
+                    .rotationEffect(.degrees(45))
             }
         }
         .padding(.vertical, 6)
@@ -45,17 +54,32 @@ struct ClipboardItemRow: View {
         .contentShape(Rectangle())
     }
 
-    // MARK: - Content Type Icon
+    // MARK: - Content Type Icon / Thumbnail
 
+    @ViewBuilder
     private var contentTypeIcon: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 6)
-                .fill(iconBackgroundColor)
-                .frame(width: 32, height: 32)
+        if item.contentType == .image, let data = item.imageData, let nsImage = NSImage(data: data) {
+            // Image thumbnail
+            Image(nsImage: nsImage)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: 40, height: 40)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(Color.secondary.opacity(0.2), lineWidth: 0.5)
+                )
+        } else {
+            // Standard icon
+            ZStack {
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(iconBackgroundColor)
+                    .frame(width: 40, height: 40)
 
-            Image(systemName: item.contentType.iconName)
-                .font(.system(size: 14))
-                .foregroundColor(iconForegroundColor)
+                Image(systemName: item.contentType.iconName)
+                    .font(.system(size: 16))
+                    .foregroundColor(iconForegroundColor)
+            }
         }
     }
 
@@ -64,11 +88,11 @@ struct ClipboardItemRow: View {
         case .text:
             return Color.blue.opacity(0.15)
         case .rtf:
-            return Color.purple.opacity(0.15)
+            return Color.orange.opacity(0.15)
         case .image:
             return Color.green.opacity(0.15)
         case .file:
-            return Color.orange.opacity(0.15)
+            return Color.gray.opacity(0.15)
         }
     }
 
@@ -77,11 +101,11 @@ struct ClipboardItemRow: View {
         case .text:
             return .blue
         case .rtf:
-            return .purple
+            return .orange
         case .image:
             return .green
         case .file:
-            return .orange
+            return .gray
         }
     }
 
@@ -90,36 +114,111 @@ struct ClipboardItemRow: View {
     @ViewBuilder
     private var contentPreview: some View {
         switch item.contentType {
-        case .text, .rtf:
+        case .text:
+            // Monospace font for plain text
             Text(item.textContent ?? "Empty content")
+                .font(.system(size: 13, design: .monospaced))
                 .foregroundColor(.primary)
+                .lineLimit(2)
+
+        case .rtf:
+            // Render RTF preview
+            RTFPreviewView(rtfString: item.rtfContent ?? item.textContent ?? "")
+                .lineLimit(2)
+
         case .image:
-            Text(item.ocrText?.isEmpty == false ? item.ocrText! : "Image")
-                .foregroundColor(.primary)
+            // Image: show dimensions + OCR text if available
+            VStack(alignment: .leading, spacing: 2) {
+                if let data = item.imageData, let nsImage = NSImage(data: data) {
+                    Text("\(Int(nsImage.size.width)) x \(Int(nsImage.size.height))")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.primary)
+                }
+                if let ocr = item.ocrText, !ocr.isEmpty {
+                    Text(ocr)
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+            }
+
         case .file:
-            Text(item.filePath.map { URL(fileURLWithPath: $0).lastPathComponent } ?? "File")
-                .foregroundColor(.primary)
+            // File: filename + file size
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.filePath.map { URL(fileURLWithPath: $0).lastPathComponent } ?? "File")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                if let size = fileSizeString {
+                    Text(size)
+                        .font(.system(size: 11))
+                        .foregroundColor(.secondary)
+                }
+            }
         }
     }
 
-    // MARK: - Relative Time
+    // MARK: - Helpers
 
+    /// Formatted file size string for file-type items.
+    private var fileSizeString: String? {
+        guard item.contentType == .file, let path = item.filePath else { return nil }
+        guard let attrs = try? FileManager.default.attributesOfItem(atPath: path),
+              let size = attrs[.size] as? Int64 else { return nil }
+        return ByteCountFormatter.string(fromByteCount: size, countStyle: .file)
+    }
+
+    /// Chinese relative time display.
     private var relativeTime: String {
         let now = Date()
         let interval = now.timeIntervalSince(item.createdAt)
 
         if interval < 60 {
-            return "Just now"
+            return "刚刚"
         } else if interval < 3600 {
             let minutes = Int(interval / 60)
-            return "\(minutes)m ago"
+            return "\(minutes)分钟前"
         } else if interval < 86400 {
             let hours = Int(interval / 3600)
-            return "\(hours)h ago"
-        } else {
+            return "\(hours)小时前"
+        } else if interval < 604800 {
             let days = Int(interval / 86400)
-            return "\(days)d ago"
+            return "\(days)天前"
+        } else {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "MM/dd"
+            return formatter.string(from: item.createdAt)
         }
+    }
+}
+
+// MARK: - RTF Preview Helper
+
+/// A lightweight NSViewRepresentable that renders a single-line RTF preview.
+struct RTFPreviewView: View {
+    let rtfString: String
+    var lineLimit: Int = 2
+
+    var body: some View {
+        if let attributedString = parseRTF() {
+            Text(AttributedString(attributedString))
+                .lineLimit(lineLimit)
+        } else {
+            // Fallback: plain text
+            Text(rtfString)
+                .font(.system(size: 13))
+                .foregroundColor(.primary)
+                .lineLimit(lineLimit)
+        }
+    }
+
+    private func parseRTF() -> NSAttributedString? {
+        guard let data = rtfString.data(using: .utf8) else { return nil }
+        let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
+            .documentType: NSAttributedString.DocumentType.rtf,
+            .characterEncoding: String.Encoding.utf8.rawValue
+        ]
+        return try? NSAttributedString(data: data, options: options, documentAttributes: nil)
     }
 }
 
@@ -128,8 +227,17 @@ struct ClipboardItemRow: View {
         ClipboardItemRow(
             item: ClipboardItem(
                 contentType: .text,
-                textContent: "Hello, this is a sample text content for preview",
+                textContent: "Hello, this is a sample text content for preview. It shows how the row looks with two lines.",
                 contentHash: "abc123"
+            ),
+            isSelected: false
+        )
+        ClipboardItemRow(
+            item: ClipboardItem(
+                contentType: .rtf,
+                textContent: "Rich text content",
+                rtfContent: "{\\rtf1\\ansi This is {\\b bold} and {\\i italic} text.}",
+                contentHash: "def456"
             ),
             isSelected: false
         )
@@ -137,9 +245,17 @@ struct ClipboardItemRow: View {
             item: ClipboardItem(
                 contentType: .image,
                 ocrText: "Extracted text from image",
-                contentHash: "def456"
+                contentHash: "ghi789"
             ),
             isSelected: true
+        )
+        ClipboardItemRow(
+            item: ClipboardItem(
+                contentType: .file,
+                filePath: "/Users/test/Documents/report.pdf",
+                contentHash: "jkl012"
+            ),
+            isSelected: false
         )
     }
     .padding()

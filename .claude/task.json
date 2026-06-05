@@ -55,7 +55,7 @@
       "id": "US-004",
       "title": "内容展示与多类型渲染",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": ["US-002", "US-003"],
       "steps": [

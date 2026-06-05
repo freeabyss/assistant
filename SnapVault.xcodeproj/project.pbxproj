@@ -31,6 +31,7 @@
 		A10001000000000000000016 /* ClipboardListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000016; };
 		A10001000000000000000017 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000017; };
 		A10001000000000000000018 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000018; };
+		A10001000000000000000019 /* ToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001C; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -61,6 +62,7 @@
 		A10000000000000000000019 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1000000000000000000001A /* SnapVault.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SnapVault.entitlements; sourceTree = "<group>"; };
 		A1000000000000000000001B /* SnapVault.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SnapVault.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1000000000000000000001C /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -117,6 +119,7 @@
 				A1000300000000000000000E /* ClipboardList */,
 				A1000300000000000000000F /* Preview */,
 				A10003000000000000000010 /* Settings */,
+				A10003000000000000000018 /* Components */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -226,6 +229,14 @@
 				A10000000000000000000015 /* SettingsView.swift */,
 			);
 			path = Settings;
+			sourceTree = "<group>";
+		};
+		A10003000000000000000018 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				A1000000000000000000001C /* ToastView.swift */,
+			);
+			path = Components;
 			sourceTree = "<group>";
 		};
 		A10003000000000000000011 /* ClipboardMonitor */ = {
@@ -385,6 +396,7 @@
 				A10001000000000000000015 /* SettingsView.swift in Sources */,
 				A10001000000000000000016 /* ClipboardListViewModel.swift in Sources */,
 				A10001000000000000000017 /* SettingsViewModel.swift in Sources */,
+				A10001000000000000000019 /* ToastView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -4,6 +4,7 @@ import SwiftUI
 struct ClipboardListView: View {
     @ObservedObject var viewModel: ClipboardListViewModel
     @State private var selectedItemID: Int64?
+    @State private var previewItem: ClipboardItem?
 
     var body: some View {
         Group {
@@ -18,6 +19,26 @@ struct ClipboardListView: View {
                 await viewModel.loadMore()
             }
         }
+        .sheet(item: $previewItem) { item in
+            PreviewPanel(
+                item: item,
+                onCopy: {
+                    viewModel.copyToClipboard(item)
+                },
+                onDelete: {
+                    Task {
+                        await viewModel.deleteItem(item)
+                    }
+                }
+            )
+        }
+        .overlay(alignment: .center) {
+            if viewModel.showToast {
+                ToastView(message: viewModel.toastMessage)
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: 0.2), value: viewModel.showToast)
+            }
+        }
     }
 
     // MARK: - List View
@@ -30,7 +51,7 @@ struct ClipboardListView: View {
                     .id(item.id)
                     .onTapGesture {
                         selectedItemID = item.id
-                        viewModel.copyToClipboard(item)
+                        previewItem = item
                     }
                     .contextMenu {
                         itemContextMenu(item)
@@ -93,6 +114,12 @@ struct ClipboardListView: View {
             viewModel.copyToClipboard(item)
         }) {
             Label("Copy", systemImage: "doc.on.doc")
+        }
+
+        Button(action: {
+            previewItem = item
+        }) {
+            Label("Preview", systemImage: "eye")
         }
 
         Button(action: {

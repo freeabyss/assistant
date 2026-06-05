@@ -13,6 +13,8 @@ final class ClipboardListViewModel: ObservableObject {
     @Published var selectedContentType: ContentType? = nil
     @Published var isLoading: Bool = false
     @Published var hasMore: Bool = true
+    @Published var showToast: Bool = false
+    @Published var toastMessage: String = ""
 
     // MARK: - Private
 
@@ -116,28 +118,53 @@ final class ClipboardListViewModel: ObservableObject {
         }
     }
 
-    /// Copy item content to clipboard.
+    /// Copy item content to clipboard with proper type handling.
     func copyToClipboard(_ item: ClipboardItem) {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
 
         switch item.contentType {
-        case .text, .rtf:
+        case .text:
             if let text = item.textContent {
                 pasteboard.setString(text, forType: .string)
             }
-        case .image:
-            if let data = item.imageData, let image = NSImage(data: data) {
-                pasteboard.writeObjects([image])
+
+        case .rtf:
+            // Write both RTF data and plain text fallback
+            if let rtf = item.rtfContent, let rtfData = rtf.data(using: .utf8) {
+                pasteboard.setData(rtfData, forType: .rtf)
             }
+            // Always provide plain text fallback
+            if let text = item.textContent {
+                pasteboard.setString(text, forType: .string)
+            }
+
+        case .image:
+            if let data = item.imageData {
+                pasteboard.setData(data, forType: .tiff)
+            }
+
         case .file:
             if let path = item.filePath {
                 let url = URL(fileURLWithPath: path)
+                pasteboard.clearContents()
                 pasteboard.writeObjects([url as NSPasteboardWriting])
             }
         }
 
+        // Show toast feedback
+        showCopyToast()
+
         logger.debug("Copied item id=\(String(describing: item.id)) to clipboard")
+    }
+
+    /// Show a brief "已复制" toast notification.
+    private func showCopyToast() {
+        toastMessage = "已复制"
+        showToast = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            self?.showToast = false
+        }
     }
 
     // MARK: - Private
