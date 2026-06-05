@@ -155,36 +155,140 @@ struct TextBlock {
 }
 ```
 
-### SearchServiceProtocol
+### SearchSource（统一搜索源协议）
 
-**职责**：统一搜索入口，聚合 FTS5 和 Spotlight 结果。
+**职责**：所有搜索源的统一接口，实现可插拔架构。
 
 ```swift
-protocol SearchServiceProtocol {
-    /// 搜索剪贴板历史
+/// 搜索源类型
+enum SearchResultType: String, Codable, CaseIterable {
+    case application   // 已安装应用
+    case file          // 本地文件
+    case clipboard     // 剪贴板历史
+
+    var displayName: String {
+        switch self {
+        case .application: return "应用"
+        case .file: return "文件"
+        case .clipboard: return "剪贴板"
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .application: return "app.fill"
+        case .file: return "doc.fill"
+        case .clipboard: return "clipboard.fill"
+        }
+    }
+}
+
+/// 统一搜索结果
+struct UnifiedSearchResult: Identifiable {
+    let id: String                // 唯一标识（sourceType:原始ID）
+    let title: String             // 主标题
+    let subtitle: String?         // 副标题
+    let icon: NSImage?            // 图标
+    let type: SearchResultType    // 结果类型
+    let score: Double             // 综合排序分数 (0-1)
+    let highlightRanges: [NSRange] // 高亮位置
+    let action: SearchResultAction // 选择后的动作
+}
+
+/// 搜索结果动作
+enum SearchResultAction {
+    case launchApp(bundleID: String, path: URL)
+    case openFile(path: URL)
+    case openInFinder(path: URL)
+    case copyToClipboard(itemID: Int64)
+}
+
+/// 搜索源协议
+protocol SearchSource {
+    /// 此搜索源的结果类型
+    var sourceType: SearchResultType { get }
+
+    /// 搜索
     /// - Parameters:
     ///   - query: 搜索关键词
     ///   - limit: 最大返回条数
-    ///   - scope: 搜索范围
-    /// - Returns: 按相关度排序的结果
-    func search(
-        query: String,
-        limit: Int,
-        scope: SearchScope
-    ) async throws -> [SearchResult]
+    /// - Returns: 统一格式的搜索结果
+    func search(query: String, limit: Int) async throws -> [UnifiedSearchResult]
+}
+```
+
+### UnifiedSearchServiceProtocol
+
+**职责**：统一搜索入口，聚合所有搜索源，排序分组。
+
+```swift
+protocol UnifiedSearchServiceProtocol {
+    /// 注册搜索源
+    func registerSource(_ source: SearchSource)
+
+    /// 统一搜索
+    /// - Parameters:
+    ///   - query: 搜索关键词
+    ///   - limit: 每个源的最大返回条数
+    /// - Returns: 合并排序后的结果，按类型分组
+    func search(query: String, limit: Int) async throws -> UnifiedSearchResponse
+
+    /// 记录用户选择（用于提升排名）
+    func recordSelection(resultID: String)
 }
 
-enum SearchScope {
-    case all           // 全部内容
-    case textOnly      // 仅文本
-    case imageOCR      // 仅图片 OCR 文本
+struct UnifiedSearchResponse {
+    let applications: [UnifiedSearchResult]  // 应用结果
+    let files: [UnifiedSearchResult]         // 文件结果
+    let clipboard: [UnifiedSearchResult]     // 剪贴板结果
+    let totalCount: Int
+    let elapsed: TimeInterval                // 搜索耗时(ms)
+}
+```
+
+### AppSearchSourceProtocol
+
+**职责**：已安装应用搜索，基于内存索引。
+
+```swift
+protocol AppSearchSourceProtocol: SearchSource {
+    /// 构建/刷新应用索引
+    func rebuildIndex() async
+
+    /// 获取应用信息
+    func getAppInfo(bundleID: String) -> AppInfo?
 }
 
-struct SearchResult {
-    let item: ClipboardItem
-    let score: Double          // 相关度分数
-    let matchedField: String   // 匹配的字段名
-    let highlightRanges: [NSRange]  // 高亮位置
+struct AppInfo {
+    let name: String              // 应用名称
+    let bundleID: String          // Bundle Identifier
+    let path: URL                 // .app 路径
+    let icon: NSImage?            // 应用图标
+    let lastUsed: Date?           // 最后使用时间
+    let useCount: Int             // 使用次数
+}
+```
+
+### FileSearchSourceProtocol
+
+**职责**：本地文件搜索，基于 Spotlight NSMetadataQuery。
+
+```swift
+protocol FileSearchSourceProtocol: SearchSource {
+    /// 设置搜索范围（默认用户主目录）
+    func setSearchScope(_ paths: [URL])
+
+    /// 设置文件类型过滤
+    func setFileTypes(_ types: [String])  // UTI 类型
+}
+
+struct FileInfo {
+    let name: String              // 文件名
+    let path: URL                 // 文件路径
+    let contentType: String       // UTI 类型
+    let size: Int64               // 文件大小(bytes)
+    let modifiedDate: Date        // 修改日期
+    let icon: NSImage?            // 文件图标
 }
 ```
 
@@ -231,6 +335,34 @@ struct UpdateInfo {
 
 ## ViewModel 接口
 
+### UnifiedSearchViewModel
+
+**职责**：统一搜索界面的 ViewModel，管理搜索输入、结果展示、用户选择。
+
+```swift
+@MainActor
+class UnifiedSearchViewModel: ObservableObject {
+    @Published var searchText: String = ""
+    @Published var applications: [UnifiedSearchResult] = []
+    @Published var files: [UnifiedSearchResult] = []
+    @Published var clipboard: [UnifiedSearchResult] = []
+    @Published var isLoading: Bool = false
+    @Published var selectedResult: UnifiedSearchResult?
+    @Published var elapsed: TimeInterval = 0
+
+    /// 执行搜索（300ms debounce）
+    func search() async
+
+    /// 用户选择结果
+    func select(_ result: UnifiedSearchResult)
+
+    /// 键盘导航（上/下/回车）
+    func moveSelectionUp()
+    func moveSelectionDown()
+    func confirmSelection()
+}
+```
+
 ### ClipboardListViewModel
 
 ```swift
@@ -269,16 +401,25 @@ class SettingsViewModel: ObservableObject {
 
 ```mermaid
 graph TD
-    A[MenuBarView / FloatingPanel] --> B[ClipboardListViewModel]
-    B --> C[ContentRepositoryProtocol]
-    B --> D[SearchServiceProtocol]
-    E[ClipboardMonitor] --> C
-    E --> F[OCRServiceProtocol]
-    D --> C
-    D --> G[Spotlight / NSMetadataQuery]
-    C --> H[GRDB / SQLite]
+    A[UnifiedSearchView / FloatingPanel] --> US[UnifiedSearchViewModel]
+    US --> USS[UnifiedSearchService]
+    USS --> AS[AppSearchSource]
+    USS --> FS[FileSearchSource]
+    USS --> CS[ClipboardSearchSource]
+    AS --> IDX[内存应用索引]
+    FS --> MQ[NSMetadataQuery / Spotlight]
+    CS --> FTS[GRDB FTS5]
+    CS --> REPO[ContentRepository]
+    US --> ACT[SearchResultAction]
+    ACT -->|launchApp| WS[NSWorkspace]
+    ACT -->|openFile| WS
+    ACT -->|copyToClipboard| PB[NSPasteboard]
+    E[ClipboardMonitor] --> REPO
+    E --> OCR[OCRService]
+    OCR --> VN[Vision Framework]
+    REPO --> DB[(SQLite / GRDB)]
     I[SettingsView] --> J[SettingsViewModel]
-    J --> C
+    J --> REPO
     K[SparkleUpdater] --> L[Sparkle Framework]
 ```
 
@@ -287,3 +428,4 @@ graph TD
 | 日期       | 变更内容 |
 | :--------- | :------- |
 | 2026-06-05 | 初始版本：核心 Protocol 定义、ViewModel 接口、依赖关系 |
+| 2026-06-05 | v2：增加 SearchSource 统一协议、AppSearchSource、FileSearchSource、UnifiedSearchService、UnifiedSearchViewModel，重构依赖关系图 |

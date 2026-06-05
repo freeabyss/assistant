@@ -5,57 +5,114 @@
 | 日期       | 修改人 | 备注     |
 | :--------- | :----- | :------- |
 | 2026-06-05 | Claude | 初始版本 |
+| 2026-06-05 | Claude | v2：增加应用搜索、文件搜索，重构为 Spotlight 类启动器 |
 
 ## 系统概述
 
-SnapVault（暂存区）是一款 macOS 原生剪贴板历史管理工具，面向需要频繁复制粘贴内容的开发者、设计师和文字工作者。系统通过全局监听剪贴板变化、OCR 识别图片文字、Spotlight 全文搜索等能力，解决 macOS 原生剪贴板"只能存一条"的痛点，让用户快速检索和复用历史复制内容。
+SnapVault（暂存区）是一款 **macOS 快速启动器**，集应用搜索、文件搜索、剪贴板历史于一体。用户通过全局快捷键唤起一个类似 Spotlight 的搜索面板，输入关键词即可：
+
+1. **搜索已安装应用** — 即时启动 App（类似 Spotlight / Alfred）
+2. **搜索本地文件** — 基于 Spotlight 索引的文件名/内容搜索，快速打开文件或定位 Finder
+3. **检索剪贴板历史** — 搜索所有复制过的文本、图片、文件记录
+
+面向需要高效工作流的开发者、设计师和文字工作者，替代频繁切换 Finder、Spotlight、剪贴板工具的碎片化操作。
 
 ## 设计目标
 
-- **即时响应**：剪贴板监听延迟 < 100ms，搜索结果 < 200ms 返回，快捷键唤起面板 < 150ms
-- **低资源占用**：常驻内存 < 50MB，CPU 空闲占用 < 1%，数据库文件 < 500MB（默认保留 30 天）
+- **即时响应**：搜索结果 < 200ms 返回，快捷键唤起面板 < 150ms，应用启动 < 500ms
+- **低资源占用**：常驻内存 < 80MB，CPU 空闲占用 < 1%，数据库文件 < 500MB（默认保留 30 天）
+- **统一入口**：一个搜索框同时匹配应用、文件、剪贴板，结果按类型分组展示
 - **原生体验**：100% SwiftUI 构建，遵循 macOS Human Interface Guidelines，支持 Dark Mode、VoiceOver
 - **数据安全**：所有数据仅存本地 SQLite，不联网传输；数据库文件使用 macOS Data Protection
-- **可扩展性**：模块化架构，各子系统（OCR、搜索、存储）独立可替换
+- **可扩展性**：模块化架构，各子系统（搜索源、OCR、存储）独立可替换
 
 ## 整体架构
 
 ### 分层结构
 
-系统采用 **MVVM + 服务层** 的分层架构，分为四层：
+系统采用 **MVVM + 服务层 + 统一搜索管线** 的分层架构：
 
 ```
-┌─────────────────────────────────────────────────┐
-│                   表现层 (Presentation)           │
-│         SwiftUI Views + ViewModels               │
-├─────────────────────────────────────────────────┤
-│                   业务层 (Business)               │
-│    ClipboardManager / SearchEngine / OCRService  │
-├─────────────────────────────────────────────────┤
-│                   数据层 (Data)                   │
-│         GRDB Repository + Models                 │
-├─────────────────────────────────────────────────┤
-│                   平台层 (Platform)               │
-│   NSPasteboard / Vision / ScreenCaptureKit / OSLog│
-└─────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│                    表现层 (Presentation)                   │
+│          UnifiedSearchView + ResultGroupView              │
+├──────────────────────────────────────────────────────────┤
+│                    业务层 (Business)                       │
+│  UnifiedSearchService ──┬── AppSearchSource               │
+│                         ├── FileSearchSource              │
+│                         ├── ClipboardSearchSource         │
+│                         └── ScoreAggregator               │
+├──────────────────────────────────────────────────────────┤
+│                    数据层 (Data)                           │
+│          GRDB Repository + AppIndex Cache                 │
+├──────────────────────────────────────────────────────────┤
+│                    平台层 (Platform)                       │
+│  NSWorkspace / NSMetadataQuery / NSPasteboard / Vision    │
+└──────────────────────────────────────────────────────────┘
 ```
 
 ### 模块划分
 
-| 模块                 | 职责                                           | 关键类型                    |
-| :------------------- | :--------------------------------------------- | :-------------------------- |
-| **App Shell**        | 应用生命周期、菜单栏图标、全局快捷键注册       | `AppDelegate`, `MenuBarView`|
-| **ClipboardMonitor** | 监听系统剪贴板变化，去重过滤，触发存储         | `ClipboardMonitor`          |
-| **ContentStore**     | 数据持久化、查询、清理过期数据                 | `ContentRepository`         |
-| **SearchEngine**     | 全文搜索、Spotlight 索引同步                   | `SearchService`             |
-| **OCRService**       | 图片文字识别，提取可搜索文本                   | `OCRProcessor`              |
-| **PreviewPanel**     | 内容预览窗口（文本/图片/富文本/文件）          | `PreviewView`               |
-| **SettingsModule**   | 偏好设置界面与持久化                           | `SettingsView`, `Settings`  |
-| **UpdateService**    | 自动更新检查与安装                             | `SparkleUpdater`            |
+| 模块                   | 职责                                           | 关键类型                         |
+| :--------------------- | :--------------------------------------------- | :------------------------------- |
+| **App Shell**          | 应用生命周期、菜单栏图标、全局快捷键注册       | `AppDelegate`, `MenuBarView`     |
+| **UnifiedSearch**      | 统一搜索入口，聚合多个搜索源，结果排序分组     | `UnifiedSearchService`           |
+| **AppSearchSource**    | 已安装应用搜索，基于 /Applications 索引        | `AppSearchSource`                |
+| **FileSearchSource**   | 本地文件搜索，基于 Spotlight NSMetadataQuery   | `FileSearchSource`               |
+| **ClipboardSearchSource** | 剪贴板历史搜索，基于 GRDB FTS5              | `ClipboardSearchSource`          |
+| **ClipboardMonitor**   | 监听系统剪贴板变化，去重过滤，触发存储         | `ClipboardMonitor`               |
+| **ContentStore**       | 数据持久化、查询、清理过期数据                 | `ContentRepository`              |
+| **OCRService**         | 图片文字识别，提取可搜索文本                   | `OCRProcessor`                   |
+| **PreviewPanel**       | 内容预览窗口（文本/图片/富文本/文件）          | `PreviewView`                    |
+| **SettingsModule**     | 偏好设置界面与持久化                           | `SettingsView`, `Settings`       |
+| **UpdateService**      | 自动更新检查与安装                             | `SparkleUpdater`                 |
+
+### 搜索源协议（SearchSource Protocol）
+
+所有搜索源遵循统一协议，实现可插拔架构：
+
+```swift
+protocol SearchSource {
+    var sourceType: SearchResultType { get }
+    func search(query: String, limit: Int) async throws -> [SearchResult]
+}
+
+enum SearchResultType: String, CaseIterable {
+    case application   // 已安装应用
+    case file          // 本地文件
+    case clipboard     // 剪贴板历史
+}
+```
 
 ### 交互关系
 
-**核心数据流 —— 剪贴板捕获：**
+**核心数据流 —— 统一搜索：**
+
+```
+用户输入快捷键 ⌘+Space ──> 浮动搜索面板
+                              │
+                              ├─ 输入关键词 ──> UnifiedSearchService.search()
+                              │                      │
+                              │                      ├─> AppSearchSource.search()
+                              │                      │     └─ 内存索引匹配（前缀+模糊）
+                              │                      │
+                              │                      ├─> FileSearchSource.search()
+                              │                      │     └─ NSMetadataQuery（Spotlight）
+                              │                      │
+                              │                      └─> ClipboardSearchSource.search()
+                              │                            └─ GRDB FTS5 全文搜索
+                              │
+                              ├─ ScoreAggregator ──> 合并去重、按相关度排序
+                              │
+                              ├─ 结果分组展示 ──> 🖥 应用 | 📁 文件 | 📋 剪贴板
+                              │
+                              └─ 用户选择 ──>
+                                    ├─ 应用 → NSWorkspace.launchApplication()
+                                    ├─ 文件 → NSWorkspace.open() / Finder 定位
+                                    └─ 剪贴板 → NSPasteboard.write() + 粘贴
+```
+
+**核心数据流 —— 剪贴板捕获（不变）：**
 
 ```
 NSPasteboard ──poll/changeCount──> ClipboardMonitor
@@ -69,30 +126,16 @@ NSPasteboard ──poll/changeCount──> ClipboardMonitor
                                              └─> SQLite (GRDB)
 ```
 
-**核心数据流 —— 用户检索：**
-
-```
-用户输入快捷键 ──> MenuBarView / FloatingPanel
-                       │
-                       ├─ 搜索框输入 ──> SearchService.query()
-                       │                     │
-                       │                     ├─ GRDB FTS5 全文搜索
-                       │                     └─ Spotlight metadata 查询
-                       │
-                       ├─ 结果列表 ──> ClipboardItem 列表
-                       │
-                       └─ 用户选择 ──> NSPasteboard.write() ──> 粘贴到当前应用
-```
-
 ## 技术选型
 
 | 领域     | 选择                  | 理由                                                                       | 备选方案                  |
 | :------- | :-------------------- | :------------------------------------------------------------------------- | :------------------------ |
 | UI 框架  | SwiftUI               | 声明式 UI，macOS 原生支持，Apple 生态未来方向，代码量少于 AppKit            | AppKit（更成熟但更冗长）  |
 | 系统桥接 | AppKit                | SwiftUI 部分能力不足（如 NSWindow 控制、全局事件监听），需 AppKit 补充       | 纯 SwiftUI（能力不够）    |
+| 应用搜索 | NSWorkspace + 内存索引 | 直接枚举 /Applications 目录，内存中前缀+模糊匹配，零延迟                   | LaunchServices API（较重）|
+| 文件搜索 | Spotlight (NSMetadataQuery) | 系统级全文搜索，零额外索引成本，与 macOS 深度集成          | 自建倒排索引（复杂度高）  |
 | OCR      | Vision (VNRecognizeTextRequest) | 系统内置，无需额外依赖，支持中英文，离线可用               | Tesseract（需打包模型）   |
 | 截图     | ScreenCaptureKit      | macOS 12+ 原生 API，高性能，支持窗口/区域捕获                              | CGWindowListCreateImage   |
-| 搜索     | Spotlight (NSMetadataQuery) | 系统级全文搜索，零额外索引成本，与 macOS 深度集成          | 自建倒排索引（复杂度高）  |
 | 剪贴板   | NSPasteboard          | macOS 标准剪贴板 API，changeCount 监听变化                                 | 无备选                    |
 | 存储     | SQLite + GRDB         | GRDB 是 Swift 生态最成熟的 SQLite 封装，类型安全，支持 FTS5 全文搜索、Migration | Core Data（过重）、Realm  |
 | 快捷键   | KeyboardShortcuts     | 轻量级 Swift 库，macOS 原生快捷键注册，支持录制                            | HotKey（较老）            |
@@ -104,7 +147,8 @@ NSPasteboard ──poll/changeCount──> ClipboardMonitor
 - **SwiftUI**：部分高级窗口控制（如 Panel 样式、精确的窗口层级）需回退到 AppKit
 - **ScreenCaptureKit**：最低要求 macOS 12.3，需在 Info.plist 中声明最低系统版本
 - **Vision OCR**：复杂排版（如表格、多栏）识别率有限，后续可考虑 VisionKit 增强
-- **Spotlight**：索引有延迟，新内容需通过 GRDB FTS5 作为主搜索，Spotlight 作为补充
+- **Spotlight 文件搜索**：依赖系统索引，首次使用或外接磁盘可能有延迟；应用搜索不依赖 Spotlight
+- **应用搜索覆盖范围**：仅索引 /Applications 和 ~/Applications，非标准路径安装的应用需手动配置
 
 ## 详细方案索引
 
@@ -115,7 +159,34 @@ NSPasteboard ──poll/changeCount──> ClipboardMonitor
 
 ## 关键设计决策
 
-### 1. 剪贴板监听策略
+### 1. 统一搜索架构（SearchSource 模式）
+
+采用 **可插拔搜索源** 架构，而非单一搜索引擎：
+
+```
+UnifiedSearchService
+    ├── AppSearchSource      （内存索引，< 10ms）
+    ├── FileSearchSource     （NSMetadataQuery，< 200ms）
+    └── ClipboardSearchSource（GRDB FTS5，< 50ms）
+```
+
+优势：
+- 新增搜索源只需实现 `SearchSource` 协议
+- 各源独立搜索，并行执行，结果由 `ScoreAggregator` 合并
+- 搜索结果按类型分组展示，用户可快速切换
+
+### 2. 应用搜索方案：内存索引而非 Spotlight
+
+应用搜索 **不依赖 Spotlight**，而是直接枚举文件系统：
+
+- 启动时扫描 `/Applications` 和 `~/Applications`（递归查找 `.app` bundle）
+- 构建内存索引：`[{name, bundleID, path, icon}]`
+- 搜索算法：前缀匹配 > 包含匹配 > 模糊匹配（Levenshtein）
+- 索引刷新：每 5 分钟增量检查，监听 `NSWorkspace.didInstallApplicationNotification`
+
+理由：Spotlight 对应用搜索有延迟（索引未完成时搜不到），内存索引首次启动即可用。
+
+### 3. 剪贴板监听策略
 
 采用 **定时轮询 changeCount** 的方式而非 `NSPasteboard` 的 `changeCount` KVO（macOS 不可靠）。
 
@@ -123,22 +194,23 @@ NSPasteboard ──poll/changeCount──> ClipboardMonitor
 - 去重逻辑：对内容计算 SHA256 hash，与最近 10 条记录比对
 - 空闲优化：应用失去焦点时降低轮询频率至 2s
 
-### 2. 数据库选型理由
+### 4. 数据库选型理由
 
 使用 GRDB 而非 Core Data 的原因：
 - Core Data 的 `NSFetchedResultsController` 在 SwiftUI 中适配不自然
-- GRDB 原生支持 FTS5 全文搜索，满足 PRD-05 的搜索需求
+- GRDB 原生支持 FTS5 全文搜索，满足搜索需求
 - GRDB 的 Migration 机制更适合版本迭代
 - 更轻量，编译速度更快
 
-### 3. 浮动面板 vs 独立窗口
+### 5. 浮动面板 vs 独立窗口
 
 采用 **NSPanel（浮动面板）** 而非普通 NSWindow：
 - 面板在失去焦点时自动隐藏（`becomesKeyOnlyIfNeeded`）
 - 可设置为 `NSPanel.Level.floating`，覆盖其他应用
 - 不出现在 Dock 和 Mission Control 中
+- 样式仿照 Spotlight：居中显示、圆角搜索框、结果列表
 
-### 4. 图片 OCR 流程
+### 6. 图片 OCR 流程
 
 ```
 图片进入 ──> 检查尺寸（跳过 < 50x50 的图标）
@@ -148,8 +220,20 @@ NSPasteboard ──poll/changeCount──> ClipboardMonitor
          ──> 同步到 FTS5 索引
 ```
 
+### 7. 搜索结果排序策略
+
+三种搜索源的结果合并后，按以下规则排序：
+
+1. **类型权重**：应用 > 文件 > 剪贴板（应用启动最常用）
+2. **相关度分数**：各源内部的匹配分数归一化到 0-1
+3. **使用频率**：记录用户选择次数，高频结果提升排名
+4. **时效性**：剪贴板按时间衰减，文件按修改时间排序
+
+最终分数 = 类型权重 × 0.3 + 相关度 × 0.4 + 使用频率 × 0.2 + 时效性 × 0.1
+
 ## 变更记录
 
 | 日期       | 变更内容 |
 | :--------- | :------- |
 | 2026-06-05 | 初始版本：基于 PRD 创建总体架构设计 |
+| 2026-06-05 | v2：重构为 Spotlight 类启动器，增加应用搜索（内存索引）、文件搜索（NSMetadataQuery）、统一搜索管线（SearchSource 协议）、搜索结果排序策略 |

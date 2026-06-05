@@ -178,6 +178,70 @@
         "导入时数据校验"
       ],
       "done_definition": "可导出为 JSON/CSV 格式，可从 JSON 导入恢复数据"
+    },
+    {
+      "id": "US-012",
+      "title": "统一搜索框架（SearchSource 协议）",
+      "priority": "high",
+      "passes": false,
+      "blocked": false,
+      "depends_on": [],
+      "steps": [
+        "定义 SearchSource 协议和 UnifiedSearchResult 类型",
+        "实现 UnifiedSearchService（多源并行搜索 + ScoreAggregator）",
+        "实现 UnifiedSearchViewModel（debounce、分组、键盘导航）",
+        "重构现有 SearchService 为 ClipboardSearchSource",
+        "搜索结果按类型分组：应用 / 文件 / 剪贴板"
+      ],
+      "done_definition": "统一搜索框架可运行，三个搜索源可独立注册和调用"
+    },
+    {
+      "id": "US-013",
+      "title": "应用搜索（AppSearchSource）",
+      "priority": "high",
+      "passes": false,
+      "blocked": false,
+      "depends_on": ["US-012"],
+      "steps": [
+        "实现 /Applications 和 ~/Applications 目录递归扫描",
+        "构建内存索引：name/bundleID/path/icon",
+        "实现前缀匹配 + 包含匹配 + 模糊匹配算法",
+        "集成 NSWorkspace.launchApplication 启动应用",
+        "增量刷新索引（每5分钟 + 应用安装通知）"
+      ],
+      "done_definition": "输入应用名前几个字母即可匹配，回车启动应用，< 10ms 响应"
+    },
+    {
+      "id": "US-014",
+      "title": "文件搜索（FileSearchSource）",
+      "priority": "high",
+      "passes": false,
+      "blocked": false,
+      "depends_on": ["US-012"],
+      "steps": [
+        "实现 NSMetadataQuery 封装（FileSearchSource）",
+        "配置搜索范围（默认用户主目录）",
+        "支持文件名 + 文件内容搜索",
+        "集成 NSWorkspace.open() 打开文件",
+        "集成 Finder 定位（reveal in Finder）"
+      ],
+      "done_definition": "输入文件名关键词可搜索 Spotlight 索引的文件，支持打开和 Finder 定位"
+    },
+    {
+      "id": "US-015",
+      "title": "统一搜索 UI 重构",
+      "priority": "high",
+      "passes": false,
+      "blocked": false,
+      "depends_on": ["US-012", "US-013", "US-014"],
+      "steps": [
+        "重构主界面为 Spotlight 风格搜索框",
+        "搜索结果分组展示（应用/文件/剪贴板 Tab 或分段）",
+        "键盘导航（↑↓ 选择，回车执行，Tab 切换分组）",
+        "结果项显示类型图标 + 标题 + 副标题",
+        "搜索耗时显示"
+      ],
+      "done_definition": "一个搜索框同时搜索应用、文件、剪贴板，结果分组展示，键盘可完全操控"
     }
   ]
 }
