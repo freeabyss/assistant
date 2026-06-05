@@ -119,7 +119,7 @@
       "id": "US-008",
       "title": "快捷键与全局唤起",
       "priority": "medium",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": ["US-002"],
       "steps": [

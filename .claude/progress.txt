@@ -480,3 +480,59 @@
 - DataCleanupService 的 Timer 在主线程 RunLoop 上运行，如果需要后台运行需调整
 - 存储清理的 batchSize=50 是经验值，如果单条记录很大（如图片）可能需要调整
 - swipeActions 在 macOS 14+ 上效果最佳，macOS 13 上可能有细微差异
+
+## 2026-06-05 - US-008 快捷键与全局唤起
+
+### 完成内容
+1. **KeyboardShortcuts.Name 扩展**
+   - 新建 `KeyboardShortcuts+Names.swift`（SnapVault/Utilities/）
+   - 定义 `.togglePanel` 快捷键名称，默认快捷键 ⌘+Shift+V
+   - 使用 `Self("togglePanel", default: .init(.v, modifiers: [.command, .shift]))` 注册
+
+2. **全局快捷键注册（AppDelegate）**
+   - 添加 `import KeyboardShortcuts`
+   - 在 `applicationDidFinishLaunching` 中调用 `registerGlobalShortcuts()`
+   - 使用 `KeyboardShortcuts.onKeyUp(for: .togglePanel)` 监听快捷键事件
+   - 快捷键触发时调用 `togglePanel()` 切换面板显示/隐藏
+   - 日志记录快捷键注册状态
+
+3. **搜索框焦点管理**
+   - MenuBarView 新增 `@FocusState private var isSearchFocused: Bool`
+   - 搜索 TextField 添加 `.focused($isSearchFocused)` 修饰符
+   - 定义 `.focusSearchField` 通知（Notification.Name 扩展）
+   - MenuBarView 监听 `.focusSearchField` 通知，收到后设置 `isSearchFocused = true`
+   - AppDelegate 的 `showPanel()` 方法在面板显示后 100ms 发送 `.focusSearchField` 通知
+   - 延迟确保面板已成为 key window 后再请求焦点
+
+4. **快捷键录制 UI（SettingsView）**
+   - 新建 `ShortcutsSettingsView` 替换原来的占位文本
+   - 使用 `KeyboardShortcuts.Recorder(for: .togglePanel)` 控件录制快捷键
+   - 显示 "Toggle Panel:" 标签 + 录制器
+   - "Restore Defaults" 按钮调用 `KeyboardShortcuts.reset(.togglePanel)` 恢复默认
+   - Section footer 说明全局快捷键用途
+
+5. **Xcode 项目更新**
+   - `KeyboardShortcuts+Names.swift` 添加到 Utilities 分组
+   - 添加 PBXBuildFile 和 PBXFileReference 条目
+   - 添加到 Sources 编译阶段
+
+### 修改文件清单
+- SnapVault/Utilities/KeyboardShortcuts+Names.swift（新建：快捷键名称定义）
+- SnapVault/App/AppDelegate.swift（添加 import + registerGlobalShortcuts + 焦点通知）
+- SnapVault/Views/MenuBar/MenuBarView.swift（添加 @FocusState + focusSearchField 通知）
+- SnapVault/Views/Settings/SettingsView.swift（完整重写快捷键设置 UI）
+- SnapVault.xcodeproj/project.pbxproj（添加新文件引用）
+
+### 技术决策记录
+1. 使用 `KeyboardShortcuts.onKeyUp` 而非 `onKeyDown`，避免按键按下时重复触发
+2. 搜索框焦点通过 NotificationCenter 传递，解耦 AppDelegate 和 MenuBarView
+3. 100ms 延迟发送焦点请求，确保 NSPanel 已成为 key window（否则 @FocusState 可能不生效）
+4. SettingsView 使用 Form + Section 结构，符合 macOS 偏好设置规范
+5. KeyboardShortcuts.Recorder 内置冲突检测，无需额外实现
+
+### 留给后续 Agent 的提示
+- US-009（偏好设置）的快捷键 Tab 已实现，可以直接复用 ShortcutsSettingsView
+- 如果需要添加更多快捷键，在 KeyboardShortcuts+Names.swift 中扩展即可
+- KeyboardShortcuts 库自动处理快捷键的持久化存储（UserDefaults）
+- NSPanel 的 `.nonactivatingPanel` styleMask 可能影响快捷键触发时的焦点获取，如遇问题可调整 panel 属性
+- focusSearchField 通知在面板每次显示时都会发送，包括通过状态栏图标点击的情况

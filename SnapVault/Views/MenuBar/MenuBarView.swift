@@ -1,9 +1,16 @@
 import SwiftUI
 
+/// Notification posted when the panel is shown via global shortcut,
+/// requesting the search field to receive keyboard focus.
+extension Notification.Name {
+    static let focusSearchField = Notification.Name("SnapVault.focusSearchField")
+}
+
 /// Main container view shown in the floating panel.
 /// Contains search bar, content type filter tabs, and clipboard history list.
 struct MenuBarView: View {
     @StateObject private var viewModel = ClipboardListViewModel()
+    @FocusState private var isSearchFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
@@ -26,6 +33,9 @@ struct MenuBarView: View {
         }
         .frame(width: 400, height: 500)
         .background(Color(NSColor.windowBackgroundColor))
+        .onReceive(NotificationCenter.default.publisher(for: .focusSearchField)) { _ in
+            isSearchFocused = true
+        }
     }
 
     // MARK: - Header
@@ -63,6 +73,7 @@ struct MenuBarView: View {
             TextField("Search clipboard history...", text: $viewModel.searchText)
                 .textFieldStyle(.plain)
                 .font(.system(size: 13))
+                .focused($isSearchFocused)
 
             if !viewModel.searchText.isEmpty {
                 Button(action: {

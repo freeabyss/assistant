@@ -1,5 +1,6 @@
 import Cocoa
 import SwiftUI
+import KeyboardShortcuts
 import os.log
 
 /// AppKit lifecycle delegate, bridges AppKit-specific setup that SwiftUI cannot handle.
@@ -49,6 +50,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Start data cleanup service (immediate + hourly)
         cleanupService.start()
+
+        // Register global keyboard shortcut for panel toggle
+        registerGlobalShortcuts()
 
         logger.info("SnapVault launched successfully")
     }
@@ -115,6 +119,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         panel.makeKeyAndOrderFront(nil)
         startMonitoringEvents()
+
+        // Request search field focus after a brief delay to ensure the panel is key
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            NotificationCenter.default.post(name: .focusSearchField, object: nil)
+        }
 
         logger.info("Panel shown")
     }
@@ -196,6 +205,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             NSEvent.removeMonitor(monitor)
             localEventMonitor = nil
         }
+    }
+
+    // MARK: - Keyboard Shortcuts
+
+    private func registerGlobalShortcuts() {
+        KeyboardShortcuts.onKeyUp(for: .togglePanel) { [weak self] in
+            self?.togglePanel()
+        }
+        logger.info("Global shortcut registered: togglePanel (default ⌘+Shift+V)")
     }
 
     // MARK: - Clipboard Monitoring

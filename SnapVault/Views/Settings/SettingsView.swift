@@ -1,7 +1,7 @@
 import SwiftUI
+import KeyboardShortcuts
 
 /// Application preferences view.
-/// Will be fully implemented in US-009.
 struct SettingsView: View {
     var body: some View {
         TabView {
@@ -10,7 +10,7 @@ struct SettingsView: View {
                     Label("General", systemImage: "gear")
                 }
 
-            Text("Shortcuts settings placeholder")
+            ShortcutsSettingsView()
                 .tabItem {
                     Label("Shortcuts", systemImage: "keyboard")
                 }
@@ -19,10 +19,44 @@ struct SettingsView: View {
     }
 }
 
+// MARK: - General Settings
+
 struct GeneralSettingsView: View {
     var body: some View {
         Form {
             Text("General settings placeholder")
+        }
+        .padding()
+    }
+}
+
+// MARK: - Shortcuts Settings
+
+struct ShortcutsSettingsView: View {
+    var body: some View {
+        Form {
+            Section {
+                HStack {
+                    Text("Toggle Panel:")
+                        .frame(width: 120, alignment: .trailing)
+                    KeyboardShortcuts.Recorder(for: .togglePanel)
+                    Spacer()
+                }
+
+                HStack {
+                    Spacer()
+                    Button("Restore Defaults") {
+                        KeyboardShortcuts.reset(.togglePanel)
+                    }
+                    .help("Reset the toggle panel shortcut to the default ⌘+Shift+V")
+                }
+            } header: {
+                Text("Global Shortcuts")
+            } footer: {
+                Text("Use the global shortcut to show or hide the SnapVault panel from anywhere.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
         }
         .padding()
     }
