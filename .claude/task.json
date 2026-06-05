@@ -135,7 +135,7 @@
       "id": "US-009",
       "title": "偏好设置界面",
       "priority": "medium",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": ["US-001", "US-008"],
       "steps": [

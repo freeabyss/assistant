@@ -1,11 +1,18 @@
 import SwiftUI
 import KeyboardShortcuts
+import AppKit
+import UniformTypeIdentifiers
 
-/// Application preferences view.
+/// Application preferences window with tabbed sections.
+///
+/// Opened via the gear icon in the menu bar view or via the app menu.
+/// Uses macOS-native Form + Section styling for a standard preferences look.
 struct SettingsView: View {
+    @StateObject private var viewModel = SettingsViewModel()
+
     var body: some View {
         TabView {
-            GeneralSettingsView()
+            GeneralSettingsView(viewModel: viewModel)
                 .tabItem {
                     Label("General", systemImage: "gear")
                 }
@@ -14,17 +21,104 @@ struct SettingsView: View {
                 .tabItem {
                     Label("Shortcuts", systemImage: "keyboard")
                 }
+
+            DataSettingsView(viewModel: viewModel)
+                .tabItem {
+                    Label("Data", systemImage: "externaldrive")
+                }
+
+            AboutSettingsView()
+                .tabItem {
+                    Label("About", systemImage: "info.circle")
+                }
         }
-        .frame(width: 450, height: 300)
+        .frame(width: 480, height: 380)
     }
 }
 
 // MARK: - General Settings
 
 struct GeneralSettingsView: View {
+    @ObservedObject var viewModel: SettingsViewModel
+
     var body: some View {
         Form {
-            Text("General settings placeholder")
+            // -- Retention & Storage --
+            Section {
+                HStack {
+                    Text("Keep history for:")
+                        .frame(width: 140, alignment: .trailing)
+                    Stepper(
+                        "\(viewModel.retentionDays) days",
+                        value: $viewModel.retentionDays,
+                        in: 1...365,
+                        step: 1
+                    )
+                }
+
+                HStack {
+                    Text("Storage limit:")
+                        .frame(width: 140, alignment: .trailing)
+                    Stepper(
+                        "\(viewModel.maxStorageMB) MB",
+                        value: $viewModel.maxStorageMB,
+                        in: 100...2000,
+                        step: 50
+                    )
+                }
+            } header: {
+                Text("Retention")
+            } footer: {
+                Text("Clipboard items older than the retention period will be automatically deleted. Pinned items are never removed.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            // -- Behavior --
+            Section {
+                Toggle(isOn: $viewModel.launchAtLogin) {
+                    Text("Launch at login")
+                }
+
+                Toggle(isOn: $viewModel.ocrEnabled) {
+                    Text("OCR text recognition")
+                }
+
+                HStack {
+                    Text("Polling interval:")
+                        .frame(width: 140, alignment: .trailing)
+                    Picker("", selection: $viewModel.pollInterval) {
+                        ForEach(SettingsViewModel.pollIntervalOptions, id: \.value) { option in
+                            Text(option.label).tag(option.value)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(width: 140)
+                }
+            } header: {
+                Text("Behavior")
+            } footer: {
+                Text("OCR extracts text from images for search. Polling interval controls how often SnapVault checks the clipboard for new content.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            // -- Save / Reset --
+            HStack {
+                Spacer()
+                Button("Restore Defaults") {
+                    viewModel.resetToDefaults()
+                }
+                .help("Reset all general settings to their default values")
+
+                Button("Save") {
+                    Task {
+                        await viewModel.save()
+                    }
+                }
+                .keyboardShortcut(.defaultAction)
+                .help("Save all settings changes")
+            }
         }
         .padding()
     }
@@ -53,11 +147,206 @@ struct ShortcutsSettingsView: View {
             } header: {
                 Text("Global Shortcuts")
             } footer: {
-                Text("Use the global shortcut to show or hide the SnapVault panel from anywhere.")
+                Text("Use the global shortcut to show or hide the SnapVault panel from anywhere. Click the recorder field and press your desired key combination.")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
         }
+        .padding()
+    }
+}
+
+// MARK: - Data Settings
+
+struct DataSettingsView: View {
+    @ObservedObject var viewModel: SettingsViewModel
+
+    var body: some View {
+        Form {
+            // -- Database Info --
+            Section {
+                HStack {
+                    Text("Database size:")
+                        .frame(width: 140, alignment: .trailing)
+                    Text(formatSize(viewModel.databaseSizeMB))
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Button("Refresh") {
+                        viewModel.loadDatabaseStats()
+                    }
+                    .buttonStyle(.borderless)
+                    .font(.caption)
+                }
+
+                HStack {
+                    Text("Total items:")
+                        .frame(width: 140, alignment: .trailing)
+                    Text("\(viewModel.totalItemCount)")
+                        .foregroundColor(.secondary)
+                    Spacer()
+                }
+            } header: {
+                Text("Storage")
+            }
+
+            // -- Import / Export --
+            Section {
+                HStack {
+                    Button(action: { exportData() }) {
+                        Label("Export Data...", systemImage: "square.and.arrow.up")
+                    }
+                    .disabled(viewModel.isExporting)
+
+                    Spacer()
+
+                    Button(action: { importData() }) {
+                        Label("Import Data...", systemImage: "square.and.arrow.down")
+                    }
+                    .disabled(viewModel.isImporting)
+                }
+
+                if let status = viewModel.dataOperationStatus {
+                    Text(status)
+                        .font(.caption)
+                        .foregroundColor(.green)
+                }
+            } header: {
+                Text("Import & Export")
+            } footer: {
+                Text("Export creates a JSON file with all clipboard history. Import merges data from a previously exported file, skipping duplicates.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            // -- Danger Zone --
+            Section {
+                HStack {
+                    Button(action: { viewModel.showClearHistoryConfirm = true }) {
+                        Label("Clear History...", systemImage: "trash")
+                            .foregroundColor(.red)
+                    }
+                    .disabled(viewModel.isClearingHistory)
+                    .confirmationDialog(
+                        "Are you sure you want to clear all clipboard history?",
+                        isPresented: $viewModel.showClearHistoryConfirm,
+                        titleVisibility: .visible
+                    ) {
+                        Button("Clear All History", role: .destructive) {
+                            Task {
+                                await viewModel.clearHistory()
+                            }
+                        }
+                        Button("Cancel", role: .cancel) {}
+                    } message: {
+                        Text("This will permanently delete all non-pinned clipboard items. Pinned items will be preserved. This action cannot be undone.")
+                    }
+
+                    Spacer()
+                }
+            } header: {
+                Text("Danger Zone")
+            }
+        }
+        .padding()
+        .alert(viewModel.alertTitle, isPresented: $viewModel.showAlert) {
+            Button("OK") {}
+        } message: {
+            Text(viewModel.alertMessage)
+        }
+    }
+
+    // MARK: - Export / Import Actions
+
+    private func exportData() {
+        let panel = NSSavePanel()
+        panel.title = "Export Clipboard History"
+        panel.nameFieldStringValue = "snapvault-export.json"
+        panel.allowedContentTypes = [.json]
+        panel.canCreateDirectories = true
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        Task {
+            await viewModel.exportData(to: url)
+        }
+    }
+
+    private func importData() {
+        let panel = NSOpenPanel()
+        panel.title = "Import Clipboard History"
+        panel.allowedContentTypes = [.json]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        Task {
+            await viewModel.importData(from: url)
+        }
+    }
+
+    private func formatSize(_ mb: Double) -> String {
+        if mb < 1.0 {
+            return String(format: "%.0f KB", mb * 1024)
+        }
+        return String(format: "%.1f MB", mb)
+    }
+}
+
+// MARK: - About Settings
+
+struct AboutSettingsView: View {
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+    }
+
+    private var buildNumber: String {
+        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+    }
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Spacer()
+
+            // App icon
+            if let icon = NSApplication.shared.applicationIconImage {
+                Image(nsImage: icon)
+                    .resizable()
+                    .frame(width: 64, height: 64)
+            } else {
+                Image(systemName: "clipboard.fill")
+                    .font(.system(size: 48))
+                    .foregroundColor(.accentColor)
+            }
+
+            Text("SnapVault")
+                .font(.title)
+                .fontWeight(.bold)
+
+            Text("Version \(appVersion) (\(buildNumber))")
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+
+            Text("A fast, local clipboard manager for macOS.")
+                .font(.body)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+
+            Divider()
+
+            VStack(spacing: 4) {
+                Text("Built with SwiftUI + GRDB")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+
+                Text("Data is stored locally on your Mac.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
         .padding()
     }
 }

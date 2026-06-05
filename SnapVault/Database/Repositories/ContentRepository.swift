@@ -396,6 +396,54 @@ final class ContentRepository {
         }
     }
 
+    /// Read all settings from app_settings table as a dictionary.
+    func readAllSettings() throws -> [String: String] {
+        guard let dbQueue = dbQueue else {
+            throw RepositoryError.databaseNotReady
+        }
+
+        return try dbQueue.read { db in
+            let settings = try AppSetting.fetchAll(db)
+            var dict: [String: String] = [:]
+            for setting in settings {
+                dict[setting.key] = setting.value
+            }
+            return dict
+        }
+    }
+
+    /// Update a single setting value in app_settings table.
+    /// Inserts the key if it doesn't exist.
+    func updateSetting(key: String, value: String) throws {
+        guard let dbQueue = dbQueue else {
+            throw RepositoryError.databaseNotReady
+        }
+
+        try dbQueue.write { db in
+            try db.execute(
+                sql: "INSERT OR REPLACE INTO app_settings (key, value) VALUES (?, ?)",
+                arguments: [key, value]
+            )
+            logger.debug("Updated setting: \(key) = \(value)")
+        }
+    }
+
+    /// Delete all non-pinned clipboard items (clear history).
+    /// Returns the count of deleted items.
+    func clearAllHistory() throws -> Int {
+        guard let dbQueue = dbQueue else {
+            throw RepositoryError.databaseNotReady
+        }
+
+        return try dbQueue.write { db in
+            let deleted = try ClipboardItem
+                .filter(Column("is_pinned") == 0)
+                .deleteAll(db)
+            logger.info("Cleared history: deleted \(deleted) non-pinned items")
+            return deleted
+        }
+    }
+
     // MARK: - Stats
 
     /// Get storage statistics.

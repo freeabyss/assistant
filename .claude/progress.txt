@@ -536,3 +536,78 @@
 - KeyboardShortcuts 库自动处理快捷键的持久化存储（UserDefaults）
 - NSPanel 的 `.nonactivatingPanel` styleMask 可能影响快捷键触发时的焦点获取，如遇问题可调整 panel 属性
 - focusSearchField 通知在面板每次显示时都会发送，包括通过状态栏图标点击的情况
+
+## 2026-06-05 - US-009 偏好设置界面
+
+### 完成内容
+1. **SettingsView 完整重写（4 个 Tab）**
+   - General / Shortcuts / Data / About 四个标签页
+   - 使用 macOS 原生 Form + Section + TabView 风格
+   - 窗口尺寸 480x380，适配 macOS 偏好设置规范
+
+2. **通用设置（GeneralSettingsView）**
+   - 保留天数：Stepper 控件（1-365 天，默认 30）
+   - 存储上限：Stepper 控件（100-2000 MB，步长 50，默认 500）
+   - 开机启动：Toggle，使用 SMAppService.mainApp（macOS 13+）
+   - OCR 开关：Toggle，读写 app_settings.ocr_enabled
+   - 轮询间隔：Picker（500ms / 1000ms / 2000ms）
+   - "Restore Defaults" 按钮重置所有通用设置
+   - "Save" 按钮（Enter）持久化所有设置到数据库
+
+3. **快捷键设置（ShortcutsSettingsView）**
+   - 已有 KeyboardShortcuts.Recorder 录制控件
+   - 添加更详细的说明文字（点击录制字段，按下组合键）
+   - "Restore Defaults" 按钮恢复默认 Command+Shift+V
+
+4. **数据管理设置（DataSettingsView）**
+   - 显示数据库文件大小和总记录数（支持手动刷新）
+   - "Export Data..." 按钮 -> NSSavePanel -> JSON 导出（ISO8601 日期格式，美化输出）
+   - "Import Data..." 按钮 -> NSOpenPanel -> JSON 导入（自动去重，跳过已存在的 hash）
+   - "Clear History..." 按钮（红色）-> confirmationDialog 确认 -> 删除所有非置顶记录
+   - 导入/导出/清理操作显示状态反馈信息
+
+5. **关于页面（AboutSettingsView）**
+   - 应用图标 + 名称 + 版本号
+   - 简介文字 + 技术栈说明
+
+6. **SettingsViewModel 完整实现**
+   - 从 app_settings 表加载所有配置到 @Published 属性
+   - save() 方法写回 app_settings 表（INSERT OR REPLACE）
+   - 发送 .settingsDidChange 通知，通知 ClipboardMonitor 等服务
+   - 开机启动通过 SMAppService.mainApp 注册/注销
+   - 数据导出：JSON 编码 + ISO8601 日期 + prettyPrinted
+   - 数据导入：JSON 解码 + hash 去重 + 重新分配 ID
+   - 清空历史：调用 repository.clearAllHistory()
+   - 错误处理：所有操作有 alert 反馈
+
+7. **ContentRepository 新增方法**
+   - readAllSettings()：读取所有设置为 [String: String] 字典
+   - updateSetting(key:value:)：INSERT OR REPLACE 单个设置
+   - clearAllHistory()：删除所有非置顶记录
+
+8. **ClipboardMonitor 设置联动**
+   - 新增 settingsDidChange 通知观察者
+   - 收到通知后从数据库读取新的 poll_interval_ms 并重启 Timer
+   - 前台激活时也从设置读取轮询间隔（而非硬编码）
+   - start/stop 正确注册/注销设置观察者
+
+### 修改文件清单
+- SnapVault/Views/Settings/SettingsView.swift（完整重写：4 Tab 设置界面）
+- SnapVault/ViewModels/SettingsViewModel.swift（完整重写：加载/保存/导出/导入/清理）
+- SnapVault/Database/Repositories/ContentRepository.swift（新增 readAllSettings/updateSetting/clearAllHistory）
+- SnapVault/Services/ClipboardMonitor/ClipboardMonitor.swift（新增 settingsDidChange 观察者 + 读取 poll interval）
+
+### 技术决策记录
+1. 使用 NSSavePanel/NSOpenPanel 而非 SwiftUI fileExporter/fileImporter，因为 fileExporter 需要 FileDocument 绑定有初始数据，而导出是在用户选择路径后才生成数据
+2. SMAppService.mainApp（macOS 13+）替代了旧的 SMLoginItemSetEnabled，提供更可靠的开机启动管理
+3. 设置保存使用 INSERT OR REPLACE 确保 key 唯一性，无需先查询再更新
+4. .settingsDidChange 通知解耦了 SettingsViewModel 和 ClipboardMonitor，ClipboardMonitor 自行从数据库读取新值
+5. 导入时重置 item.id = nil 让 GRDB 自动分配新 ID，避免与现有记录冲突
+6. confirmationDialog 用于清空历史的二次确认，role: .destructive 按钮显示红色
+
+### 留给后续 Agent 的提示
+- US-010（自动更新）可独立进行，不依赖 US-009
+- US-011（数据导入导出）的 JSON 导出格式已定义，后续可扩展 CSV 格式
+- 如果需要添加更多快捷键，在 KeyboardShortcuts+Names.swift 中扩展，ShortcutsSettingsView 中添加对应 Recorder
+- ClipboardMonitor 的 readPollIntervalFromSettings() 使用 repository 实例读取设置，每次设置变更都会触发一次 DB 查询（开销可忽略）
+- 设置窗口通过 NSApp.sendAction(Selector("showSettingsWindow:")) 打开，这是 macOS 标准偏好设置入口

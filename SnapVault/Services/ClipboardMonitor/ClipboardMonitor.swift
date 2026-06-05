@@ -66,6 +66,9 @@ final class ClipboardMonitor: ClipboardMonitorProtocol {
     /// Observer token for `didResignActiveNotification`.
     private var resignActiveObserver: NSObjectProtocol?
 
+    /// Observer token for `settingsDidChange` notification.
+    private var settingsChangeObserver: NSObjectProtocol?
+
     // MARK: - ClipboardMonitorProtocol
 
     var onNewContent: AsyncStream<ClipboardEvent> {
@@ -85,16 +88,21 @@ final class ClipboardMonitor: ClipboardMonitorProtocol {
 
         lastChangeCount = NSPasteboard.general.changeCount
         loadRecentHashes()
-        startTimer(interval: activePollInterval)
-        registerAppNotifications()
 
-        logger.info("ClipboardMonitor started (poll=\(Int(self.activePollInterval * 1000))ms)")
+        // Read poll interval from settings
+        let interval = readPollIntervalFromSettings()
+        startTimer(interval: interval)
+        registerAppNotifications()
+        registerSettingsObserver()
+
+        logger.info("ClipboardMonitor started (poll=\(Int(interval * 1000))ms)")
     }
 
     func stop() {
         timer?.invalidate()
         timer = nil
         unregisterAppNotifications()
+        unregisterSettingsObserver()
 
         logger.info("ClipboardMonitor stopped")
     }
@@ -262,8 +270,9 @@ final class ClipboardMonitor: ClipboardMonitorProtocol {
             queue: .main
         ) { [weak self] _ in
             guard let self else { return }
-            self.logger.debug("App became active – switching to \(Int(self.activePollInterval * 1000))ms polling")
-            self.startTimer(interval: self.activePollInterval)
+            let interval = self.readPollIntervalFromSettings()
+            self.logger.debug("App became active – switching to \(Int(interval * 1000))ms polling")
+            self.startTimer(interval: interval)
         }
 
         resignActiveObserver = NotificationCenter.default.addObserver(
@@ -286,5 +295,41 @@ final class ClipboardMonitor: ClipboardMonitorProtocol {
             NotificationCenter.default.removeObserver(observer)
             resignActiveObserver = nil
         }
+    }
+
+    // MARK: - Settings Observer
+
+    /// Register observer for settings changes to update poll interval.
+    private func registerSettingsObserver() {
+        settingsChangeObserver = NotificationCenter.default.addObserver(
+            forName: .settingsDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            let interval = self.readPollIntervalFromSettings()
+            self.logger.debug("Settings changed – updating poll interval to \(Int(interval * 1000))ms")
+            self.startTimer(interval: interval)
+        }
+    }
+
+    private func unregisterSettingsObserver() {
+        if let observer = settingsChangeObserver {
+            NotificationCenter.default.removeObserver(observer)
+            settingsChangeObserver = nil
+        }
+    }
+
+    /// Read the poll interval from app_settings, falling back to the default.
+    private func readPollIntervalFromSettings() -> TimeInterval {
+        do {
+            if let msStr = try repository.readSetting(key: SettingKey.pollIntervalMs),
+               let ms = Int(msStr), ms > 0 {
+                return TimeInterval(ms) / 1000.0
+            }
+        } catch {
+            logger.error("Failed to read poll interval setting: \(error.localizedDescription, privacy: .public)")
+        }
+        return activePollInterval
     }
 }
