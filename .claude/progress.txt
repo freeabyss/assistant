@@ -1,0 +1,111 @@
+# SnapVault 开发进度记录
+
+## 2026-06-05 - 架构设计阶段
+
+### 完成内容
+- 阅读 PRD 文档（doc/prd.md），理解产品需求
+- 创建总体架构设计文档（doc/architecture.md）
+  - 系统概述、设计目标
+  - MVVM + 服务层分层架构
+  - 8 个核心模块划分及职责
+  - 技术选型表（10 项技术，含理由和备选方案）
+  - 关键设计决策（监听策略、数据库选型、浮动面板、OCR 流程）
+- 创建数据库详细设计文档（doc/architecture_db.md）
+  - clipboard_items 核心表 + FTS5 全文搜索虚拟表
+  - tags / item_tags 标签系统
+  - app_settings 配置存储
+  - GRDB Migration 策略
+  - 数据生命周期管理（自动清理、空间限制、置顶保护）
+- 创建接口设计文档（doc/architecture_api.md）
+  - 6 个核心 Protocol 定义
+  - ViewModel 接口
+  - 依赖关系图
+- 初始化 task.json（11 个用户故事任务）
+
+### 技术决策记录
+1. 剪贴板监听采用 500ms 轮询 changeCount（非 KVO，因 macOS KVO 不可靠）
+2. 使用 GRDB 而非 Core Data（更好的 SwiftUI 集成、原生 FTS5 支持）
+3. 主窗口采用 NSPanel 浮动面板（失焦自动隐藏、不占 Dock）
+4. OCR 使用 Vision VNRecognizeTextRequest（系统内置、离线、支持中英文）
+
+### 留给后续 Agent 的提示
+- US-001 是所有任务的基础，必须最先完成
+- US-003（剪贴板监听）是核心功能，需要重点测试
+- SwiftUI 在 macOS 上部分高级窗口控制需 AppKit 桥接，注意 NSPanel 的使用
+- FTS5 触发器必须在 Migration 中一并创建，否则搜索不工作
+- OCR 跳过小于 50x50 的图片（避免对图标做无意义识别）
+
+## 2026-06-05 - US-001 项目初始化与基础架构搭建
+
+### 完成内容
+1. **Xcode macOS App 项目结构（SwiftUI + AppKit 生命周期）**
+   - 创建 `SnapVault.xcodeproj` 完整项目文件（pbxproj、scheme、workspace settings）
+   - `SnapVaultApp.swift`：@main 入口，使用 SwiftUI App 生命周期
+   - `AppDelegate.swift`：@NSApplicationDelegateAdaptor 桥接 AppKit，负责数据库初始化和 Application Support 目录创建
+   - `AppState.swift`：@MainActor 全局应用状态（ObservableObject）
+   - `Info.plist`：配置 LSUIElement=true（菜单栏应用，不在 Dock 显示）
+   - `SnapVault.entitlements`：App Sandbox + user-selected files 读写权限
+
+2. **SPM 依赖配置**
+   - `Package.swift`：定义 GRDB ~> 7.0, KeyboardShortcuts ~> 2.0, Sparkle ~> 2.0
+   - 平台设置 macOS(.v13)
+   - Xcode 项目中通过 XCRemoteSwiftPackageReference 配置了三个 SPM 依赖
+   - Package.resolved 锁定版本：GRDB 7.11.0, KeyboardShortcuts 2.4.0, Sparkle 2.9.2
+
+3. **MVVM 分层目录结构**
+   - 完整创建了 App/, Views/{MenuBar,ClipboardList,Preview,Settings}, ViewModels/, Models/, Services/{ClipboardMonitor,ContentStore,SearchEngine,OCRService,UpdateService}, Database/{Migrations,Repositories}, Utilities/, Resources/ 目录
+
+4. **GRDB DatabaseManager 和 v1 Migration**
+   - `DatabaseManager.swift`：单例模式，管理 DatabaseQueue 连接和 Migration 注册
+   - 数据库路径：~/Library/Application Support/SnapVault/snapvault.db
+   - v1 Migration 包含：
+     - clipboard_items 表（id, content_type, text_content, rtf_content, image_data, file_path, ocr_text, content_hash, is_pinned, created_at, updated_at）
+     - 4 个 BTREE 索引（content_hash, created_at, content_type, is_pinned）
+     - clipboard_items_fts FTS5 虚拟表（unicode61 tokenizer，content sync）
+     - 3 个同步触发器（INSERT/DELETE/UPDATE 自动同步 FTS5）
+     - tags 表（id, name UNIQUE, created_at）
+     - item_tags 多对多关联表（item_id, tag_id，联合主键，外键级联删除）
+     - app_settings 键值表（key PK, value）
+     - 5 个预设配置项（retention_days=30, max_storage_mb=500, ocr_enabled=1, poll_interval_ms=500, search_provider=fts）
+   - `ContentRepository.swift`：完整 CRUD + FTS5 搜索 + 分页 + 去重 + 清理 + 统计
+
+5. **OSLog 日志基础设施**
+   - `Logger.swift`：扩展 os.Logger，定义子系统 com.snapvault.app
+   - 6 个分类：database, clipboard, ocr, search, ui, update, app
+   - `CryptoHelper.swift`：SHA-256 哈希工具（用于剪贴板内容去重）
+
+6. **数据模型**
+   - `ClipboardItem.swift`：GRDB FetchableRecord + MutablePersistableRecord，含 FTS5 关联
+   - `Tag.swift` + `ItemTag.swift`：标签系统模型
+   - `AppSetting.swift`：应用设置模型 + SettingKey 枚举
+   - `SnapVaultError.swift`：统一错误类型
+
+7. **服务层占位文件**
+   - ClipboardMonitor, ContentStore, SearchService, OCRService, UpdateService 均创建了协议和骨架实现
+
+8. **视图层占位文件**
+   - MenuBarView, ClipboardListView, ClipboardItemRow, PreviewPanel, SettingsView
+
+9. **测试文件**
+   - DatabaseManagerTests.swift, CryptoHelperTests.swift
+
+10. **.gitignore**
+    - 忽略 .build/, .swiftpm/, DerivedData/, xcuserdata/ 等
+
+### 技术决策记录
+1. 使用 `@NSApplicationDelegateAdaptor` 桥接 AppKit 生命周期，在 applicationDidFinishLaunching 中初始化数据库
+2. DatabaseManager 采用单例模式（`DatabaseManager.shared`），所有数据库操作通过共享的 DatabaseQueue
+3. FTS5 搜索使用原始 SQL MATCH 查询（而非 GRDB 的 join 语法），因为 content-sync FTS5 表更适合直接 SQL
+4. ContentRepository 同时支持 SPM 和 Xcode 项目两种构建方式
+
+### 已知限制
+- KeyboardShortcuts 2.x 库源码中使用了 `#Preview` 宏，导致 `swift build` CLI 无法编译（需要 Xcode 的 PreviewsMacros 插件）。项目在 Xcode 中可以正常编译。
+- 服务层和视图层文件为占位骨架，将在后续 US 任务中实现完整功能
+
+### 留给后续 Agent 的提示
+- US-002 需要实现 MenuBarExtra 菜单栏图标和主窗口框架
+- US-003 需要实现 ClipboardMonitor 的完整轮询逻辑
+- ContentRepository 的 search() 方法使用 FTS5 MATCH SQL，注意查询语法（支持 AND/OR/NEAR 等 FTS5 操作符）
+- DatabaseManager.setup() 在 AppDelegate.applicationDidFinishLaunching 中调用，确保在任何数据库操作之前完成
+- 项目可以同时通过 `swift build`（有 KeyboardShortcuts 预览宏警告）和 Xcode 构建
+- git 已在 US-001 完成时初始化并提交

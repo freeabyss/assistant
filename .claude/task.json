@@ -1,0 +1,183 @@
+{
+  "project": "SnapVault",
+  "version": "0.1.0",
+  "created_at": "2026-06-05",
+  "tasks": [
+    {
+      "id": "US-001",
+      "title": "项目初始化与基础架构搭建",
+      "priority": "high",
+      "passes": true,
+      "blocked": false,
+      "depends_on": [],
+      "steps": [
+        "创建 Xcode macOS App 项目（SwiftUI + AppKit 生命周期）",
+        "配置 SPM 依赖：GRDB、KeyboardShortcuts、Sparkle",
+        "创建 MVVM 分层目录结构",
+        "实现 GRDB DatabaseManager 和 v1 Migration",
+        "实现 OSLog 日志基础设施"
+      ],
+      "done_definition": "项目可编译运行，数据库初始化成功，日志系统可用"
+    },
+    {
+      "id": "US-002",
+      "title": "菜单栏图标与主界面框架",
+      "priority": "high",
+      "passes": false,
+      "blocked": false,
+      "depends_on": ["US-001"],
+      "steps": [
+        "实现 MenuBarExtra 菜单栏图标",
+        "创建主窗口 SwiftUI 视图框架",
+        "实现列表视图骨架（LazyVStack + 分页加载）",
+        "实现搜索栏 UI",
+        "实现类型筛选 Tab"
+      ],
+      "done_definition": "菜单栏图标显示正常，点击可展开主界面，列表可滚动"
+    },
+    {
+      "id": "US-003",
+      "title": "剪贴板监听与自动捕获",
+      "priority": "high",
+      "passes": false,
+      "blocked": false,
+      "depends_on": ["US-001"],
+      "steps": [
+        "实现 ClipboardMonitor（500ms 轮询 changeCount）",
+        "实现内容类型检测（纯文本/RTF/图片/文件）",
+        "实现 SHA256 去重逻辑",
+        "实现 ContentRepository.save() 持久化",
+        "空闲时降低轮询频率（2s）"
+      ],
+      "done_definition": "复制任意内容后 1s 内自动出现在历史列表中，无重复记录"
+    },
+    {
+      "id": "US-004",
+      "title": "内容展示与多类型渲染",
+      "priority": "high",
+      "passes": false,
+      "blocked": false,
+      "depends_on": ["US-002", "US-003"],
+      "steps": [
+        "实现 ClipboardItemRow 视图（纯文本/RTF/图片/文件四种样式）",
+        "实现 PreviewPanel 预览视图",
+        "实现复制到剪贴板功能",
+        "实现内容类型图标/缩略图",
+        "实现相对时间显示（刚刚/N分钟前）"
+      ],
+      "done_definition": "四种内容类型正确显示，点击可预览，可复制回剪贴板"
+    },
+    {
+      "id": "US-005",
+      "title": "搜索与 Spotlight 集成",
+      "priority": "high",
+      "passes": false,
+      "blocked": false,
+      "depends_on": ["US-003"],
+      "steps": [
+        "实现 FTS5 全文搜索查询",
+        "实现 SearchService 聚合搜索",
+        "集成 NSMetadataQuery（Spotlight）",
+        "实现搜索结果高亮",
+        "实现搜索结果按相关度排序"
+      ],
+      "done_definition": "输入关键词后 200ms 内返回结果，支持中文搜索，结果高亮显示"
+    },
+    {
+      "id": "US-006",
+      "title": "OCR 图片文字识别",
+      "priority": "high",
+      "passes": false,
+      "blocked": false,
+      "depends_on": ["US-003"],
+      "steps": [
+        "实现 OCRService（VNRecognizeTextRequest）",
+        "集成 OCR 流程到剪贴板捕获管线",
+        "OCR 结果存入 ocr_text 字段",
+        "OCR 文本同步到 FTS5 索引",
+        "添加 OCR 开关设置"
+      ],
+      "done_definition": "截图后 OCR 自动执行，图片中的文字可被搜索到"
+    },
+    {
+      "id": "US-007",
+      "title": "置顶与数据管理",
+      "priority": "medium",
+      "passes": false,
+      "blocked": false,
+      "depends_on": ["US-004"],
+      "steps": [
+        "实现置顶/取消置顶功能",
+        "实现滑动删除",
+        "实现自动过期清理（默认 30 天）",
+        "实现存储空间限制（默认 500MB）",
+        "置顶记录永不自动删除"
+      ],
+      "done_definition": "置顶功能正常，过期数据自动清理，置顶记录受保护"
+    },
+    {
+      "id": "US-008",
+      "title": "快捷键与全局唤起",
+      "priority": "medium",
+      "passes": false,
+      "blocked": false,
+      "depends_on": ["US-002"],
+      "steps": [
+        "集成 KeyboardShortcuts 库",
+        "注册全局快捷键（默认 ⌘+Shift+V）",
+        "快捷键唤起/隐藏主窗口",
+        "快捷键录制 UI（偏好设置中）",
+        "快捷键冲突检测"
+      ],
+      "done_definition": "全局快捷键可唤起面板，支持自定义录制"
+    },
+    {
+      "id": "US-009",
+      "title": "偏好设置界面",
+      "priority": "medium",
+      "passes": false,
+      "blocked": false,
+      "depends_on": ["US-001", "US-008"],
+      "steps": [
+        "创建 SettingsView SwiftUI 视图",
+        "实现通用设置（保留天数、存储上限、开机启动）",
+        "实现快捷键设置",
+        "实现 OCR 开关",
+        "实现数据导入导出"
+      ],
+      "done_definition": "偏好设置界面完整，所有设置项可修改并持久化"
+    },
+    {
+      "id": "US-010",
+      "title": "自动更新（Sparkle）",
+      "priority": "low",
+      "passes": false,
+      "blocked": false,
+      "depends_on": ["US-001"],
+      "steps": [
+        "集成 Sparkle 框架",
+        "配置 appcast.xml 签名",
+        "实现自动更新检查（启动时 + 每日一次）",
+        "实现手动检查更新菜单项",
+        "实现更新进度 UI"
+      ],
+      "done_definition": "应用可检测新版本并完成更新流程"
+    },
+    {
+      "id": "US-011",
+      "title": "数据导入导出",
+      "priority": "low",
+      "passes": false,
+      "blocked": false,
+      "depends_on": ["US-007"],
+      "steps": [
+        "实现 JSON 导出",
+        "实现 CSV 导出",
+        "实现数据库文件导出",
+        "实现 JSON 导入",
+        "导入时数据校验"
+      ],
+      "done_definition": "可导出为 JSON/CSV 格式，可从 JSON 导入恢复数据"
+    }
+  ]
+}
