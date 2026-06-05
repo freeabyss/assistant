@@ -680,3 +680,88 @@
 - 实际发布时需要：1) 生成 EdDSA 密钥对 2) 替换 Info.plist 中的 SUPublicEDKey 3) 构建并签名更新包 4) 填写 appcast.xml 5) 托管 appcast.xml 到 SUFeedURL
 - Sparkle 2.x 要求 macOS 10.13+，与项目的 macOS 13 最低要求兼容
 - canCheckForUpdates 属性可用于在 UI 中禁用/启用检查更新按钮（当前未使用此状态）
+
+## 2026-06-05 - US-011 数据导入导出
+
+### 完成内容
+1. **ExportService 服务类**
+   - 新建 `SnapVault/Services/ExportService/ExportService.swift`
+   - 实现 ExportServiceProtocol 的三个导出方法 + JSON 导入方法
+   - 包含 ExportWrapper、ExportItem 数据结构和 ImportResult、ExportError 类型
+
+2. **JSON 导出**
+   - 查询所有 clipboard_items，序列化为 JSON 格式
+   - JSON 结构：`{ "version": "1.0", "exported_at": "...", "item_count": N, "items": [...] }`
+   - 日期格式使用 ISO 8601（JSONEncoder.dateEncodingStrategy = .iso8601）
+   - 图片数据导出为 Base64 编码（Data.base64EncodedString()）
+   - 使用 .prettyPrinted 和 .sortedKeys 格式化输出
+   - 使用 .atomic 写入确保文件完整性
+
+3. **CSV 导出**
+   - 导出字段：id, content_type, text_content, ocr_text, is_pinned, created_at
+   - UTF-8 with BOM（\u{FEFF}）确保 Excel 正确识别中文
+   - 正确处理字段中的逗号、换行、引号（CSV 转义：双引号包裹 + 内部双引号转义为两个双引号）
+   - 长文本字段截断到 1000 字符（避免巨大 CSV 文件）
+   - 不导出图片二进制数据（CSV 不适合）
+
+4. **数据库文件导出**
+   - 直接复制 snapvault.db 文件到用户选择的路径
+   - 使用 FileManager.copyItem
+   - 导出前执行 VACUUM 减小文件大小（可选，默认启用）
+   - 使用 .atomic 写入确保文件完整性
+
+5. **JSON 导入完善**
+   - 校验 JSON 格式：支持新格式（ExportWrapper 带 version 字段）和旧格式（纯数组）
+   - 校验每个 item 的必需字段（通过 Codable 解码自动校验）
+   - 根据 content_hash 去重（跳过已存在的记录）
+   - 导入完成返回统计：ImportResult（imported, skipped, total）
+   - 导入过程中通过 progress 回调报告进度
+   - 导入时保留原始 createdAt/updatedAt 时间戳
+
+6. **SettingsViewModel 重构**
+   - 移除旧的 exportData/importData 方法
+   - 新增 exportJSON/exportCSV/exportDatabase 三个导出方法
+   - 新增 importJSON 方法，支持进度回调
+   - 新增 importProgress 属性用于 UI 进度显示
+   - 所有方法委托给 ExportService
+
+7. **SettingsView 更新**
+   - DataSettingsView 分为 Export 和 Import 两个 Section
+   - Export Section：JSON/CSV/Database 三个导出按钮
+   - Import Section：JSON 导入按钮 + 进度条（导入时显示）
+   - Status Section：操作完成后显示成功消息和 Dismiss 按钮
+   - Danger Zone Section 保留清空历史功能
+   - 窗口高度调整为 420 以容纳更多内容
+
+8. **ClipboardItem 模型更新**
+   - convenience init 新增 createdAt/updatedAt 可选参数（默认 Date()）
+   - 导入时可保留原始时间戳
+
+9. **Xcode 项目更新**
+   - 添加 ExportService.swift 的 PBXBuildFile、PBXFileReference
+   - 创建 ExportService PBXGroup 并添加到 Services 组
+   - 添加到 Sources 编译阶段
+
+### 修改文件清单
+- SnapVault/Services/ExportService/ExportService.swift（新建：完整的导入导出服务）
+- SnapVault/ViewModels/SettingsViewModel.swift（重构：委托给 ExportService，新增 CSV/DB 导出）
+- SnapVault/Views/Settings/SettingsView.swift（更新：新增导出选项和导入进度 UI）
+- SnapVault/Models/ClipboardItem.swift（更新：init 新增 createdAt/updatedAt 参数）
+- SnapVault.xcodeproj/project.pbxproj（添加 ExportService.swift 文件引用）
+
+### 技术决策记录
+1. ExportWrapper 包装格式（version + exported_at + items）优于纯数组，便于版本兼容和元数据追踪
+2. CSV 导出使用 UTF-8 BOM（\u{FEFF}），这是 Excel 打开 UTF-8 CSV 的标准做法
+3. 导入支持两种格式：新格式（ExportWrapper）和旧格式（纯 ClipboardItem 数组），向后兼容
+4. 导入去重使用预加载的 HashSet，避免对每条记录做数据库查询
+5. 图片 Base64 编码在 ExportItem 中处理，ClipboardItem 本身不感知编码格式
+6. VACUUM 在导出前执行，可以显著减小数据库文件大小（特别是有大量删除操作后）
+7. 进度回调使用闭包而非 Combine，简化实现并避免 @MainActor 线程问题
+
+### 留给后续 Agent 的提示
+- 所有 US 任务已完成（US-001 ~ US-011）
+- ExportService 可以独立使用，不仅限于 SettingsView
+- 如果需要支持更多导出格式（如 HTML、Markdown），在 ExportService 中添加新方法即可
+- CSV 导出截断长文本到 1000 字符，如果需要完整导出应使用 JSON 格式
+- 导入进度回调在当前实现中可能不够平滑（因为 GRDB 的 save 是同步的），如需更细粒度进度可考虑批量提交
+- 数据库导出的 VACUUM 操作可能耗时较长（大数据库），UI 层可考虑添加进度指示

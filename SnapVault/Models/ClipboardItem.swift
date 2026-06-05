@@ -79,7 +79,9 @@ struct ClipboardItem: Identifiable, Codable, FetchableRecord, MutablePersistable
         filePath: String? = nil,
         ocrText: String? = nil,
         contentHash: String,
-        isPinned: Bool = false
+        isPinned: Bool = false,
+        createdAt: Date = Date(),
+        updatedAt: Date = Date()
     ) {
         self.id = nil
         self.contentType = contentType
@@ -90,8 +92,8 @@ struct ClipboardItem: Identifiable, Codable, FetchableRecord, MutablePersistable
         self.ocrText = ocrText
         self.contentHash = contentHash
         self.isPinned = isPinned
-        self.createdAt = Date()
-        self.updatedAt = Date()
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
     }
 
     // MARK: - Fetch Requests

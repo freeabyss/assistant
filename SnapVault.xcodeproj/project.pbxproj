@@ -35,6 +35,7 @@
 		A1000100000000000000001A /* DataCleanupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001D; };
 		A1000100000000000000001B /* KeyboardShortcuts+Names.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001E; };
 		A1000100000000000000001C /* appcast.xml in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001F; };
+		A1000100000000000000001D /* ExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000020; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -69,6 +70,7 @@
 		A1000000000000000000001D /* DataCleanupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataCleanupService.swift; sourceTree = "<group>"; };
 		A1000000000000000000001E /* KeyboardShortcuts+Names.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "KeyboardShortcuts+Names.swift"; sourceTree = "<group>"; };
 		A1000000000000000000001F /* appcast.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = appcast.xml; sourceTree = "<group>"; };
+		A10000000000000000000020 /* ExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -159,6 +161,7 @@
 				A10003000000000000000014 /* OCRService */,
 				A10003000000000000000015 /* UpdateService */,
 				A10003000000000000000019 /* DataCleanup */,
+				A1000300000000000000001A /* ExportService */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -311,6 +314,14 @@
 			path = DataCleanup;
 			sourceTree = "<group>";
 		};
+		A1000300000000000000001A /* ExportService */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000020 /* ExportService.swift */,
+			);
+			path = ExportService;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -417,6 +428,7 @@
 				A10001000000000000000019 /* ToastView.swift in Sources */,
 				A1000100000000000000001A /* DataCleanupService.swift in Sources */,
 				A1000100000000000000001B /* KeyboardShortcuts+Names.swift in Sources */,
+				A1000100000000000000001D /* ExportService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

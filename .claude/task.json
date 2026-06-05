@@ -167,7 +167,7 @@
       "id": "US-011",
       "title": "数据导入导出",
       "priority": "low",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": ["US-007"],
       "steps": [

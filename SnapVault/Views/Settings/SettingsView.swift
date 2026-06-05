@@ -32,7 +32,7 @@ struct SettingsView: View {
                     Label("About", systemImage: "info.circle")
                 }
         }
-        .frame(width: 480, height: 380)
+        .frame(width: 480, height: 420)
     }
 }
 
@@ -142,7 +142,7 @@ struct ShortcutsSettingsView: View {
                     Button("Restore Defaults") {
                         KeyboardShortcuts.reset(.togglePanel)
                     }
-                    .help("Reset the toggle panel shortcut to the default ⌘+Shift+V")
+                    .help("Reset the toggle panel shortcut to the default Command+Shift+V")
                 }
             } header: {
                 Text("Global Shortcuts")
@@ -189,33 +189,77 @@ struct DataSettingsView: View {
                 Text("Storage")
             }
 
-            // -- Import / Export --
+            // -- Export --
             Section {
                 HStack {
-                    Button(action: { exportData() }) {
-                        Label("Export Data...", systemImage: "square.and.arrow.up")
+                    Button(action: { exportJSON() }) {
+                        Label("Export JSON...", systemImage: "doc.text")
                     }
                     .disabled(viewModel.isExporting)
 
                     Spacer()
 
-                    Button(action: { importData() }) {
-                        Label("Import Data...", systemImage: "square.and.arrow.down")
+                    Button(action: { exportCSV() }) {
+                        Label("Export CSV...", systemImage: "tablecells")
                     }
-                    .disabled(viewModel.isImporting)
+                    .disabled(viewModel.isExporting)
                 }
 
-                if let status = viewModel.dataOperationStatus {
-                    Text(status)
-                        .font(.caption)
-                        .foregroundColor(.green)
+                HStack {
+                    Button(action: { exportDatabase() }) {
+                        Label("Export Database...", systemImage: "internaldrive")
+                    }
+                    .disabled(viewModel.isExporting)
+
+                    Spacer()
                 }
             } header: {
-                Text("Import & Export")
+                Text("Export")
             } footer: {
-                Text("Export creates a JSON file with all clipboard history. Import merges data from a previously exported file, skipping duplicates.")
+                Text("JSON includes all data (images as Base64). CSV includes text fields only. Database exports the raw SQLite file.")
                     .font(.caption)
                     .foregroundColor(.secondary)
+            }
+
+            // -- Import --
+            Section {
+                Button(action: { importJSON() }) {
+                    Label("Import JSON...", systemImage: "square.and.arrow.down")
+                }
+                .disabled(viewModel.isImporting)
+
+                if viewModel.isImporting {
+                    ProgressView(value: viewModel.importProgress)
+                        .progressViewStyle(.linear)
+                    Text("Importing...")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            } header: {
+                Text("Import")
+            } footer: {
+                Text("Import data from a previously exported JSON file. Duplicate items (same content hash) will be skipped.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            // -- Status --
+            if let status = viewModel.dataOperationStatus {
+                Section {
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.green)
+                        Text(status)
+                            .font(.caption)
+                            .foregroundColor(.green)
+                        Spacer()
+                        Button("Dismiss") {
+                            viewModel.dataOperationStatus = nil
+                        }
+                        .buttonStyle(.borderless)
+                        .font(.caption)
+                    }
+                }
             }
 
             // -- Danger Zone --
@@ -255,11 +299,11 @@ struct DataSettingsView: View {
         }
     }
 
-    // MARK: - Export / Import Actions
+    // MARK: - Export Actions
 
-    private func exportData() {
+    private func exportJSON() {
         let panel = NSSavePanel()
-        panel.title = "Export Clipboard History"
+        panel.title = "Export Clipboard History as JSON"
         panel.nameFieldStringValue = "snapvault-export.json"
         panel.allowedContentTypes = [.json]
         panel.canCreateDirectories = true
@@ -267,11 +311,41 @@ struct DataSettingsView: View {
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
         Task {
-            await viewModel.exportData(to: url)
+            await viewModel.exportJSON(to: url)
         }
     }
 
-    private func importData() {
+    private func exportCSV() {
+        let panel = NSSavePanel()
+        panel.title = "Export Clipboard History as CSV"
+        panel.nameFieldStringValue = "snapvault-export.csv"
+        panel.allowedContentTypes = [.commaSeparatedText]
+        panel.canCreateDirectories = true
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        Task {
+            await viewModel.exportCSV(to: url)
+        }
+    }
+
+    private func exportDatabase() {
+        let panel = NSSavePanel()
+        panel.title = "Export Database File"
+        panel.nameFieldStringValue = "snapvault.db"
+        panel.allowedContentTypes = [.init(filenameExtension: "db")!]
+        panel.canCreateDirectories = true
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        Task {
+            await viewModel.exportDatabase(to: url)
+        }
+    }
+
+    // MARK: - Import Actions
+
+    private func importJSON() {
         let panel = NSOpenPanel()
         panel.title = "Import Clipboard History"
         panel.allowedContentTypes = [.json]
@@ -281,9 +355,11 @@ struct DataSettingsView: View {
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
         Task {
-            await viewModel.importData(from: url)
+            await viewModel.importJSON(from: url)
         }
     }
+
+    // MARK: - Helpers
 
     private func formatSize(_ mb: Double) -> String {
         if mb < 1.0 {

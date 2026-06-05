@@ -16,6 +16,7 @@ extension Notification.Name {
 final class SettingsViewModel: ObservableObject {
     let logger = Logger.app
     private let repository = ContentRepository()
+    private let exportService = ExportService()
 
     // MARK: - General Settings
 
@@ -34,6 +35,9 @@ final class SettingsViewModel: ObservableObject {
     @Published var isExporting: Bool = false
     @Published var isImporting: Bool = false
     @Published var isClearingHistory: Bool = false
+
+    /// Import progress (current item / total items).
+    @Published var importProgress: Double = 0
 
     /// Alert state for confirmations and messages.
     @Published var showAlert: Bool = false
@@ -150,68 +154,91 @@ final class SettingsViewModel: ObservableObject {
         }
     }
 
-    // MARK: - Data Export
+    // MARK: - JSON Export
 
     /// Export clipboard history to a JSON file.
-    func exportData(to url: URL) async {
+    func exportJSON(to url: URL) async {
         isExporting = true
         defer { isExporting = false }
 
         do {
-            let items = try repository.fetchHistory(page: 0, pageSize: 10000)
-
-            let encoder = JSONEncoder()
-            encoder.dateEncodingStrategy = .iso8601
-            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-
-            let data = try encoder.encode(items)
-            try data.write(to: url)
-
-            dataOperationStatus = "Exported \(items.count) items"
-            logger.info("Exported \(items.count) items to \(url.path, privacy: .public)")
+            try exportService.exportToJSON(to: url)
+            let count = totalItemCount
+            dataOperationStatus = "Exported \(count) items to JSON"
+            logger.info("Exported \(count) items to JSON: \(url.path, privacy: .public)")
         } catch {
-            logger.error("Export failed: \(error.localizedDescription, privacy: .public)")
+            logger.error("JSON export failed: \(error.localizedDescription, privacy: .public)")
             alertTitle = "Export Error"
-            alertMessage = "Failed to export data: \(error.localizedDescription)"
+            alertMessage = "Failed to export JSON: \(error.localizedDescription)"
             showAlert = true
         }
     }
 
-    // MARK: - Data Import
+    // MARK: - CSV Export
 
-    /// Import clipboard history from a JSON file.
-    func importData(from url: URL) async {
-        isImporting = true
-        defer { isImporting = false }
+    /// Export clipboard history to a CSV file.
+    func exportCSV(to url: URL) async {
+        isExporting = true
+        defer { isExporting = false }
 
         do {
-            let data = try Data(contentsOf: url)
+            try exportService.exportToCSV(to: url)
+            let count = totalItemCount
+            dataOperationStatus = "Exported \(count) items to CSV"
+            logger.info("Exported \(count) items to CSV: \(url.path, privacy: .public)")
+        } catch {
+            logger.error("CSV export failed: \(error.localizedDescription, privacy: .public)")
+            alertTitle = "Export Error"
+            alertMessage = "Failed to export CSV: \(error.localizedDescription)"
+            showAlert = true
+        }
+    }
 
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
+    // MARK: - Database Export
 
-            let items = try decoder.decode([ClipboardItem].self, from: data)
+    /// Export the raw database file.
+    func exportDatabase(to url: URL) async {
+        isExporting = true
+        defer { isExporting = false }
 
-            var importedCount = 0
-            for var item in items {
-                // Reset id so it gets a new auto-increment
-                item.id = nil
-                // Check for duplicates by hash
-                if try repository.findByHash(item.contentHash) != nil {
-                    continue
+        do {
+            try exportService.exportDatabase(to: url)
+            dataOperationStatus = "Database exported"
+            logger.info("Database exported to \(url.path, privacy: .public)")
+        } catch {
+            logger.error("Database export failed: \(error.localizedDescription, privacy: .public)")
+            alertTitle = "Export Error"
+            alertMessage = "Failed to export database: \(error.localizedDescription)"
+            showAlert = true
+        }
+    }
+
+    // MARK: - JSON Import
+
+    /// Import clipboard history from a JSON file with progress tracking.
+    func importJSON(from url: URL) async {
+        isImporting = true
+        importProgress = 0
+        defer {
+            isImporting = false
+            importProgress = 0
+        }
+
+        do {
+            let result = try exportService.importFromJSON(from: url) { [weak self] current, total in
+                Task { @MainActor in
+                    self?.importProgress = Double(current) / Double(total)
                 }
-                _ = try repository.save(item)
-                importedCount += 1
             }
 
-            dataOperationStatus = "Imported \(importedCount) items"
+            dataOperationStatus = result.summary
             loadDatabaseStats()
             NotificationCenter.default.post(name: .clipboardItemSaved, object: nil)
-            logger.info("Imported \(importedCount) items from \(url.path, privacy: .public)")
+            logger.info("JSON import complete: \(result.summary, privacy: .public)")
         } catch {
-            logger.error("Import failed: \(error.localizedDescription, privacy: .public)")
+            logger.error("JSON import failed: \(error.localizedDescription, privacy: .public)")
             alertTitle = "Import Error"
-            alertMessage = "Failed to import data: \(error.localizedDescription)"
+            alertMessage = "Failed to import JSON: \(error.localizedDescription)"
             showAlert = true
         }
     }
