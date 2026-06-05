@@ -15,6 +15,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Local event monitor to detect clicks outside the panel.
     private var localEventMonitor: Any?
 
+    /// Clipboard polling monitor.
+    private let clipboardMonitor = ClipboardMonitor()
+
+    /// Content store that persists new clipboard events.
+    private let contentStore = ContentStore()
+
+    /// Task that consumes clipboard events from the monitor stream.
+    private var monitorTask: Task<Void, Never>?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         logger.info("SnapVault launching")
 
@@ -32,11 +41,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Set up status bar item
         setupStatusItem()
 
+        // Start clipboard monitoring
+        startClipboardMonitoring()
+
         logger.info("SnapVault launched successfully")
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         logger.info("SnapVault terminating")
+        clipboardMonitor.stop()
+        monitorTask?.cancel()
         if let monitor = localEventMonitor {
             NSEvent.removeMonitor(monitor)
         }
@@ -175,6 +189,28 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             NSEvent.removeMonitor(monitor)
             localEventMonitor = nil
         }
+    }
+
+    // MARK: - Clipboard Monitoring
+
+    private func startClipboardMonitoring() {
+        // Start the monitor (begins polling).
+        clipboardMonitor.start()
+
+        // Consume the event stream and forward to ContentStore.
+        monitorTask = Task { [weak self] in
+            guard let self else { return }
+            for await event in self.clipboardMonitor.onNewContent {
+                do {
+                    let id = try await self.contentStore.processEvent(event)
+                    self.logger.debug("Processed clipboard event -> item id=\(id)")
+                } catch {
+                    self.logger.error("Failed to process clipboard event: \(error.localizedDescription, privacy: .public)")
+                }
+            }
+        }
+
+        logger.info("Clipboard monitoring started")
     }
 
     // MARK: - Private

@@ -175,3 +175,62 @@
 - ClipboardListViewModel.copyToClipboard() 已实现基本功能，US-004 可能需要增强
 - NSPanel 的 floating level 可能与全屏应用冲突，如有问题可调整为 .statusBar
 - 事件监听器在 applicationWillTerminate 中正确清理，但如需支持面板重建，注意 stopMonitoringEvents 的调用时机
+
+## 2026-06-05 - US-003 剪贴板监听与自动捕获
+
+### 完成内容
+1. **ClipboardMonitor 完整实现**
+   - 使用 Timer 每 500ms 轮询 NSPasteboard.general.changeCount
+   - changeCount 变化时读取剪贴板内容，支持四种类型检测
+   - 通过 AsyncStream<ClipboardEvent> 发布新内容事件
+   - 内存级 SHA256 去重缓存（最近 200 条 hash），避免重复 DB 查询
+
+2. **内容类型检测（优先级：RTF > 纯文本 > 图片 > 文件）**
+   - NSPasteboard.PasteboardType.rtf → .rtf（hash RTF 二进制数据）
+   - NSPasteboard.PasteboardType.string → .text（hash 文本内容）
+   - NSPasteboard.PasteboardType.tiff / .png → .image（hash 图片二进制）
+   - NSPasteboard.PasteboardType.fileURL → .file（hash 排序后的路径字符串）
+
+3. **SHA256 去重逻辑（双层）**
+   - 第一层：ClipboardMonitor 内存缓存（Set<String>，最近 200 条）
+   - 第二层：ContentStore 通过 ContentRepository.findByHash() 数据库级去重
+   - 启动时从 DB 加载最近 10 条 hash 到内存缓存
+
+4. **ContentStore 完整实现**
+   - processEvent() 接收 ClipboardEvent，创建 ClipboardItem 并保存
+   - 对图片类型调用 OCRService（stub，US-006 实现）
+   - 保存成功后通过 NotificationCenter 发送 .clipboardItemSaved 通知
+   - 300ms debounce 避免频繁 UI 刷新
+
+5. **空闲时降低轮询频率**
+   - 监听 NSApplication.didBecomeActiveNotification / didResignActiveNotification
+   - 前台：500ms 轮询
+   - 后台：2000ms 轮询
+
+6. **集成到 AppDelegate**
+   - applicationDidFinishLaunching 中调用 clipboardMonitor.start()
+   - 启动 AsyncStream 消费任务，将事件转发给 ContentStore.processEvent()
+   - applicationWillTerminate 中停止 monitor 和取消 task
+
+7. **ClipboardListViewModel 自动刷新**
+   - 监听 .clipboardItemSaved 通知
+   - 收到通知后自动调用 refresh() 重新加载列表
+
+### 修改文件清单
+- SnapVault/Services/ClipboardMonitor/ClipboardMonitor.swift（重写完整实现）
+- SnapVault/Services/ContentStore/ContentStore.swift（重写完整实现）
+- SnapVault/App/AppDelegate.swift（集成 ClipboardMonitor + ContentStore）
+- SnapVault/ViewModels/ClipboardListViewModel.swift（添加通知监听自动刷新）
+
+### 技术决策记录
+1. Timer 使用 RunLoop.main.add(forMode: .common)，确保在滚动等 RunLoop 模式切换时仍能触发
+2. 双层去重：内存缓存避免频繁 DB 查询，DB 查询覆盖 app 重启场景
+3. 通过 NotificationCenter + debounce 通知 UI 刷新，而非直接耦合 ViewModel
+4. ClipboardMonitor 的 onNewContent 使用 AsyncStream，continuation 存储在实例变量中，timer 回调中 yield 事件
+
+### 留给后续 Agent 的提示
+- US-004 需要完善 ClipboardItemRow 的图片预览（缩略图）和富文本渲染
+- US-006 需要实现 OCRService 的完整 VNRecognizeTextRequest 逻辑
+- ContentStore.performOCR() 已预留 OCR 结果更新到数据库的逻辑，US-006 只需实现 OCRService
+- ClipboardMonitor 的 onNewContent 是冷流（cold stream），每次访问属性都会创建新的 AsyncStream；当前只在 AppDelegate 中访问一次，如需多消费者需改为共享流
+- NSPasteboard.fileURL 类型在 macOS 上可能需要 com.apple.security.files.user-selected.read-only entitlement

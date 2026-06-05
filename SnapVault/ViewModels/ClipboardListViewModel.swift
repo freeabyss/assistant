@@ -22,11 +22,21 @@ final class ClipboardListViewModel: ObservableObject {
     private var currentPage = 0
     private var cancellables = Set<AnyCancellable>()
 
+    /// Observer token for clipboardItemSaved notifications.
+    private var savedObserver: NSObjectProtocol?
+
     // MARK: - Init
 
     init() {
         setupSearchDebounce()
         setupFilterSubscription()
+        setupNewContentObserver()
+    }
+
+    deinit {
+        if let observer = savedObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
     }
 
     // MARK: - Public API
@@ -166,5 +176,18 @@ final class ClipboardListViewModel: ObservableObject {
                 }
             }
             .store(in: &cancellables)
+    }
+
+    /// Listen for new clipboard items saved by ContentStore and auto-refresh the list.
+    private func setupNewContentObserver() {
+        savedObserver = NotificationCenter.default.addObserver(
+            forName: .clipboardItemSaved,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { [weak self] in
+                await self?.refresh()
+            }
+        }
     }
 }
