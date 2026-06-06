@@ -1052,3 +1052,91 @@
 - 应用图标获取（NSWorkspace.shared.icon）在首次索引时可能较慢，后续可考虑延迟加载或缓存
 - 模糊匹配对短查询（<3字符）自动禁用（maxDistance = query.count - 1）
 - ScreenshotService 的 @available(macOS 14.0, *) 意味着截图功能在 macOS 13 上不可用，US-012 需要处理降级方案
+
+## 2026-06-06 - US-016 统一搜索 UI 重构
+
+### 完成内容
+1. **UnifiedSearchViewModel 完整实现**
+   - @MainActor + ObservableObject，注入 UnifiedSearchServiceProtocol
+   - @Published 属性：searchText, applications, files, clipboard, isLoading, selectedResult, elapsed, selectedGroup
+   - 300ms debounce 搜索（Combine pipeline）
+   - search() 方法调用 unifiedSearchService.search()，结果按类型分组
+   - 键盘导航：moveSelectionUp() / moveSelectionDown() / confirmSelection()
+   - 分组切换：cycleGroupForward() / cycleGroupBackward()（Tab 键触发）
+   - executeAction() 执行 SearchResultAction：
+     - .launchApp → NSWorkspace.shared.openApplication
+     - .openFile → NSWorkspace.shared.open
+     - .openInFinder → NSWorkspace.shared.activateFileViewerSelecting
+     - .copyToClipboard → 从数据库获取 ClipboardItem 并写入 NSPasteboard
+   - recordAppLaunch() 持久化应用使用次数到 UserDefaults
+   - isSearchActive 计算属性用于切换搜索/历史模式
+
+2. **Spotlight 风格搜索框（MenuBarView 重构）**
+   - 搜索框放大（font size 15）、圆角 10、带阴影效果
+   - placeholder: "Search apps, files, clipboard..."
+   - 搜索框下方显示搜索耗时（elapsed ms）和结果总数
+   - 移除旧的 ContentType 过滤 Tab
+   - 新增搜索结果分组 Tab：All | Apps | Files | Clipboard
+     - 每个 Tab 显示对应数量 badge
+     - Tab 使用 SF Symbol 图标：tray / app.fill / doc.fill / clipboard.fill
+   - 搜索框为空时显示剪贴板历史（ClipboardListView）
+   - 搜索框有内容时切换到统一搜索结果（UnifiedResultList）
+
+3. **UnifiedResultRow 统一搜索结果行视图**
+   - 左侧：类型图标（NSImage 或 SF Symbol + 色彩背景）
+   - 中间：标题（支持搜索关键词黄色高亮）+ 副标题（灰色）
+   - 右侧：操作提示（Enter 键）
+   - 选中状态：accentColor 15% 透明度背景
+   - 高亮渲染使用 NSMutableAttributedString
+
+4. **ResultGroupView 搜索结果分组视图**
+   - 分组标题：类型图标 + 类型名 + 数量 badge
+   - 分组内容：UnifiedResultRow 列表（通过 ForEach）
+   - 空状态：该类型无结果时显示简短提示
+
+5. **UnifiedResultList 统一搜索结果列表**
+   - 根据 selectedGroup 显示对应分组
+   - "全部" 模式下按优先级排列：应用 → 文件 → 剪贴板
+   - 每个分组最多显示 10 条结果
+   - 加载中和无结果的占位视图
+   - ScrollViewReader 支持选中项自动滚动到可见区域
+
+6. **KeyEventHandler 键盘事件处理组件**
+   - NSViewRepresentable 包装自定义 NSView
+   - 拦截 Up/Down/Return/Tab 键事件
+   - macOS 13 兼容（替代 onKeyPress，后者需要 macOS 14+）
+   - 作为 MenuBarView 的 background overlay
+
+7. **AppDelegate 集成**
+   - 创建 UnifiedSearchViewModel 实例（在 applicationDidFinishLaunching 中，main actor 上）
+   - 将 ViewModel 传递给 MenuBarView 构造器
+
+8. **Xcode 项目更新**
+   - 5 个新 .swift 文件添加到编译目标
+   - 创建 SearchResults PBXGroup
+   - KeyEventHandler 添加到 Components 组
+
+### 修改文件清单
+- SnapVault/ViewModels/UnifiedSearchViewModel.swift（新建：统一搜索 ViewModel）
+- SnapVault/Views/SearchResults/UnifiedResultRow.swift（新建：搜索结果行视图）
+- SnapVault/Views/SearchResults/ResultGroupView.swift（新建：搜索结果分组视图）
+- SnapVault/Views/SearchResults/UnifiedResultList.swift（新建：搜索结果列表）
+- SnapVault/Views/Components/KeyEventHandler.swift（新建：键盘事件处理组件）
+- SnapVault/Views/MenuBar/MenuBarView.swift（重构：Spotlight 风格搜索 UI）
+- SnapVault/App/AppDelegate.swift（集成 UnifiedSearchViewModel）
+- SnapVault.xcodeproj/project.pbxproj（添加新文件引用）
+
+### 技术决策记录
+1. 使用 KeyEventHandler（NSViewRepresentable）处理键盘事件，因为 onKeyPress 需要 macOS 14+，项目目标是 macOS 13
+2. UnifiedSearchViewModel 的 init 在 AppDelegate.applicationDidFinishLaunching 中调用（main actor 上），避免 @MainActor init 在非隔离上下文中调用的编译错误
+3. 搜索框为空时显示 ClipboardListView（复用现有组件），搜索框有内容时切换到 UnifiedResultList，实现搜索/历史双模式共存
+4. 每个分组最多显示 10 条结果（maxResultsPerSource），避免结果过多影响性能和可用性
+5. 搜索关键词高亮复用 NSMutableAttributedString 方案（与 ClipboardItemRow 一致）
+6. copyClipboardItem 通过 ContentRepository.fetch() 从数据库获取完整 ClipboardItem 数据，确保 RTF/图片等类型正确复制
+
+### 留给后续 Agent 的提示
+- 所有 US 任务已完成（US-001 ~ US-016）
+- KeyEventHandler 的 .allowsHitTesting(false) 确保它不拦截鼠标事件，但这也意味着它可能无法成为第一响应者；如果键盘事件不生效，可能需要调整为可交互的透明视图
+- UnifiedSearchViewModel.copyClipboardItem() 内部创建新的 ContentRepository 实例，如果需要共享同一个实例可考虑依赖注入
+- 分组 Tab 的可见性逻辑：只有当该类型有结果或当前选中时才显示 Tab，避免空 Tab 占用空间
+- MenuBarView 的 Preview 需要传入 UnifiedSearchViewModel 实例，实际使用时由 AppDelegate 注入

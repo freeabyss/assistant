@@ -8,32 +8,60 @@ extension Notification.Name {
 }
 
 /// Main container view shown in the floating panel.
-/// Contains search bar, content type filter tabs, and clipboard history list.
+///
+/// Displays a Spotlight-style search bar at the top. When the search field is empty,
+/// shows clipboard history (ClipboardListView). When the user types, switches to
+/// unified search results (UnifiedResultList) with grouped display.
 struct MenuBarView: View {
-    @StateObject private var viewModel = ClipboardListViewModel()
+    @ObservedObject var searchViewModel: UnifiedSearchViewModel
+    @StateObject private var clipboardViewModel = ClipboardListViewModel()
     @FocusState private var isSearchFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header: App title
+            // Header: App title + settings
             headerBar
 
-            // Search bar
+            // Spotlight-style search bar
             searchBar
-                .padding(.horizontal, 12)
+                .padding(.horizontal, 16)
                 .padding(.top, 8)
                 .padding(.bottom, 4)
 
-            // Content type filter tabs
-            filterTabs
-                .padding(.horizontal, 12)
-                .padding(.bottom, 8)
+            // Search timing info (when searching)
+            if searchViewModel.isSearchActive {
+                searchTimingBar
+            }
 
-            // Clipboard history list
-            ClipboardListView(viewModel: viewModel)
+            // Group filter tabs (when searching)
+            if searchViewModel.isSearchActive {
+                groupFilterTabs
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 6)
+            }
+
+            // Content area: search results or clipboard history
+            if searchViewModel.isSearchActive {
+                UnifiedResultList(viewModel: searchViewModel)
+            } else {
+                ClipboardListView(viewModel: clipboardViewModel)
+            }
         }
         .frame(width: 400, height: 500)
         .background(Color(NSColor.windowBackgroundColor))
+        .background(
+            KeyEventHandler(
+                onUpArrow: { searchViewModel.moveSelectionUp() },
+                onDownArrow: { searchViewModel.moveSelectionDown() },
+                onReturn: {
+                    if searchViewModel.isSearchActive {
+                        searchViewModel.confirmSelection()
+                    }
+                },
+                onTab: { searchViewModel.cycleGroupForward() }
+            )
+            .allowsHitTesting(false)
+        )
         .onReceive(NotificationCenter.default.publisher(for: .focusSearchField)) { _ in
             isSearchFocused = true
         }
@@ -72,54 +100,107 @@ struct MenuBarView: View {
         .padding(.bottom, 4)
     }
 
-    // MARK: - Search Bar
+    // MARK: - Spotlight-Style Search Bar
 
     private var searchBar: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             Image(systemName: "magnifyingglass")
-                .foregroundColor(.secondary)
-                .font(.system(size: 13))
+                .foregroundColor(.secondary.opacity(0.7))
+                .font(.system(size: 15))
 
-            TextField("Search clipboard history...", text: $viewModel.searchText)
+            TextField("Search apps, files, clipboard...", text: $searchViewModel.searchText)
                 .textFieldStyle(.plain)
-                .font(.system(size: 13))
+                .font(.system(size: 15))
                 .focused($isSearchFocused)
 
-            if !viewModel.searchText.isEmpty {
+            if !searchViewModel.searchText.isEmpty {
                 Button(action: {
-                    viewModel.searchText = ""
+                    searchViewModel.searchText = ""
                 }) {
                     Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.secondary)
-                        .font(.system(size: 13))
+                        .foregroundColor(.secondary.opacity(0.6))
+                        .font(.system(size: 14))
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
-        .background(Color(NSColor.controlBackgroundColor))
-        .cornerRadius(8)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color(NSColor.controlBackgroundColor))
+                .shadow(color: Color.black.opacity(0.08), radius: 4, y: 2)
+        )
     }
 
-    // MARK: - Filter Tabs
+    // MARK: - Search Timing Bar
 
-    private var filterTabs: some View {
+    private var searchTimingBar: some View {
+        HStack(spacing: 4) {
+            if searchViewModel.isLoading {
+                ProgressView()
+                    .scaleEffect(0.6)
+                    .frame(width: 12, height: 12)
+            }
+            Text("\(searchViewModel.totalCount) results")
+                .font(.system(size: 10))
+                .foregroundColor(.secondary.opacity(0.7))
+            Text("·")
+                .font(.system(size: 10))
+                .foregroundColor(.secondary.opacity(0.5))
+            Text("\(Int(searchViewModel.elapsed))ms")
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundColor(.secondary.opacity(0.7))
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 2)
+    }
+
+    // MARK: - Group Filter Tabs
+
+    private var groupFilterTabs: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
-                FilterTabButton(
+                // "All" tab
+                GroupTabButton(
                     title: "All",
                     icon: "tray",
-                    isSelected: viewModel.selectedContentType == nil,
-                    action: { viewModel.selectedContentType = nil }
+                    count: searchViewModel.totalCount,
+                    isSelected: searchViewModel.selectedGroup == nil,
+                    action: { searchViewModel.selectedGroup = nil }
                 )
 
-                ForEach(ContentType.allCases) { type in
-                    FilterTabButton(
-                        title: type.displayName,
-                        icon: type.iconName,
-                        isSelected: viewModel.selectedContentType == type,
-                        action: { viewModel.selectedContentType = type }
+                // Application tab
+                if !searchViewModel.applications.isEmpty || searchViewModel.selectedGroup == .application {
+                    GroupTabButton(
+                        title: "Apps",
+                        icon: "app.fill",
+                        count: searchViewModel.applications.count,
+                        isSelected: searchViewModel.selectedGroup == .application,
+                        action: { searchViewModel.selectedGroup = .application }
+                    )
+                }
+
+                // File tab
+                if !searchViewModel.files.isEmpty || searchViewModel.selectedGroup == .file {
+                    GroupTabButton(
+                        title: "Files",
+                        icon: "doc.fill",
+                        count: searchViewModel.files.count,
+                        isSelected: searchViewModel.selectedGroup == .file,
+                        action: { searchViewModel.selectedGroup = .file }
+                    )
+                }
+
+                // Clipboard tab
+                if !searchViewModel.clipboard.isEmpty || searchViewModel.selectedGroup == .clipboard {
+                    GroupTabButton(
+                        title: "Clipboard",
+                        icon: "clipboard.fill",
+                        count: searchViewModel.clipboard.count,
+                        isSelected: searchViewModel.selectedGroup == .clipboard,
+                        action: { searchViewModel.selectedGroup = .clipboard }
                     )
                 }
             }
@@ -142,11 +223,12 @@ struct MenuBarView: View {
     }
 }
 
-// MARK: - Filter Tab Button
+// MARK: - Group Tab Button
 
-struct FilterTabButton: View {
+struct GroupTabButton: View {
     let title: String
     let icon: String
+    let count: Int
     let isSelected: Bool
     let action: () -> Void
 
@@ -154,12 +236,15 @@ struct FilterTabButton: View {
         Button(action: action) {
             HStack(spacing: 4) {
                 Image(systemName: icon)
-                    .font(.system(size: 11))
+                    .font(.system(size: 10))
                 Text(title)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(size: 11, weight: .medium))
+                Text("\(count)")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(isSelected ? .white.opacity(0.8) : .secondary)
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
             .background(isSelected ? Color.accentColor : Color.clear)
             .foregroundColor(isSelected ? .white : .primary)
             .cornerRadius(6)
@@ -169,5 +254,5 @@ struct FilterTabButton: View {
 }
 
 #Preview {
-    MenuBarView()
+    MenuBarView(searchViewModel: UnifiedSearchViewModel(unifiedSearchService: UnifiedSearchService()))
 }

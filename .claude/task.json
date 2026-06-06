@@ -247,7 +247,7 @@
       "id": "US-016",
       "title": "统一搜索 UI 重构",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": ["US-013", "US-014", "US-015"],
       "steps": [

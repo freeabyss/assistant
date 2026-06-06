@@ -43,6 +43,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// File search source (skeleton, full impl in US-015).
     private let fileSearchSource = FileSearchSource()
 
+    /// Unified search view model (created in applicationDidFinishLaunching on main actor).
+    private var unifiedSearchViewModel: UnifiedSearchViewModel!
+
     /// Screenshot service for region and window capture (macOS 14+).
     private lazy var screenshotService: ScreenshotServiceProtocol? = {
         if #available(macOS 14.0, *) {
@@ -82,6 +85,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         unifiedSearchService.registerSource(appSearchSource)
         unifiedSearchService.registerSource(fileSearchSource)
         logger.info("Unified search service initialized with 3 sources")
+
+        // Create unified search view model (must be on main actor)
+        unifiedSearchViewModel = UnifiedSearchViewModel(unifiedSearchService: unifiedSearchService)
 
         // Set up Sparkle auto-update (Sparkle handles launch delay + periodic checks internally)
         updateService.setup()
@@ -194,7 +200,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         panel.backgroundColor = .clear
 
         // Set the SwiftUI content
-        let menuBarView = MenuBarView()
+        let menuBarView = MenuBarView(searchViewModel: unifiedSearchViewModel)
         let hostingView = NSHostingView(rootView: menuBarView)
         hostingView.translatesAutoresizingMaskIntoConstraints = false
 
