@@ -847,3 +847,57 @@
 - US-016（统一搜索 UI）需要创建 UnifiedSearchViewModel，使用 UnifiedSearchServiceProtocol 进行搜索
 - ClipboardSearchSource 的 SearchService 实例在内部创建，与 ClipboardListViewModel 使用的实例是独立的（各自有自己的 FTS5 查询）
 - 如果需要共享同一个 SearchService 实例，可以在 AppDelegate 中创建并注入
+
+## 2026-06-06 - US-015 文件搜索（FileSearchSource）
+
+### 完成内容
+1. **FileInfo 结构体**
+   - 定义 FileInfo：name, path, contentType (UTI), size (Int64), modifiedDate, icon (NSImage?)
+   - 与 architecture_api.md 中的 FileInfo 接口定义一致
+
+2. **NSMetadataQuery 封装**
+   - `performSpotlightSearch()` 通过 `withCheckedContinuation` 包装为 async 方法
+   - NSMetadataQuery 在 `DispatchQueue.main.async` 中执行（RunLoop.main 要求）
+   - 搜索谓词：`kMDItemDisplayName CONTAINS[cd] %@` OR `kMDItemTextContent CONTAINS[cd] %@`（文件名+内容）
+   - 默认搜索范围：`NSMetadataQueryUserHomeScope`
+   - 5 秒超时保护，超时返回空结果并记录警告日志
+   - 使用 `NSLock` + `didResume` 标志确保 continuation 只 resume 一次
+
+3. **搜索结果处理**
+   - 从 NSMetadataItem 提取属性：kMDItemDisplayName, kMDItemPath, kMDItemContentType, kMDItemFSSize, kMDItemContentModificationDate
+   - 通过 `NSWorkspace.shared.icon(forFile:)` 获取文件图标
+   - 结果按 `NSMetadataQueryResultContentRelevanceAttribute` 排序
+
+4. **UnifiedSearchResult 转换**
+   - id 格式：`"file:\(path)"`
+   - title = 文件名
+   - subtitle = UTI 类型描述 + 文件大小（ByteCountFormatter）+ 相对时间
+   - type = .file
+   - action = .openFile(path:)
+   - 相关度分数：nameScore (prefix=0.7, contains=0.5, content=0.2) + recencyScore (1d=0.3, 7d=0.2, 30d=0.1)
+
+5. **搜索范围和类型过滤**
+   - `setSearchScope(_ paths: [URL])` 设置自定义搜索路径
+   - `setFileTypes(_ types: [String])` 按 UTI 类型过滤（如 public.image, public.text）
+   - 文件类型过滤通过 NSCompoundPredicate AND 组合
+
+6. **搜索结果高亮**
+   - `computeHighlightRanges()` 支持多关键词、caseInsensitive + diacriticInsensitive 匹配
+
+### 修改文件清单
+- SnapVault/Services/SearchEngine/FileSearchSource.swift（完整重写：NSMetadataQuery 实现）
+- SnapVault/Services/SearchEngine/AppSearchSource.swift（修复 NSWorkspace 通知名称编译错误）
+
+### 技术决策记录
+1. NSMetadataQuery 必须在 RunLoop.main 上启动，使用 DispatchQueue.main.async 包装
+2. 使用 withCheckedContinuation 而非 withCheckedThrowingContinuation，因为搜索失败返回空数组而非抛错
+3. NSLock + didResume 标志防止 continuation 多次 resume（timeout 和 notification 可能竞争）
+4. 搜索谓词同时搜索文件名和文件内容（kMDItemDisplayName OR kMDItemTextContent），覆盖更多场景
+5. 文件类型过滤使用 NSCompoundPredicate AND 与搜索谓词组合
+6. 相关度分数结合名称匹配质量（prefix > contains > content）和文件修改时间（越新越高）
+
+### 留给后续 Agent 的提示
+- US-016（统一搜索 UI）可以直接使用 FileSearchSource，通过 UnifiedSearchService 注册
+- NSMetadataQuery 的搜索结果依赖系统 Spotlight 索引，首次搜索外接磁盘文件可能有延迟
+- FileInfo 结构体在 FileSearchSource.swift 中定义，如需在其他文件中使用需注意 import
+- AppSearchSource.swift 中修复了 NSWorkspace 通知名称：didInstallApplicationNotification → didLaunchApplicationNotification, didUnmountApplicationNotification → didTerminateApplicationNotification（原始通知名在当前 SDK 中不存在）

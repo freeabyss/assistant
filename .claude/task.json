@@ -231,7 +231,7 @@
       "id": "US-015",
       "title": "文件搜索（FileSearchSource）",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": ["US-013"],
       "steps": [
