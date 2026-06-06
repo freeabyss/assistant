@@ -981,3 +981,74 @@
 - 如果需要更高质量的区域截图，可以考虑使用 SCStream（macOS 12.3+）替代全屏+裁剪方案
 - 截图结果已自动存入剪贴板历史并触发 OCR，搜索可以找到截图中的文字
 - 快捷键冲突检测由 KeyboardShortcuts 库自动处理
+
+## 2026-06-06 - US-014 应用搜索（AppSearchSource）
+
+### 完成内容
+1. **AppSearchSource 完整实现**
+   - 替换骨架代码为完整实现，约 455 行
+   - 遵循 AppSearchSourceProtocol + SearchSource 协议
+
+2. **应用索引构建（AppIndexBuilder）**
+   - 启动时异步构建索引（Task.detached priority: .utility，不阻塞主线程）
+   - 扫描 /Applications 和 ~/Applications 目录，递归查找 .app bundle
+   - 使用 FileManager.enumerator 递归遍历，遇到 .app 跳过子目录
+   - 从 Info.plist 提取 CFBundleDisplayName / CFBundleName / CFBundleIdentifier
+   - 使用 NSWorkspace.shared.icon(forFile:) 获取应用图标（32x32）
+   - 索引按 normalized name 排序，支持二分查找
+   - NSLock 保护并发访问
+
+3. **三种搜索策略（按优先级排序）**
+   - 前缀匹配：二分查找 sorted index，O(log n) 查找起始位置 + 线性扫描匹配项
+   - 包含匹配：线性扫描，排除已匹配项
+   - 模糊匹配：Levenshtein 编辑距离 <= 2，两行优化算法节省内存
+   - 字符串归一化：diacriticInsensitive + lowercase，支持重音字符匹配
+
+4. **搜索结果排序**
+   - 分数：prefix=1.0 > contains=0.7 > fuzzy=0.4
+   - 同分按 useCount 降序（使用频率高的排前面）
+   - 再按名称字母序
+   - 结果包含高亮范围（NSRange）
+
+5. **索引刷新机制**
+   - 每 5 分钟定时刷新（Timer.scheduledTimer）
+   - rebuildIndex() 支持强制重建
+   - 刷新在后台线程执行
+
+6. **应用使用计数**
+   - recordAppLaunch(bundleID:) 记录使用次数
+   - 持久化到 UserDefaults（JSON 编码）
+   - 用于搜索结果排序（高频使用的应用排前面）
+
+7. **AppSearchSourceProtocol 实现**
+   - rebuildIndex() — 强制重建索引
+   - getAppInfo(bundleID:) — 同步查询单个应用信息
+
+### 附带修复
+- 修复 ScreenshotService.swift 中 SCCaptureConfiguration → SCStreamConfiguration（API 名称错误）
+- 添加 ScreenshotService 和 ScreenshotOverlay 到 Xcode 项目的 Sources 编译阶段
+- 为 ScreenshotService 添加 @available(macOS 14.0, *) 注解（SCScreenshotManager 需要 macOS 14+）
+- 更新 AppDelegate 中 screenshotService 为 optional，使用 if #available 条件创建
+
+### 修改文件清单
+- SnapVault/Services/SearchEngine/AppSearchSource.swift（完整重写：索引构建 + 三种匹配策略 + 刷新机制）
+- SnapVault/Services/ScreenshotService/ScreenshotService.swift（修复 API 名称 + @available 注解）
+- SnapVault/App/AppDelegate.swift（screenshotService 改为 optional + guard let 安全访问）
+- SnapVault.xcodeproj/project.pbxproj（添加 ScreenshotService/ScreenshotOverlay 到编译目标）
+- .claude/task.json（US-014 passes: true）
+
+### 技术决策记录
+1. 使用 NSLock 而非 actor 保护 apps 数组，因为 getAppInfo 需要同步访问（actor 要求 async）
+2. 前缀匹配使用二分查找（O(log n)），包含和模糊匹配使用线性扫描（O(n)），实际应用数量（<500）下性能差异可忽略
+3. 字符串归一化使用 .diacriticInsensitive + .lowercased()，确保 "Saf" 能匹配 "Safari"
+4. Levenshtein 两行优化：只保留前一行和当前行，内存从 O(mn) 降到 O(n)
+5. useCount 编码到 result ID 中（格式 "app:bundleID:count"），避免额外字典查询
+6. 不使用 NSWorkspace 通知检测应用安装/卸载（macOS SDK 中不存在 didInstallApplicationNotification），改用 5 分钟定时刷新
+7. ScreenshotService 需要 macOS 14+（SCScreenshotManager），使用 @available 注解 + optional 模式兼容 macOS 13
+
+### 留给后续 Agent 的提示
+- US-016（统一搜索 UI）可以直接使用 AppSearchSource，通过 UnifiedSearchService 注册（已在 AppDelegate 中完成）
+- recordAppLaunch(bundleID:) 方法需要在应用启动时调用，当前由 US-016 的 UI 层负责
+- 应用图标获取（NSWorkspace.shared.icon）在首次索引时可能较慢，后续可考虑延迟加载或缓存
+- 模糊匹配对短查询（<3字符）自动禁用（maxDistance = query.count - 1）
+- ScreenshotService 的 @available(macOS 14.0, *) 意味着截图功能在 macOS 13 上不可用，US-012 需要处理降级方案
