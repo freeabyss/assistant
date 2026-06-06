@@ -63,6 +63,45 @@ final class ContentStore {
         return id
     }
 
+    // MARK: - Screenshot Processing
+
+    /// Process a screenshot result: save to database and trigger OCR.
+    ///
+    /// Creates a new ClipboardItem with contentType `.image` and the screenshot data.
+    /// After saving, OCR is automatically triggered to extract searchable text.
+    ///
+    /// - Parameter result: The screenshot capture result
+    /// - Returns: The database row id of the saved item
+    @discardableResult
+    func processScreenshot(_ result: ScreenshotResult) async throws -> Int64 {
+        // Compute content hash for deduplication
+        let contentHash = CryptoHelper.sha256(result.imageData)
+
+        // Check for duplicate
+        if let existing = try repository.findByHash(contentHash) {
+            logger.debug("Screenshot already exists (hash: \(contentHash, privacy: .public))")
+            return existing.id!
+        }
+
+        // Build the clipboard item
+        let item = ClipboardItem(
+            contentType: .image,
+            imageData: result.imageData,
+            contentHash: contentHash
+        )
+
+        let id = try repository.save(item)
+        logger.info("Saved screenshot: id=\(id), size=\(result.width)x\(result.height), source=\(String(describing: result.sourceType))")
+
+        // Run OCR on the screenshot
+        await performOCR(imageData: result.imageData, itemId: id)
+
+        // Notify the UI (debounced)
+        scheduleRefreshNotification()
+
+        return id
+    }
+
     // MARK: - OCR
 
     /// Run OCR on an image and store the result.

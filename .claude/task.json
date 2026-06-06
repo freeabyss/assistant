@@ -183,7 +183,7 @@
       "id": "US-012",
       "title": "截图功能（ScreenCaptureKit）",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": ["US-006"],
       "steps": [
@@ -215,7 +215,7 @@
       "id": "US-014",
       "title": "应用搜索（AppSearchSource）",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": ["US-013"],
       "steps": [

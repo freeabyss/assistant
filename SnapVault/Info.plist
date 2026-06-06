@@ -26,6 +26,10 @@
     <key>LSMinimumSystemVersion</key>
     <string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 
+    <!-- Screen recording permission description (ScreenCaptureKit) -->
+    <key>NSScreenCaptureUsageInfo</key>
+    <string>SnapVault needs screen recording permission to capture screenshots for OCR text recognition.</string>
+
     <!-- Sparkle auto-update configuration -->
     <key>SUFeedURL</key>
     <string>https://snapvault.app/appcast.xml</string>

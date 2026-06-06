@@ -138,16 +138,32 @@ struct ShortcutsSettingsView: View {
                 }
 
                 HStack {
+                    Text("Capture Region:")
+                        .frame(width: 120, alignment: .trailing)
+                    KeyboardShortcuts.Recorder(for: .captureRegion)
+                    Spacer()
+                }
+
+                HStack {
+                    Text("Capture Window:")
+                        .frame(width: 120, alignment: .trailing)
+                    KeyboardShortcuts.Recorder(for: .captureWindow)
+                    Spacer()
+                }
+
+                HStack {
                     Spacer()
                     Button("Restore Defaults") {
                         KeyboardShortcuts.reset(.togglePanel)
+                        KeyboardShortcuts.reset(.captureRegion)
+                        KeyboardShortcuts.reset(.captureWindow)
                     }
-                    .help("Reset the toggle panel shortcut to the default Command+Shift+V")
+                    .help("Reset all shortcuts to their default values")
                 }
             } header: {
                 Text("Global Shortcuts")
             } footer: {
-                Text("Use the global shortcut to show or hide the SnapVault panel from anywhere. Click the recorder field and press your desired key combination.")
+                Text("Use global shortcuts from anywhere. Toggle Panel shows/hides SnapVault. Capture Region lets you select an area to screenshot. Capture Window captures the window under your cursor. Click a recorder field and press your desired key combination.")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }

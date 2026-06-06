@@ -41,6 +41,8 @@
 		A10001000000000000000023 /* ClipboardSearchSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000023; };
 		A10001000000000000000024 /* AppSearchSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000024; };
 		A10001000000000000000025 /* FileSearchSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000025; };
+		A10001000000000000000026 /* ScreenshotService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000026; };
+		A10001000000000000000027 /* ScreenshotOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000027; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -81,6 +83,8 @@
 		A10000000000000000000023 /* ClipboardSearchSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardSearchSource.swift; sourceTree = "<group>"; };
 		A10000000000000000000024 /* AppSearchSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSearchSource.swift; sourceTree = "<group>"; };
 		A10000000000000000000025 /* FileSearchSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchSource.swift; sourceTree = "<group>"; };
+		A10000000000000000000026 /* ScreenshotService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotService.swift; sourceTree = "<group>"; };
+		A10000000000000000000027 /* ScreenshotOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotOverlay.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -172,6 +176,7 @@
 				A10003000000000000000015 /* UpdateService */,
 				A10003000000000000000019 /* DataCleanup */,
 				A1000300000000000000001A /* ExportService */,
+			A1000300000000000000001B /* ScreenshotService */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -257,6 +262,7 @@
 			isa = PBXGroup;
 			children = (
 				A1000000000000000000001C /* ToastView.swift */,
+				A10000000000000000000027 /* ScreenshotOverlay.swift */,
 			);
 			path = Components;
 			sourceTree = "<group>";
@@ -335,6 +341,14 @@
 				A10000000000000000000020 /* ExportService.swift */,
 			);
 			path = ExportService;
+			sourceTree = "<group>";
+		};
+		A1000300000000000000001B /* ScreenshotService */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000026 /* ScreenshotService.swift */,
+			);
+			path = ScreenshotService;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -449,6 +463,8 @@
 				A10001000000000000000023 /* ClipboardSearchSource.swift in Sources */,
 				A10001000000000000000024 /* AppSearchSource.swift in Sources */,
 				A10001000000000000000025 /* FileSearchSource.swift in Sources */,
+				A10001000000000000000026 /* ScreenshotService.swift in Sources */,
+				A10001000000000000000027 /* ScreenshotOverlay.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

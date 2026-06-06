@@ -901,3 +901,83 @@
 - NSMetadataQuery 的搜索结果依赖系统 Spotlight 索引，首次搜索外接磁盘文件可能有延迟
 - FileInfo 结构体在 FileSearchSource.swift 中定义，如需在其他文件中使用需注意 import
 - AppSearchSource.swift 中修复了 NSWorkspace 通知名称：didInstallApplicationNotification → didLaunchApplicationNotification, didUnmountApplicationNotification → didTerminateApplicationNotification（原始通知名在当前 SDK 中不存在）
+
+## 2026-06-06 - US-012 截图功能（ScreenCaptureKit）
+
+### 完成内容
+1. **ScreenshotService 完整实现**
+   - 新建 `SnapVault/Services/ScreenshotService/ScreenshotService.swift`
+   - 定义 `ScreenshotServiceProtocol` 协议：`captureRegion()`, `captureWindow()`, `captureScreen()`
+   - 定义 `ScreenshotResult` 结构体：imageData, width, height, captureDate, sourceType
+   - 定义 `CaptureSource` 枚举：region, window, screen
+   - 使用 ScreenCaptureKit 的 `SCShareableContent` 枚举窗口（macOS 12.3+ 兼容）
+   - 使用 CoreGraphics 的 `CGDisplayCreateImage` 和 `CGWindowListCreateImage` 进行实际捕获（macOS 13 兼容）
+   - 添加 `CGImage.pngData()` 扩展方法用于 PNG 转换
+
+2. **区域选择 Overlay**
+   - 新建 `SnapVault/Views/Components/ScreenshotOverlay.swift`
+   - `ScreenshotOverlayController`：管理全屏透明覆盖窗口
+   - `ScreenshotOverlayView`：自定义 NSView 处理鼠标拖拽选择
+   - 全屏半透明黑色覆盖层（30% 透明度）
+   - 拖拽过程中显示白色边框选区和十字准线
+   - 显示选区尺寸标签（居中下方，黑底白字圆角标签）
+   - ESC 键取消截图
+   - 最小选区尺寸 5x5 像素
+
+3. **ContentStore 集成**
+   - 新增 `processScreenshot(_ result: ScreenshotResult)` 方法
+   - 使用 `CryptoHelper.sha256` 计算内容哈希进行去重
+   - 创建 ClipboardItem（contentType: .image）保存到数据库
+   - 自动触发 OCR 流程提取可搜索文本
+   - 发送 UI 刷新通知
+
+4. **快捷键注册**
+   - 新增 `.captureRegion` 快捷键（默认 ⌘+Shift+S）
+   - 新增 `.captureWindow` 快捷键（默认 ⌘+Shift+W）
+   - AppDelegate 中注册全局快捷键监听
+   - 截图时先隐藏面板，截图完成后恢复
+
+5. **权限配置**
+   - Info.plist 添加 `NSScreenCaptureUsageInfo` 描述
+   - SnapVault.entitlements 添加 `com.apple.security.screencapture` 权限
+
+6. **设置界面更新**
+   - ShortcutsSettingsView 新增 Capture Region 和 Capture Window 快捷键录制器
+   - Restore Defaults 按钮重置所有三个快捷键
+
+7. **Xcode 项目更新**
+   - 添加 ScreenshotService.swift 和 ScreenshotOverlay.swift 到编译目标
+   - 创建 ScreenshotService PBXGroup
+   - 添加到 Components 组和 Sources 编译阶段
+
+### 修改文件清单
+- SnapVault/Services/ScreenshotService/ScreenshotService.swift（新建：截图服务核心实现）
+- SnapVault/Views/Components/ScreenshotOverlay.swift（新建：区域选择覆盖层）
+- SnapVault/Models/SnapVaultError.swift（新增 screenshotFailed 错误类型）
+- SnapVault/Utilities/Logger.swift（新增 screenshot 日志分类）
+- SnapVault/Services/ContentStore/ContentStore.swift（新增 processScreenshot 方法）
+- SnapVault/Utilities/KeyboardShortcuts+Names.swift（新增 captureRegion/captureWindow 快捷键）
+- SnapVault/App/AppDelegate.swift（集成截图服务和快捷键）
+- SnapVault/Views/Settings/SettingsView.swift（新增截图快捷键录制器）
+- SnapVault/Info.plist（添加屏幕录制权限描述）
+- SnapVault/SnapVault.entitlements（添加屏幕录制权限）
+- SnapVault.xcodeproj/project.pbxproj（添加新文件引用）
+
+### 技术决策记录
+1. 使用 ScreenCaptureKit 的 SCShareableContent 枚举窗口，但使用 CoreGraphics 的 CGDisplayCreateImage/CGWindowListCreateImage 进行实际捕获，因为 SCCaptureConfiguration 是 macOS 14+ API
+2. 区域截图通过捕获全屏后裁剪实现，而非使用 SCScreenshotManager（macOS 14+）
+3. 坐标系转换：AppKit 使用左下角原点，ScreenCaptureKit/CoreGraphics 使用左上角原点，需要进行 Y 轴翻转
+4. 截图时先隐藏面板避免面板出现在截图中，截图完成后恢复面板状态
+5. 使用 withCheckedThrowingContinuation 将 overlay 的回调包装为 async/await
+6. 窗口查找使用 SCShareableContent.windows 数组（按前后顺序排列），找到第一个包含鼠标点的窗口
+
+### 已知限制
+- 区域截图通过全屏捕获+裁剪实现，可能在多显示器环境下需要调整
+- 窗口捕获使用 CGWindowListCreateImage，可能无法捕获被完全遮挡的窗口
+- 首次使用时系统会弹窗请求屏幕录制权限
+
+### 留给后续 Agent 的提示
+- ScreenshotService 可以扩展支持多显示器（当前只使用主显示器）
+- 如果需要更高质量的区域截图，可以考虑使用 SCStream（macOS 12.3+）替代全屏+裁剪方案
+- 截图结果已自动存入剪贴板历史并触发 OCR，搜索可以找到截图中的文字
+- 快捷键冲突检测由 KeyboardShortcuts 库自动处理

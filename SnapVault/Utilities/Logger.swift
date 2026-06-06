@@ -34,4 +34,7 @@ extension Logger {
 
     /// App lifecycle (startup, shutdown, general app events).
     static let app = Logger(subsystem: subsystem, category: "app")
+
+    /// Screenshot operations (ScreenCaptureKit, overlay, capture).
+    static let screenshot = Logger(subsystem: subsystem, category: "screenshot")
 }

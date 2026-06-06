@@ -43,6 +43,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// File search source (skeleton, full impl in US-015).
     private let fileSearchSource = FileSearchSource()
 
+    /// Screenshot service for region and window capture (macOS 14+).
+    private lazy var screenshotService: ScreenshotServiceProtocol? = {
+        if #available(macOS 14.0, *) {
+            return ScreenshotService()
+        }
+        return nil
+    }()
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         logger.info("SnapVault launching")
 
@@ -245,7 +253,89 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         KeyboardShortcuts.onKeyUp(for: .togglePanel) { [weak self] in
             self?.togglePanel()
         }
-        logger.info("Global shortcut registered: togglePanel (default ⌘+Shift+V)")
+
+        KeyboardShortcuts.onKeyUp(for: .captureRegion) { [weak self] in
+            self?.performRegionCapture()
+        }
+
+        KeyboardShortcuts.onKeyUp(for: .captureWindow) { [weak self] in
+            self?.performWindowCapture()
+        }
+
+        logger.info("Global shortcuts registered: togglePanel, captureRegion, captureWindow")
+    }
+
+    // MARK: - Screenshot Capture
+
+    /// Perform a region capture.
+    /// Hides the panel first, then shows the overlay, and restores the panel after capture.
+    private func performRegionCapture() {
+        logger.info("Region capture triggered by shortcut")
+
+        // Hide the panel so it doesn't appear in the screenshot
+        let wasPanelVisible = panel?.isVisible ?? false
+        if wasPanelVisible {
+            closePanel()
+        }
+
+        Task {
+            do {
+                guard let screenshotService else {
+                    logger.warning("Screenshot service not available (requires macOS 14+)")
+                    return
+                }
+                let result = try await screenshotService.captureRegion()
+                try await contentStore.processScreenshot(result)
+                logger.info("Region capture completed and saved")
+            } catch {
+                // Don't log user cancellation as an error
+                if case SnapVaultError.screenshotFailed(let reason) = error, reason == "User cancelled" {
+                    logger.debug("Region capture cancelled")
+                } else {
+                    logger.error("Region capture failed: \(error.localizedDescription, privacy: .public)")
+                }
+            }
+
+            // Restore panel if it was visible before
+            if wasPanelVisible {
+                DispatchQueue.main.async { [weak self] in
+                    self?.showPanel()
+                }
+            }
+        }
+    }
+
+    /// Perform a window capture.
+    /// Hides the panel first, then captures the window under the cursor.
+    private func performWindowCapture() {
+        logger.info("Window capture triggered by shortcut")
+
+        // Hide the panel so it doesn't appear in the screenshot
+        let wasPanelVisible = panel?.isVisible ?? false
+        if wasPanelVisible {
+            closePanel()
+        }
+
+        Task {
+            do {
+                guard let screenshotService else {
+                    logger.warning("Screenshot service not available (requires macOS 14+)")
+                    return
+                }
+                let result = try await screenshotService.captureWindow()
+                try await contentStore.processScreenshot(result)
+                logger.info("Window capture completed and saved")
+            } catch {
+                logger.error("Window capture failed: \(error.localizedDescription, privacy: .public)")
+            }
+
+            // Restore panel if it was visible before
+            if wasPanelVisible {
+                DispatchQueue.main.async { [weak self] in
+                    self?.showPanel()
+                }
+            }
+        }
     }
 
     // MARK: - Clipboard Monitoring

@@ -9,6 +9,7 @@ enum SnapVaultError: LocalizedError {
     case storageLimitExceeded
     case exportFailed(reason: String)
     case importFailed(reason: String)
+    case screenshotFailed(reason: String)
 
     var errorDescription: String? {
         switch self {
@@ -26,6 +27,8 @@ enum SnapVaultError: LocalizedError {
             return "Export failed: \(reason)"
         case .importFailed(let reason):
             return "Import failed: \(reason)"
+        case .screenshotFailed(let reason):
+            return "Screenshot failed: \(reason)"
         }
     }
 }
