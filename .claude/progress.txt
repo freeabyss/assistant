@@ -765,3 +765,85 @@
 - CSV 导出截断长文本到 1000 字符，如果需要完整导出应使用 JSON 格式
 - 导入进度回调在当前实现中可能不够平滑（因为 GRDB 的 save 是同步的），如需更细粒度进度可考虑批量提交
 - 数据库导出的 VACUUM 操作可能耗时较长（大数据库），UI 层可考虑添加进度指示
+
+## 2026-06-06 - US-013 统一搜索框架（SearchSource 协议）
+
+### 完成内容
+1. **UnifiedSearchTypes.swift — 统一搜索类型定义**
+   - `SearchResultType` 枚举：application/file/clipboard，含 displayName 和 iconName
+   - `UnifiedSearchResult` 结构体（Identifiable）：id/title/subtitle/icon/type/score/highlightRanges/action
+   - `SearchResultAction` 枚举：launchApp/openFile/openInFinder/copyToClipboard
+   - `UnifiedSearchResponse` 结构体：applications/files/clipboard/totalCount/elapsed
+   - `SearchSource` 协议：sourceType + search(query:limit:) async throws
+
+2. **UnifiedSearchService.swift — 统一搜索服务**
+   - `UnifiedSearchServiceProtocol` 协议：registerSource/search/recordSelection
+   - `UnifiedSearchService` 实现：
+     - 持有 [SearchSource] 数组，支持动态注册
+     - search() 使用 TaskGroup 并行调用所有已注册源
+     - ScoreAggregator（私有方法）：typeWeight(0.3) * typePriority + relevanceWeight(0.4) * sourceScore + frequencyWeight(0.3) * frequencyBoost
+     - 类型优先级：application=1.0, file=0.7, clipboard=0.5
+     - 用户选择频次使用对数缩放（1次=0.3, 5次=0.6, 20次=0.85, 100次=1.0）
+     - 按类型分组返回 UnifiedSearchResponse
+     - 记录搜索耗时（毫秒）
+     - recordSelection() 持久化到 UserDefaults
+   - 单个源失败不影响整体搜索（catch + log）
+
+3. **ClipboardSearchSource.swift — 剪贴板搜索源**
+   - 实现 SearchSource 协议（sourceType = .clipboard）
+   - 同时实现 SearchServiceProtocol（向后兼容 ClipboardListViewModel）
+   - 内部持有 SearchService 实例，委托 FTS5 + Spotlight 搜索
+   - 将 SearchResult 转换为 UnifiedSearchResult：
+     - id 格式："clipboard:\(itemID)"
+     - title = textContent ?? ocrText ?? filePath
+     - subtitle = 内容类型 + 相对时间
+     - icon = SF Symbol（doc.text/doc.richtext/photo/doc）
+     - action = .copyToClipboard(itemID:)
+
+4. **AppSearchSource.swift — 应用搜索源骨架**
+   - 实现 SearchSource + AppSearchSourceProtocol
+   - search() 返回空数组（US-014 实现完整逻辑）
+   - 定义 AppInfo 结构体和 rebuildIndex/getAppInfo 方法
+
+5. **FileSearchSource.swift — 文件搜索源骨架**
+   - 实现 SearchSource + FileSearchSourceProtocol
+   - search() 返回空数组（US-015 实现完整逻辑）
+   - 定义 setSearchScope/setFileTypes 方法
+
+6. **AppDelegate.swift 集成**
+   - 创建 UnifiedSearchService 实例
+   - 创建 ClipboardSearchSource/AppSearchSource/FileSearchSource 实例
+   - applicationDidFinishLaunching 中注册三个搜索源
+
+7. **ClipboardListViewModel.swift 更新**
+   - searchService 从 SearchService() 改为 ClipboardSearchSource()
+   - 保持 SearchServiceProtocol 接口不变，performSearch 逻辑不受影响
+
+8. **Xcode 项目更新**
+   - 5 个新 .swift 文件添加到 SnapVault.xcodeproj 编译目标
+   - 添加到 SearchEngine PBXGroup
+
+### 修改文件清单
+- SnapVault/Services/SearchEngine/UnifiedSearchTypes.swift（新建：类型定义 + SearchSource 协议）
+- SnapVault/Services/SearchEngine/UnifiedSearchService.swift（新建：统一搜索服务）
+- SnapVault/Services/SearchEngine/ClipboardSearchSource.swift（新建：剪贴板搜索源）
+- SnapVault/Services/SearchEngine/AppSearchSource.swift（新建：应用搜索源骨架）
+- SnapVault/Services/SearchEngine/FileSearchSource.swift（新建：文件搜索源骨架）
+- SnapVault/App/AppDelegate.swift（集成搜索源注册）
+- SnapVault/ViewModels/ClipboardListViewModel.swift（使用 ClipboardSearchSource）
+- SnapVault.xcodeproj/project.pbxproj（添加新文件引用）
+
+### 技术决策记录
+1. ClipboardSearchSource 同时实现 SearchSource 和 SearchServiceProtocol，避免修改 ClipboardListViewModel 的搜索逻辑
+2. UnifiedSearchService 的 ScoreAggregator 使用加权公式而非简单排序，支持未来调整权重
+3. 用户选择频次使用对数缩放，避免频繁选择的结果垄断排名
+4. 单个搜索源失败不影响整体搜索（catch + log），提高鲁棒性
+5. NSLock 用于保护 sources 数组的并发访问（注册发生在启动时，搜索在运行时）
+6. AppSearchSource 和 FileSearchSource 作为空骨架创建，US-014/US-015 将填充完整逻辑
+
+### 留给后续 Agent 的提示
+- US-014（应用搜索）需要实现 AppSearchSource 的完整逻辑：/Applications 和 ~/Applications 扫描、内存索引、前缀/模糊匹配
+- US-015（文件搜索）需要实现 FileSearchSource 的完整逻辑：NSMetadataQuery 封装、搜索范围配置
+- US-016（统一搜索 UI）需要创建 UnifiedSearchViewModel，使用 UnifiedSearchServiceProtocol 进行搜索
+- ClipboardSearchSource 的 SearchService 实例在内部创建，与 ClipboardListViewModel 使用的实例是独立的（各自有自己的 FTS5 查询）
+- 如果需要共享同一个 SearchService 实例，可以在 AppDelegate 中创建并注入

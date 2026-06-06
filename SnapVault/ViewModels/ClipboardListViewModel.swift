@@ -23,7 +23,7 @@ final class ClipboardListViewModel: ObservableObject {
     // MARK: - Private
 
     private let repository = ContentRepository()
-    private let searchService: SearchServiceProtocol = SearchService()
+    private let searchService: SearchServiceProtocol = ClipboardSearchSource()
     private let logger = Logger.ui
     private let pageSize = 50
     private var currentPage = 0

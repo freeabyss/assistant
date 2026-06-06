@@ -31,6 +31,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Auto-update service (Sparkle).
     private let updateService = UpdateService()
 
+    /// Unified search service aggregating multiple search sources.
+    private let unifiedSearchService = UnifiedSearchService()
+
+    /// Clipboard search source (wraps FTS5 + Spotlight search).
+    private let clipboardSearchSource = ClipboardSearchSource()
+
+    /// Application search source (skeleton, full impl in US-014).
+    private let appSearchSource = AppSearchSource()
+
+    /// File search source (skeleton, full impl in US-015).
+    private let fileSearchSource = FileSearchSource()
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         logger.info("SnapVault launching")
 
@@ -56,6 +68,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Register global keyboard shortcut for panel toggle
         registerGlobalShortcuts()
+
+        // Register unified search sources
+        unifiedSearchService.registerSource(clipboardSearchSource)
+        unifiedSearchService.registerSource(appSearchSource)
+        unifiedSearchService.registerSource(fileSearchSource)
+        logger.info("Unified search service initialized with 3 sources")
 
         // Set up Sparkle auto-update (Sparkle handles launch delay + periodic checks internally)
         updateService.setup()
