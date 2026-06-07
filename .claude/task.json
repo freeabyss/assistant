@@ -450,7 +450,7 @@
       "id": "US-025",
       "title": "截图标注编辑器（箭头/矩形/马赛克/文本）",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": [
         "US-024"

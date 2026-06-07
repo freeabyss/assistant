@@ -274,6 +274,27 @@ final class ContentRepository {
         }
     }
 
+    /// Overwrite the image_data blob for a stored screenshot.
+    ///
+    /// Used by the annotation editor to persist the annotated composite
+    /// back into the row.  The FTS5 trigger re-syncs on UPDATE so
+    /// ocr_text remains consistent (caller is expected to clear
+    /// `ocr_text` after calling this, since annotations change the
+    /// visual content and invalidate the previous OCR result).
+    func updateImageData(id: Int64, imageData: Data) throws {
+        guard let dbQueue = dbQueue else {
+            throw RepositoryError.databaseNotReady
+        }
+
+        try dbQueue.write { db in
+            try db.execute(
+                sql: "UPDATE clipboard_items SET image_data = ?, updated_at = ? WHERE id = ?",
+                arguments: [imageData, Date(), id]
+            )
+            logger.debug("Updated image_data for item id=\(id), size=\(imageData.count) bytes")
+        }
+    }
+
     /// Toggle pinned state of an item.
     func togglePin(id: Int64) throws {
         guard let dbQueue = dbQueue else {

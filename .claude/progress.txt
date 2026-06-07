@@ -1846,3 +1846,117 @@ CREATE INDEX idx_clipboard_items_is_favorite ON clipboard_items(is_favorite);
 - **NSPasteboard.tiff vs .png**：当前 Copy 写 tiff（NSImage.tiffRepresentation），因为 NSPasteboard.PasteboardType 内置 `.tiff` 没有 `.png`。tiff 体积较大（无压缩），如果用户复制大图后再粘贴有性能问题，可改为 `setData(imageData, forType: NSPasteboard.PasteboardType("public.png"))`。
 
 - **architecture.md v11 已添加变更记录**，但未新增「关键设计决策」编号 12 —— 本任务的决策点都在 v11 条目里展开，避免决策章节膨胀。如未来类似改动多了，可考虑加 "12. 截图后置工具条设计"。
+
+---
+
+## US-025: 截图标注编辑器（箭头/矩形/马赛克/文本）—— 2026-06-07
+
+### 状态: 完成（BUILD SUCCEEDED, 零 warning/error）
+
+### 实现摘要
+
+US-025 从零构建了完整的截图标注编辑器，替换 US-024 的 Annotate stub，符合 PRD 模块二的箭头/矩形框/马赛克/文本四种标注需求。
+
+### 新建文件（Views/Annotation/）
+
+1. **AnnotationShape.swift**（~200 行）
+   - `enum AnnotationShape`: arrow/rectangle/mosaic/text 四种 case，携带颜色、线宽、字体等渲染参数
+   - `enum AnnotationTool: String, CaseIterable, Identifiable`: 工具选择枚举，提供 displayName + systemImage
+   - `enum AnnotationPalette`: 固定 6 色（红/橙/黄/绿/蓝/黑）+ 默认线宽 4pt（范围 2-8pt）
+   - `enum AnnotationRenderer`: 统一绘制函数集
+     - `drawShapes(_:sourceImage:)`: 遍历 shapes 分发到各 case 绘制
+     - `drawArrow(from:to:color:width:)`: 实线 + 三角形箭头头（30°夹角, 15pt 长），通过单位向量旋转计算两侧顶点
+     - `drawRectangle(rect:color:width:)`: `NSBezierPath(rect:).stroke`
+     - `drawMosaic(rect:intensity:sourceImage:)`: `CIPixellate` 滤镜（scale 默认 8.0），center 对齐 rect 中心，`CIContext.createCGImage` 裁剪到 rect 后用 `CGContext.draw` 合成
+     - `drawText(point:content:color:font:)`: `NSAttributedString.draw(at:)` 渲染
+
+2. **AnnotationCanvas.swift**（~220 行）
+   - `AnnotationCanvasState` (`@MainActor ObservableObject`): 持有 sourceImage + shapes 数组 + draftShape + tool/color/lineWidth + UndoManager
+     - `append(_:)`: 追加 shape 并注册 undo（通过 `undoManager.registerUndo(withTarget:)` 逆操作）
+     - `registerUndoRemove(at:)` / `registerUndoInsert(_:at:)`: 双向 undo 栈
+   - `AnnotationCanvasNSView` (`NSView`): 核心渲染 + 鼠标事件
+     - `draw(_:)`: 先绘制背景图（保持宽高比适配 bounds），再 `CGContext.translateBy + scaleBy` 变换到 image-space 坐标系，调用 `AnnotationRenderer.drawShapes`
+     - `imagePoint(from:)`: view-local → image-space 坐标转换，钳位到图片边界
+     - `mouseDown/Dragged/Up`: 创建 draftShape（实时预览），mouseUp 提交到 state.shapes，拖动距离 < 2pt 视为误触丢弃
+     - `acceptsFirstResponder = true` + `override var undoManager` 暴露 UndoManager 到响应链
+   - `AnnotationCanvasView` (`NSViewRepresentable`): SwiftUI 桥接
+   - `AnnotationFlattener`: 离屏合成（`NSImage.lockFocus` + draw image + draw shapes → TIFF → `NSBitmapImageRep.png`）
+
+3. **AnnotationToolbar.swift**（~160 行）
+   - `AnnotationTopToolbar`: HStack 包含工具 pills（SF Symbol + 文字标签，选中态 accentColor 高亮）、颜色圆点（Circle fill + 选中态蓝色描边）、线宽滑杆（2-8pt step 1）、Undo/Redo 按钮
+   - `AnnotationBottomToolbar`: Cancel / Copy / Save 三按钮（⌘S/⌘C 快捷键）
+   - 子组件：`ToolPill`, `ColorSwatch`, `IconButton` 均含 hover 态交互
+
+4. **AnnotationEditorWindow.swift**（~210 行）
+   - `AnnotationEditorWindow` (`NSWindowController`, `NSWindowDelegate`)
+     - `present()`: 创建 NSWindow（title "Annotate Screenshot", titled+closable+resizable），`AnnotationEditorRootView` 作为 SwiftUI 内容
+     - `computeWindowRect()`: 图片原生尺寸适配，上限为屏幕 80%，chrome 高度预留给工具条
+     - `requestTextInput(at:completion:)`: `NSAlert` + `NSTextField` accessoryView → beginSheetModal
+     - `save()`: flatten → PNG → `ContentRepository.updateImageData(id:imageData:)` 写回 DB + 清空 `ocr_text` → 发 `.clipboardItemSaved` 通知 → `NSSavePanel` 文件保存
+     - `copyToClipboard()`: flatten → 写 `.tiff` + `public.png` 到 `NSPasteboard.general`
+     - `cancel()`: 关闭窗口
+
+### 修改现有文件
+
+5. **ContentRepository.swift**（+18 行）
+   - 新增 `updateImageData(id: Int64, imageData: Data) throws`: `UPDATE clipboard_items SET image_data = ?, updated_at = ? WHERE id = ?`，用于标注编辑器保存合成图
+
+6. **ScreenshotToolbarController.swift**（修改 ~45 行）
+   - Annotate button: 移除 `disabled: true` + `disabledHint: "Coming in US-025"`，改为直接启用
+   - `case .annotate`: 替换 stub `showTransientToast` 为 `performAnnotate(itemId:imageData:)` + dismiss
+   - 新增 `performAnnotate(itemId:imageData:)`: `NSImage(data:)` → `AnnotationEditorWindow(image:itemId:)` → `.present()`
+   - 移除 `showTransientToast` 方法（US-024 的 Annotate 占位，已无用）
+
+7. **SnapVault.xcodeproj/project.pbxproj**
+   - 新增 4 个 PBXBuildFile（34-37）
+   - 新增 4 个 PBXFileReference（34-37）
+   - 新增 PBXGroup `A1000300000000000000001E`（Annotation），children 为 4 个文件，`path = Annotation`
+   - Views group children 增加 `A1000300000000000000001E /* Annotation */`
+   - Sources build phase 增加 4 条
+
+8. **doc/architecture.md**
+   - 新增 v12 变更记录
+
+### 关键设计决策
+
+1. **坐标系统：image-space（bottom-left, 1pt=1px）**
+   - 所有 shape 坐标存储在图片像素空间，而非 view 坐标。这样编辑器窗口缩放不影响标注精度，且 PNG 导出时直接 1:1 渲染，WYSIWYG。
+   - Canvas 的 `draw(_:)` 通过 `CGContext.translateBy(x:y:)` + `scaleBy(x:y:)` 把 view 坐标系临时变换到 image-space，绘制完 restore。
+
+2. **Arrow 头部计算**
+   - 从 end 点出发，将 (start-end) 单位向量旋转 ±30°，缩放 15pt，得到两个三角形顶点。用 `NSBezierPath.fill()` 填充三角形，保证任意方向箭头美观。
+
+3. **Mosaic 通过 CIPixellate 实现**
+   - 不对整个图片做像素化（性能浪费），而是裁剪原图的 CIImage 到用户选择的 rect，对子区域跑 `CIPixellate`，`CIContext.createCGImage(from:from:)` 只输出 rect 范围，再用 `CGContext.draw` 画回原位置。这样成本与 rect 面积成正比。
+   - 无源图时降级为灰色半透明填充块，保证交互反馈不丢失。
+
+4. **Text 工具简化方案**
+   - 采用任务提示的「最简方案」：点击 → `NSAlert.beginSheetModal` + NSTextField accessoryView → 用户输入 → 确认后以 `NSAttributedString.draw(at:)` 渲染。18pt semibold 系统字体。
+   - 避免在 canvas 内嵌 NSTextField 的复杂交互（焦点管理、text selection、撤销栈合并）。
+
+5. **Undo/Redo 策略**
+   - `AnnotationCanvasState` 持有 `UndoManager`，每次 `append(shape)` 注册 undo 操作（remove at index）和 redo 操作（insert at index）。
+   - NSView 通过 `override var undoManager` 将 UndoManager 暴露到响应链，macOS 自动连接 Edit 菜单 → ⌘Z/⌘⇧Z。
+   - `registerUndo(withTarget:)` 内必须用 `Task { @MainActor in ... }` 包裹，因为 UndoManager 的回调可能在非主线程触发。
+
+6. **保存策略**
+   - Save 按钮做两件事：(a) 离屏合成 + PNG 写回 DB（`ContentRepository.updateImageData`），替换原始截图 BLOB；(b) 清空 `ocr_text`（标注改变了视觉内容，原 OCR 结果已无效）—— 用户下次点 OCR 按钮或下次截图自动 OCR 时会重新识别。
+   - 同时弹 `NSSavePanel` 让用户选文件保存路径。
+
+7. **Copy 双格式**
+   - 同时写 `.tiff`（NSImage.tiffRepresentation）和 `public.png`（NSBitmapImageRep.png）到 NSPasteboard，最大化兼容性（Pages/Keynote 取 tiff，Slack/浏览器取 png）。
+
+8. **窗口尺寸**
+   - 初始窗口 = 图片原生尺寸 + 90pt chrome 高度，但宽/高上限为屏幕 80%。用户可手动 resize 窗口，canvas 自动缩放保持宽高比。
+
+9. **与 US-024 集成**
+   - `ScreenshotToolbarController.handle(action:)` 中 `case .annotate` 调用 `performAnnotate` → 创建 `AnnotationEditorWindow(image: NSImage(data: imageData)!, itemId: itemId)` → `editor.present()`。
+   - 移除了 US-024 的占位逻辑（`showTransientToast`），Annotate 按钮从 disabled 改为 enabled。
+
+### 留给后续 Agent 的提示
+- **性能**：CIPixellate 处理超大面积（如 4K 截图全屏）时可能有 200-500ms 延迟（render 在 drawRect 里）。后续可加后台预渲染缓存（`NSCache<rect, CGImage>`）或延迟 mosaic（drawRect 只画灰色占位，mouseUp 异步生成 CGImage 后 setNeedsDisplay）。
+- **文本工具增强**：当前 NSAlert 方案简单但交互割裂。后续可做 inline NSTextField overlay（mouseDown 创建 NSTextField → 编辑完成后移除 → 提交 shape），但需处理焦点管理、UndoManager 协同等。
+- **多选/编辑现有 shape**：当前不支持点击已绘 shape 选中后拖动或删除。后续可加 hit-testing（每个 shape 计算 bounding rect）和选中态高亮（蓝色虚线框 + 手柄）。
+- **马赛克强度**：当前固定 CIPixellate scale=8.0。后续可在工具栏加滑杆让用户调节，per-shape 存储 intensity。
+- **颜色透明度**：当前颜色为纯色。后续可加 alpha 滑杆（如矩形半透明填充）。
+- **缩放/平移**：当前 canvas 不缩放不拖拽。后续可加 `scrollWheel` 缩放（magnification）+ `mouseDown` with Space 键平移（`NSCursor.openHand`）。

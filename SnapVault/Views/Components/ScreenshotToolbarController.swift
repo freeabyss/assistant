@@ -189,11 +189,8 @@ final class ScreenshotToolbarController {
             performSave(imageData: imageData)
             dismiss(reason: .action)
         case .annotate:
-            // US-025 placeholder. Show a Toast-style banner inside the OCR window
-            // would require a separate channel; for now log + dismiss with a
-            // hint, keeping the user's flow unblocked.
-            logger.info("Annotate clicked — implementation lands in US-025")
-            showTransientToast(message: "Annotation coming in US-025")
+            performAnnotate(itemId: itemId, imageData: imageData)
+            dismiss(reason: .action)
         case .discard:
             performDiscard(itemId: itemId)
             dismiss(reason: .discard)
@@ -335,30 +332,20 @@ final class ScreenshotToolbarController {
 
     // MARK: - Transient Toast (Annotate stub)
 
-    private func showTransientToast(message: String) {
-        guard let panel = panel else { return }
-        let label = NSTextField(labelWithString: message)
-        label.font = NSFont.systemFont(ofSize: 11, weight: .medium)
-        label.textColor = .white
-        label.alignment = .center
-        label.wantsLayer = true
-        label.layer?.backgroundColor = NSColor.black.withAlphaComponent(0.78).cgColor
-        label.layer?.cornerRadius = 6
-        label.drawsBackground = false
-        label.isBordered = false
+    // Removed: showTransientToast was the US-024 placeholder for Annotate.
+    // US-025 replaced it with performAnnotate below.
 
-        let size = label.intrinsicContentSize
-        let pad: CGFloat = 16
-        label.frame = NSRect(
-            x: (panel.frame.width - size.width - pad) / 2,
-            y: -28,
-            width: size.width + pad,
-            height: size.height + 8
-        )
-        panel.contentView?.addSubview(label)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) {
-            label.removeFromSuperview()
+    // MARK: - Annotation Editor
+
+    /// Open the full annotation editor window for this screenshot.
+    private func performAnnotate(itemId: Int64, imageData: Data) {
+        guard let nsImage = NSImage(data: imageData) else {
+            logger.error("Cannot open annotation editor: invalid image data")
+            return
         }
+        let editor = AnnotationEditorWindow(image: nsImage, itemId: itemId)
+        editor.present()
+        logger.info("Annotation editor opened for item id=\(itemId)")
     }
 }
 
@@ -516,13 +503,9 @@ struct ScreenshotToolbarView: View {
                 label: "Save"
             ) { onAction(.save) }
 
-            // Annotate is a stub placeholder until US-025 lands. Show it
-            // disabled to set expectations rather than hiding it entirely.
             ToolbarButton(
                 systemName: "pencil",
-                label: "Annotate",
-                disabled: true,
-                disabledHint: "Coming in US-025"
+                label: "Annotate"
             ) { onAction(.annotate) }
 
             ToolbarButton(

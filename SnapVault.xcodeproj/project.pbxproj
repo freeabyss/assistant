@@ -55,6 +55,10 @@
 		A10001000000000000000031 /* RecentContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000031; };
 		A10001000000000000000032 /* RecentContentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000032; };
 		A10001000000000000000033 /* ScreenshotToolbarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000033; };
+		A10001000000000000000034 /* AnnotationShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000034; };
+		A10001000000000000000035 /* AnnotationCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000035; };
+		A10001000000000000000036 /* AnnotationToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000036; };
+		A10001000000000000000037 /* AnnotationEditorWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000037; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -109,6 +113,10 @@
 		A10000000000000000000031 /* RecentContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentContentView.swift; sourceTree = "<group>"; };
 		A10000000000000000000032 /* RecentContentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentContentViewModel.swift; sourceTree = "<group>"; };
 		A10000000000000000000033 /* ScreenshotToolbarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotToolbarController.swift; sourceTree = "<group>"; };
+		A10000000000000000000034 /* AnnotationShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationShape.swift; sourceTree = "<group>"; };
+		A10000000000000000000035 /* AnnotationCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationCanvas.swift; sourceTree = "<group>"; };
+		A10000000000000000000036 /* AnnotationToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationToolbar.swift; sourceTree = "<group>"; };
+		A10000000000000000000037 /* AnnotationEditorWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationEditorWindow.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -168,6 +176,7 @@
 				A10003000000000000000018 /* Components */,
 				A1000300000000000000001C /* SearchResults */,
 				A1000300000000000000001D /* RecentContent */,
+				A1000300000000000000001E /* Annotation */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -403,6 +412,17 @@
 			path = RecentContent;
 			sourceTree = "<group>";
 		};
+		A1000300000000000000001E /* Annotation */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000034 /* AnnotationShape.swift */,
+				A10000000000000000000035 /* AnnotationCanvas.swift */,
+				A10000000000000000000036 /* AnnotationToolbar.swift */,
+				A10000000000000000000037 /* AnnotationEditorWindow.swift */,
+			);
+			path = Annotation;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -529,6 +549,10 @@
 				A10001000000000000000031 /* RecentContentView.swift in Sources */,
 				A10001000000000000000032 /* RecentContentViewModel.swift in Sources */,
 				A10001000000000000000033 /* ScreenshotToolbarController.swift in Sources */,
+				A10001000000000000000034 /* AnnotationShape.swift in Sources */,
+				A10001000000000000000035 /* AnnotationCanvas.swift in Sources */,
+				A10001000000000000000036 /* AnnotationToolbar.swift in Sources */,
+				A10001000000000000000037 /* AnnotationEditorWindow.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
