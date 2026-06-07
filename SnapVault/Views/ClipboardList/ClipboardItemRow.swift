@@ -43,7 +43,14 @@ struct ClipboardItemRow: View {
                 }
             }
 
-            // Pin indicator (right-aligned)
+            // Favorite indicator (yellow star) — independent from pin, may co-exist
+            if item.isFavorite {
+                Image(systemName: "star.fill")
+                    .font(.system(size: 10))
+                    .foregroundColor(.yellow)
+            }
+
+            // Pin indicator (right-aligned) — blue accent
             if item.isPinned {
                 Image(systemName: "pin.fill")
                     .font(.system(size: 10))

@@ -118,16 +118,42 @@ final class ClipboardListViewModel: ObservableObject {
                 items[index].isPinned.toggle()
                 items[index].updatedAt = Date()
             }
-            // Re-sort: pinned first, then by created_at descending
-            items.sort { lhs, rhs in
-                if lhs.isPinned != rhs.isPinned {
-                    return lhs.isPinned && !rhs.isPinned
-                }
-                return lhs.createdAt > rhs.createdAt
-            }
+            resortItems()
             logger.debug("Toggled pin for item id=\(id)")
         } catch {
             logger.error("Failed to toggle pin: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    /// Toggle favorite state of an item.
+    /// Favorite is independent from pin; an item can be both pinned and favorited.
+    func toggleFavorite(_ item: ClipboardItem) async {
+        guard let id = item.id else { return }
+        do {
+            let newState = try repository.toggleFavorite(id: id)
+            // Update local state
+            if let index = items.firstIndex(where: { $0.id == id }) {
+                items[index].isFavorite = newState
+                items[index].updatedAt = Date()
+            }
+            resortItems()
+            logger.debug("Toggled favorite for item id=\(id), isFavorite=\(newState)")
+        } catch {
+            logger.error("Failed to toggle favorite: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    /// Re-sort items in the local list using the same priority used by the repository:
+    /// pinned first, then favorited, then by created_at descending.
+    private func resortItems() {
+        items.sort { lhs, rhs in
+            if lhs.isPinned != rhs.isPinned {
+                return lhs.isPinned && !rhs.isPinned
+            }
+            if lhs.isFavorite != rhs.isFavorite {
+                return lhs.isFavorite && !rhs.isFavorite
+            }
+            return lhs.createdAt > rhs.createdAt
         }
     }
 

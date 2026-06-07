@@ -62,7 +62,8 @@ final class ContentRepository {
         page: Int = 0,
         pageSize: Int = 50,
         contentType: ContentType? = nil,
-        pinnedOnly: Bool = false
+        pinnedOnly: Bool = false,
+        favoritesOnly: Bool = false
     ) throws -> [ClipboardItem] {
         guard let dbQueue = dbQueue else {
             throw RepositoryError.databaseNotReady
@@ -79,12 +80,31 @@ final class ContentRepository {
                 request = request.filter(Column("is_pinned") == 1)
             }
 
-            // Pinned items first, then by created_at descending
+            if favoritesOnly {
+                request = request.filter(Column("is_favorite") == 1)
+            }
+
+            // Pinned items first, then favorites, then by created_at descending
             request = request
-                .order(Column("is_pinned").desc, Column("created_at").desc)
+                .order(Column("is_pinned").desc, Column("is_favorite").desc, Column("created_at").desc)
                 .limit(pageSize, offset: page * pageSize)
 
             return try request.fetchAll(db)
+        }
+    }
+
+    /// Fetch only favorited items, ordered by pin then created_at.
+    func fetchFavorites(limit: Int = 50, offset: Int = 0) throws -> [ClipboardItem] {
+        guard let dbQueue = dbQueue else {
+            throw RepositoryError.databaseNotReady
+        }
+
+        return try dbQueue.read { db in
+            try ClipboardItem
+                .filter(Column("is_favorite") == 1)
+                .order(Column("is_pinned").desc, Column("created_at").desc)
+                .limit(limit, offset: offset)
+                .fetchAll(db)
         }
     }
 
@@ -188,7 +208,7 @@ final class ContentRepository {
                 FROM clipboard_items_fts
                 JOIN clipboard_items ci ON ci.id = clipboard_items_fts.rowid
                 WHERE clipboard_items_fts MATCH ?
-                ORDER BY ci.is_pinned DESC, relevance_score DESC, ci.created_at DESC
+                ORDER BY ci.is_pinned DESC, ci.is_favorite DESC, relevance_score DESC, ci.created_at DESC
                 LIMIT ?
                 """
 
@@ -271,6 +291,27 @@ final class ContentRepository {
         }
     }
 
+    /// Toggle favorite state of an item. Returns the new state.
+    /// Favorite is independent from pin: items can be pinned, favorited, both, or neither.
+    /// Favorited items are protected from automatic cleanup (same as pinned).
+    @discardableResult
+    func toggleFavorite(id: Int64) throws -> Bool {
+        guard let dbQueue = dbQueue else {
+            throw RepositoryError.databaseNotReady
+        }
+
+        return try dbQueue.write { db in
+            guard var item = try ClipboardItem.fetchOne(db, id: id) else {
+                throw RepositoryError.itemNotFound(id)
+            }
+            item.isFavorite.toggle()
+            item.updatedAt = Date()
+            try item.update(db)
+            logger.debug("Toggled favorite for item id=\(id), isFavorite=\(item.isFavorite)")
+            return item.isFavorite
+        }
+    }
+
     // MARK: - Delete
 
     /// Delete a single item by id.
@@ -301,7 +342,8 @@ final class ContentRepository {
 
     // MARK: - Cleanup
 
-    /// Delete expired non-pinned items. Returns count of deleted items.
+    /// Delete expired non-pinned non-favorited items. Returns count of deleted items.
+    /// Both pinned and favorited items are protected from automatic cleanup.
     func cleanupExpired(retentionDays: Int) throws -> Int {
         guard let dbQueue = dbQueue else {
             throw RepositoryError.databaseNotReady
@@ -310,10 +352,11 @@ final class ContentRepository {
         return try dbQueue.write { db in
             let cutoffDate = Calendar.current.date(byAdding: .day, value: -retentionDays, to: Date())!
 
-            // Delete expired non-pinned items (pinned items are protected)
+            // Delete expired items, but protect both pinned and favorited
             let deleted = try ClipboardItem
                 .filter(Column("created_at") < cutoffDate)
                 .filter(Column("is_pinned") == 0)
+                .filter(Column("is_favorite") == 0)
                 .deleteAll(db)
 
             logger.info("Cleanup: deleted \(deleted) expired items (retention=\(retentionDays) days)")
@@ -321,8 +364,8 @@ final class ContentRepository {
         }
     }
 
-    /// Delete oldest non-pinned items until database size is under the limit.
-    /// Returns count of deleted items.
+    /// Delete oldest non-pinned non-favorited items until database size is under the limit.
+    /// Returns count of deleted items. Both pinned and favorited items are protected.
     func cleanupStorage(maxStorageMB: Int) throws -> Int {
         guard let dbQueue = dbQueue else {
             throw RepositoryError.databaseNotReady
@@ -345,10 +388,10 @@ final class ContentRepository {
                 break
             }
 
-            // Delete a batch of oldest non-pinned items
+            // Delete a batch of oldest items that are neither pinned nor favorited
             let deleted = try dbQueue.write { db -> Int in
                 let oldestIDs = try Int64.fetchAll(db,
-                    sql: "SELECT id FROM clipboard_items WHERE is_pinned = 0 ORDER BY created_at ASC LIMIT ?",
+                    sql: "SELECT id FROM clipboard_items WHERE is_pinned = 0 AND is_favorite = 0 ORDER BY created_at ASC LIMIT ?",
                     arguments: [batchSize]
                 )
 
@@ -364,7 +407,7 @@ final class ContentRepository {
 
             // If we couldn't delete anything, break to avoid infinite loop
             if deleted == 0 {
-                logger.warning("Storage cleanup: no more non-pinned items to delete, but size still exceeds limit")
+                logger.warning("Storage cleanup: no more unprotected items to delete, but size still exceeds limit")
                 break
             }
         }
@@ -428,8 +471,8 @@ final class ContentRepository {
         }
     }
 
-    /// Delete all non-pinned clipboard items (clear history).
-    /// Returns the count of deleted items.
+    /// Delete all non-pinned non-favorited clipboard items (clear history).
+    /// Returns the count of deleted items. Pinned and favorited items are preserved.
     func clearAllHistory() throws -> Int {
         guard let dbQueue = dbQueue else {
             throw RepositoryError.databaseNotReady
@@ -438,8 +481,9 @@ final class ContentRepository {
         return try dbQueue.write { db in
             let deleted = try ClipboardItem
                 .filter(Column("is_pinned") == 0)
+                .filter(Column("is_favorite") == 0)
                 .deleteAll(db)
-            logger.info("Cleared history: deleted \(deleted) non-pinned items")
+            logger.info("Cleared history: deleted \(deleted) unprotected items")
             return deleted
         }
     }

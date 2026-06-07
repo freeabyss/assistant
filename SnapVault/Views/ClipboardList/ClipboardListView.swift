@@ -66,6 +66,19 @@ struct ClipboardListView: View {
                             Label("Delete", systemImage: "trash")
                         }
                     }
+                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                        Button {
+                            Task {
+                                await viewModel.toggleFavorite(item)
+                            }
+                        } label: {
+                            Label(
+                                item.isFavorite ? "Unfavorite" : "Favorite",
+                                systemImage: item.isFavorite ? "star.slash" : "star"
+                            )
+                        }
+                        .tint(.yellow)
+                    }
                     .contextMenu {
                         itemContextMenu(item)
                     }
@@ -143,6 +156,17 @@ struct ClipboardListView: View {
             Label(
                 item.isPinned ? "Unpin" : "Pin",
                 systemImage: item.isPinned ? "pin.slash" : "pin"
+            )
+        }
+
+        Button(action: {
+            Task {
+                await viewModel.toggleFavorite(item)
+            }
+        }) {
+            Label(
+                item.isFavorite ? "Unfavorite" : "Favorite",
+                systemImage: item.isFavorite ? "star.slash" : "star"
             )
         }
 

@@ -105,7 +105,7 @@ final class ExportService {
 
     /// Export clipboard history to a CSV file at the specified URL.
     ///
-    /// Fields: id, content_type, text_content, ocr_text, is_pinned, created_at
+    /// Fields: id, content_type, text_content, ocr_text, is_pinned, is_favorite, created_at
     /// Uses UTF-8 with BOM for Excel compatibility with Chinese characters.
     /// Properly escapes commas, newlines, and quotes in field values.
     ///
@@ -136,7 +136,7 @@ final class ExportService {
         csv.append("\u{FEFF}")
 
         // Header row
-        csv.append("id,content_type,text_content,ocr_text,is_pinned,created_at\n")
+        csv.append("id,content_type,text_content,ocr_text,is_pinned,is_favorite,created_at\n")
 
         // Data rows
         let dateFormatter = ISO8601DateFormatter()
@@ -146,9 +146,10 @@ final class ExportService {
             let textContent = escapeCSVField(item.textContent ?? "")
             let ocrText = escapeCSVField(item.ocrText ?? "")
             let isPinned = item.isPinned ? "1" : "0"
+            let isFavorite = item.isFavorite ? "1" : "0"
             let createdAt = dateFormatter.string(from: item.createdAt)
 
-            csv.append("\(id),\(contentType),\(textContent),\(ocrText),\(isPinned),\(createdAt)\n")
+            csv.append("\(id),\(contentType),\(textContent),\(ocrText),\(isPinned),\(isFavorite),\(createdAt)\n")
         }
 
         guard let data = csv.data(using: .utf8) else {
@@ -318,6 +319,8 @@ struct ExportWrapper: Codable {
 /// Serializable representation of a ClipboardItem for export/import.
 ///
 /// Handles Base64 encoding for image data and omits internal GRDB fields.
+/// Backward-compatible: `isFavorite` was added in v2; legacy exports without
+/// the field decode to `false` via custom `init(from:)`.
 struct ExportItem: Codable {
     let contentType: ContentType
     let textContent: String?
@@ -327,8 +330,23 @@ struct ExportItem: Codable {
     let ocrText: String?
     let contentHash: String
     let isPinned: Bool
+    let isFavorite: Bool
     let createdAt: Date
     let updatedAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case contentType
+        case textContent
+        case rtfContent
+        case imageData
+        case filePath
+        case ocrText
+        case contentHash
+        case isPinned
+        case isFavorite
+        case createdAt
+        case updatedAt
+    }
 
     /// Create from a ClipboardItem, encoding image data as Base64.
     init(from item: ClipboardItem) {
@@ -340,8 +358,25 @@ struct ExportItem: Codable {
         self.ocrText = item.ocrText
         self.contentHash = item.contentHash
         self.isPinned = item.isPinned
+        self.isFavorite = item.isFavorite
         self.createdAt = item.createdAt
         self.updatedAt = item.updatedAt
+    }
+
+    /// Custom decoder tolerating legacy JSON exports without `isFavorite`.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.contentType = try c.decode(ContentType.self, forKey: .contentType)
+        self.textContent = try c.decodeIfPresent(String.self, forKey: .textContent)
+        self.rtfContent = try c.decodeIfPresent(String.self, forKey: .rtfContent)
+        self.imageData = try c.decodeIfPresent(String.self, forKey: .imageData)
+        self.filePath = try c.decodeIfPresent(String.self, forKey: .filePath)
+        self.ocrText = try c.decodeIfPresent(String.self, forKey: .ocrText)
+        self.contentHash = try c.decode(String.self, forKey: .contentHash)
+        self.isPinned = try c.decodeIfPresent(Bool.self, forKey: .isPinned) ?? false
+        self.isFavorite = try c.decodeIfPresent(Bool.self, forKey: .isFavorite) ?? false
+        self.createdAt = try c.decode(Date.self, forKey: .createdAt)
+        self.updatedAt = try c.decode(Date.self, forKey: .updatedAt)
     }
 
     /// Convert back to a ClipboardItem, decoding Base64 image data.
@@ -362,6 +397,7 @@ struct ExportItem: Codable {
             ocrText: ocrText,
             contentHash: contentHash,
             isPinned: isPinned,
+            isFavorite: isFavorite,
             createdAt: createdAt,
             updatedAt: updatedAt
         )

@@ -198,10 +198,13 @@ final class SearchService: SearchServiceProtocol {
             }
         }
 
-        // Sort: pinned first, then by score descending, then by created_at descending
+        // Sort: pinned first, then favorited, then by score descending, then by created_at descending
         merged.sort { lhs, rhs in
             if lhs.item.isPinned != rhs.item.isPinned {
                 return lhs.item.isPinned
+            }
+            if lhs.item.isFavorite != rhs.item.isFavorite {
+                return lhs.item.isFavorite
             }
             if lhs.score != rhs.score {
                 return lhs.score > rhs.score

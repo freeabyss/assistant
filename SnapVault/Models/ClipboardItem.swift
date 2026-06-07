@@ -43,6 +43,7 @@ struct ClipboardItem: Identifiable, Codable, FetchableRecord, MutablePersistable
     var ocrText: String?
     var contentHash: String
     var isPinned: Bool
+    var isFavorite: Bool
     var createdAt: Date
     var updatedAt: Date
 
@@ -58,6 +59,7 @@ struct ClipboardItem: Identifiable, Codable, FetchableRecord, MutablePersistable
         case ocrText = "ocr_text"
         case contentHash = "content_hash"
         case isPinned = "is_pinned"
+        case isFavorite = "is_favorite"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
     }
@@ -66,6 +68,26 @@ struct ClipboardItem: Identifiable, Codable, FetchableRecord, MutablePersistable
 
     mutating func didInsert(_ inserted: InsertionSuccess) {
         id = inserted.rowID
+    }
+
+    // MARK: - Codable (backward-compatible decoding)
+
+    /// Custom decoder that tolerates legacy JSON exports missing `is_favorite`.
+    /// Older export files (US-011 era) don't have the field; default to false.
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try container.decodeIfPresent(Int64.self, forKey: .id)
+        self.contentType = try container.decode(ContentType.self, forKey: .contentType)
+        self.textContent = try container.decodeIfPresent(String.self, forKey: .textContent)
+        self.rtfContent = try container.decodeIfPresent(String.self, forKey: .rtfContent)
+        self.imageData = try container.decodeIfPresent(Data.self, forKey: .imageData)
+        self.filePath = try container.decodeIfPresent(String.self, forKey: .filePath)
+        self.ocrText = try container.decodeIfPresent(String.self, forKey: .ocrText)
+        self.contentHash = try container.decode(String.self, forKey: .contentHash)
+        self.isPinned = try container.decodeIfPresent(Bool.self, forKey: .isPinned) ?? false
+        self.isFavorite = try container.decodeIfPresent(Bool.self, forKey: .isFavorite) ?? false
+        self.createdAt = try container.decode(Date.self, forKey: .createdAt)
+        self.updatedAt = try container.decode(Date.self, forKey: .updatedAt)
     }
 
     // MARK: - Convenience Initializer
@@ -80,6 +102,7 @@ struct ClipboardItem: Identifiable, Codable, FetchableRecord, MutablePersistable
         ocrText: String? = nil,
         contentHash: String,
         isPinned: Bool = false,
+        isFavorite: Bool = false,
         createdAt: Date = Date(),
         updatedAt: Date = Date()
     ) {
@@ -92,6 +115,7 @@ struct ClipboardItem: Identifiable, Codable, FetchableRecord, MutablePersistable
         self.ocrText = ocrText
         self.contentHash = contentHash
         self.isPinned = isPinned
+        self.isFavorite = isFavorite
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }

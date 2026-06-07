@@ -147,6 +147,21 @@ final class DatabaseManager {
             }
         }
 
+        // v2: Favorites (US-021)
+        // Adds an `is_favorite` column independent of `is_pinned`.
+        // Pin and favorite are two orthogonal flags: pin affects list order (top of list),
+        // favorite is a user-curated bookmark. Both protect items from cleanup.
+        migrator.registerMigration("v2_favorites") { db in
+            try db.alter(table: "clipboard_items") { t in
+                t.add(column: "is_favorite", .integer).notNull().defaults(to: 0)
+            }
+            try db.create(
+                index: "idx_clipboard_items_is_favorite",
+                on: "clipboard_items",
+                columns: ["is_favorite"]
+            )
+        }
+
         return migrator
     }
 }

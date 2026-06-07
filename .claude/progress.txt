@@ -1445,3 +1445,92 @@
 - 货币 rates 当前硬编码常量。如要做实时汇率，建议新增 `CurrencyRateService` 单独刷新（避免污染 UnitConverterSource 的"纯函数"性质），UnitConverterSource 只读最新快照。
 - typePriority 0.95 是初步设定；如发现 UnitConverter 在 Apps 较多场景被压制，可上调到 1.0；目前置策略：calculator/application 严格置顶，unitConversion 紧随。
 - 温度规则 `°c`/`°f` 已支持；如未来发现用户输入 `100℃`（单字符）需求，需要在正则字符集补 `℃℉` 并在 temperatureUnit 中加分支。
+
+## 2026-06-07 - US-021 收藏功能（与置顶区分）
+
+### 完成内容
+1. **DatabaseManager v2 migration**
+   - 新注册 `migrator.registerMigration("v2_favorites")`：
+     * `ALTER TABLE clipboard_items ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0`
+     * `CREATE INDEX idx_clipboard_items_is_favorite ON clipboard_items(is_favorite)`
+   - v1 块完全保留未改动，GRDB migrator 幂等增量执行，旧用户升级时只跑 v2_favorites。
+
+2. **ClipboardItem 模型**
+   - 新增 `var isFavorite: Bool` 属性 + `CodingKeys.isFavorite = "is_favorite"`
+   - 便利初始化 `init(...)` 新增 `isFavorite: Bool = false` 参数（在 isPinned 之后、createdAt 之前），所有现有调用点因默认值无需改动。
+   - 新增自定义 `init(from decoder:)` 使用 `decodeIfPresent` + `?? false` 模式，让 GRDB 行解码和 JSON 解码都对缺失字段宽容（GRDB 行因 v2 migration 总有该列，JSON 主要为旧导出兼容）。
+
+3. **ContentRepository**
+   - 新增 `toggleFavorite(id:) -> Bool`（@discardableResult，返回新状态，复用 togglePin 的 fetchOne+update 范式）
+   - 新增 `fetchFavorites(limit:offset:) -> [ClipboardItem]`：filter is_favorite=1，order by is_pinned DESC, created_at DESC
+   - `fetchHistory` 扩展 `favoritesOnly: Bool = false` 参数，order 升级为 `is_pinned DESC, is_favorite DESC, created_at DESC`
+   - `cleanupExpired` 增加 `.filter(Column("is_favorite") == 0)` —— 收藏受保护，与 pin 并列
+   - `cleanupStorage` 的原生 SQL 升级为 `WHERE is_pinned = 0 AND is_favorite = 0`
+   - `clearAllHistory` 同样增加 favorite 保护，确保用户手动「清空历史」也不会丢失收藏
+   - `searchStructured` FTS5 ORDER 升级为 `ci.is_pinned DESC, ci.is_favorite DESC, relevance_score DESC, ci.created_at DESC`（pin 严格优先于 favorite）
+
+4. **SearchService**
+   - `mergeResults` 排序新增 isFavorite 层（pin > favorite > score > createdAt），保证 FTS5+Spotlight 合并结果与 Repository 一致。
+
+5. **ClipboardListViewModel**
+   - 新增 `func toggleFavorite(_ item:) async`：调用 repository.toggleFavorite，本地 items 更新 isFavorite 后调用 resortItems
+   - 抽出 `private func resortItems()` 统一 pin > favorite > createdAt 三段优先级，togglePin 也复用，避免两份重复 sort 代码漂移
+
+6. **视图**
+   - `ClipboardItemRow.swift`：在 pin.fill（蓝色，旋转 45°）之前新增 `Image(systemName: "star.fill").foregroundColor(.yellow)`（10pt 同尺寸）。两个指示器可同时显示（既置顶又收藏 → 黄星 + 蓝针）。
+   - `ClipboardListView.swift`：
+     * 右键菜单在 Pin/Unpin 之后追加 Favorite/Unfavorite（icon: star / star.slash）
+     * 新增 `.swipeActions(edge: .leading)`，左滑出现黄色 Favorite/Unfavorite 按钮（与右滑 Delete 并列，互不干扰）
+
+7. **ExportService（JSON / CSV）**
+   - `ExportItem` 新增 `let isFavorite: Bool` 字段，显式 CodingKeys 包含 isFavorite
+   - `ExportItem.init(from:)` 自定义实现使用 `decodeIfPresent(...) ?? false`，旧版 JSON 缺该字段时默认 false（向前兼容 US-011 导出文件）
+   - `init(from item:)` 复制 isFavorite；`toClipboardItem()` 透传 isFavorite
+   - CSV 表头与每行新增 is_favorite 列（紧跟 is_pinned 之后）
+
+8. **测试 SnapVaultTests/DatabaseManagerTests.swift**
+   - 新增 4 个测试：
+     * `testClipboardItemIsFavoriteDefault`：默认 false，可设置 true，不影响 isPinned
+     * `testPinAndFavoriteAreIndependent`：四种组合切换，断言两个字段正交
+     * `testExportItemPreservesIsFavorite`：ExportItem JSON encode/decode round-trip
+     * `testExportItemBackwardCompatibleDecoding`：模拟旧版 JSON（无 isFavorite 字段）解码为 false
+
+9. **架构文档 doc/architecture.md**
+   - 变更记录追加 v8（US-021）条目，描述 v2_favorites migration、ExportItem 兼容策略、cleanup 保护、视图新图标与 swipe action、排序优先级 pin > favorite > created_at。
+
+### 修改文件清单
+- SnapVault/Database/DatabaseManager.swift（新增 v2_favorites migration，v1 保持不变）
+- SnapVault/Models/ClipboardItem.swift（isFavorite 属性 + CodingKeys + init + 自定义 init(from:)）
+- SnapVault/Database/Repositories/ContentRepository.swift（toggleFavorite/fetchFavorites + cleanup/search 加 is_favorite=0 条件 + ORDER 加 is_favorite DESC）
+- SnapVault/Services/SearchEngine/SearchService.swift（mergeResults 排序加 isFavorite 层）
+- SnapVault/ViewModels/ClipboardListViewModel.swift（toggleFavorite + resortItems 重构）
+- SnapVault/Views/ClipboardList/ClipboardListView.swift（contextMenu + swipeActions leading edge）
+- SnapVault/Views/ClipboardList/ClipboardItemRow.swift（star.fill 黄色图标）
+- SnapVault/Services/ExportService/ExportService.swift（ExportItem.isFavorite + 自定义 init(from:) + CSV 新列）
+- SnapVaultTests/DatabaseManagerTests.swift（4 个新测试）
+- doc/architecture.md（v8 变更日志）
+- .claude/task.json（US-021 passes=true）
+- .claude/progress.txt（本条记录）
+
+### Migration SQL（v2_favorites）
+```sql
+ALTER TABLE clipboard_items ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0;
+CREATE INDEX idx_clipboard_items_is_favorite ON clipboard_items(is_favorite);
+```
+
+### 关键设计决策
+1. **pin > favorite 而非 favorite > pin**：pin 是「我现在常用」的强信号（影响列表顶部布局），favorite 是「我以后想找」的存档行为。两层都允许时 pin 先呈现，符合 PRD「置顶在顶部，收藏作为长期保护」的直觉。
+2. **clearAllHistory 也保护 favorite**：原实现只保护 pin。考虑到用户「清空历史」往往是为了腾空间或隐私，但收藏属于主动 curation，不应被一键清空误伤。与 cleanupExpired/cleanupStorage 保持一致。
+3. **自定义 `init(from:)` 而非 `@DecodableFallback` / 默认值属性**：Swift Codable 没有内置「字段缺失时使用属性默认值」的机制（5.10 之前需手写）。手写 init 一次性解决 ClipboardItem 与 ExportItem 两处兼容问题，代价低、行为可控。
+4. **resortItems 抽出**：原 togglePin 内联 sort 代码，新增 toggleFavorite 后若各写一份很容易漂移（pin 改了 favorite 没改）。抽出私有方法保证两个 toggle 共享同一排序定义。
+5. **swipeActions leading vs trailing**：trailing 已被 Delete 占用（destructive）。Favorite 是「奖励性」操作，放 leading（黄色 tint）符合 iOS Mail 等系统应用的惯例（左滑标记重要邮件）。
+6. **star.fill 黄色 vs pin.fill 蓝色**：颜色对比明显（暖/冷），形状对比明显（5 角星/钉），即使色弱用户也能区分。两图标在 HStack 中并列，pin 在右（保留旧 layout），star 在左（新增），最右端固定保留 pin 位置以最小化视觉跳动。
+7. **togglePin 未改造为返回 Bool**：保持 API 兼容（toggleFavorite 是新增的，自由设计；togglePin 已被 ViewModel 多处依赖）。
+
+### 留给后续 Agent 的提示
+- **下一个 high priority 任务是 US-022（拼音 + 模糊搜索）**，依赖 US-015 已完成。
+- 偏好设置界面 SettingsView 目前没有「Favorites Only」筛选 Tab，如要加 UI 入口，在 ClipboardListViewModel 增加 `@Published var showFavoritesOnly: Bool` 并在 loadMore 传 `favoritesOnly:` 即可（Repository 已支持）。
+- FTS5 触发器（v1）未涉及 is_favorite 列，因为 FTS5 表只索引 text_content/ocr_text，与新字段无关。
+- 测试不依赖真实 DB（只测内存模型与 ExportItem JSON），无 sandbox / 文件权限要求；如未来要加集成测试，需建议 in-memory DatabaseQueue。
+- ExportItem 自定义 init(from:) 后，如再加字段务必同步 `init(from:)`、`init(from item:)`、`toClipboardItem()` 三处，避免遗漏。
+- 没有运行编译，主 Agent 验收建议至少跑 `swift test` 或在 Xcode 打开 Test Navigator 执行 DatabaseManagerTests。

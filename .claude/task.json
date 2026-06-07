@@ -332,7 +332,7 @@
       "id": "US-021",
       "title": "收藏功能（与置顶区分）",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": ["US-007"],
       "steps": [
