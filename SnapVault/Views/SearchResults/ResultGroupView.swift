@@ -68,7 +68,7 @@ struct ResultGroupView: View {
                 Image(systemName: type.iconName)
                     .font(.system(size: 16))
                     .foregroundColor(.secondary.opacity(0.4))
-                Text("No \(type.displayName.lowercased()) results")
+                Text(L10n.localized("search.noResults", type.displayName))
                     .font(.system(size: 11))
                     .foregroundColor(.secondary.opacity(0.6))
             }

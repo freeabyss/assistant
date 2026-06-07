@@ -56,7 +56,7 @@ final class UnitConverterSource: SearchSource {
         if let lengthUnit = Self.lengthUnit(for: unitToken) {
             let targets = Self.lengthTargets(excluding: lengthUnit)
             return makeResults(
-                familyName: "Length 长度",
+                familyName: L10n.localized("unit.length") + " " + "长度",
                 originalInput: trimmed,
                 value: value,
                 sourceUnit: lengthUnit,
@@ -67,7 +67,7 @@ final class UnitConverterSource: SearchSource {
         if let massUnit = Self.massUnit(for: unitToken) {
             let targets = Self.massTargets(excluding: massUnit)
             return makeResults(
-                familyName: "Mass 质量",
+                familyName: L10n.localized("unit.mass") + " " + "质量",
                 originalInput: trimmed,
                 value: value,
                 sourceUnit: massUnit,
@@ -78,7 +78,7 @@ final class UnitConverterSource: SearchSource {
         if let tempUnit = Self.temperatureUnit(for: unitToken) {
             let targets = Self.temperatureTargets(excluding: tempUnit)
             return makeResults(
-                familyName: "Temperature 温度",
+                familyName: L10n.localized("unit.temperature") + " " + "温度",
                 originalInput: trimmed,
                 value: value,
                 sourceUnit: tempUnit,
@@ -89,7 +89,7 @@ final class UnitConverterSource: SearchSource {
         if let volumeUnit = Self.volumeUnit(for: unitToken) {
             let targets = Self.volumeTargets(excluding: volumeUnit)
             return makeResults(
-                familyName: "Volume 体积",
+                familyName: L10n.localized("unit.volume") + " " + "体积",
                 originalInput: trimmed,
                 value: value,
                 sourceUnit: volumeUnit,
@@ -100,7 +100,7 @@ final class UnitConverterSource: SearchSource {
         if let durationUnit = Self.durationUnit(for: unitToken) {
             let targets = Self.durationTargets(excluding: durationUnit)
             return makeResults(
-                familyName: "Duration 时间",
+                familyName: L10n.localized("unit.duration") + " " + "时间",
                 originalInput: trimmed,
                 value: value,
                 sourceUnit: durationUnit,
@@ -161,8 +161,8 @@ final class UnitConverterSource: SearchSource {
             let displayValue = Self.resultFormatter.string(from: NSNumber(value: convertedValue))
                 ?? "\(convertedValue)"
             let targetSymbol = target.symbol
-            let title = "\(originalInput) = \(displayValue) \(targetSymbol)"
-            let subtitle = "\(familyName) · \(sourceUnit.symbol) → \(targetSymbol)"
+            let title = L10n.localized("unit.result.format", originalInput, displayValue, targetSymbol)
+            let subtitle = L10n.localized("unit.result.subtitle", familyName, sourceUnit.symbol, targetSymbol)
 
             let icon = NSImage(systemSymbolName: "arrow.left.arrow.right",
                                accessibilityDescription: "Convert")
@@ -207,8 +207,8 @@ final class UnitConverterSource: SearchSource {
 
             let displayValue = Self.resultFormatter.string(from: NSNumber(value: converted))
                 ?? "\(converted)"
-            let title = "\(originalInput.uppercased()) = \(displayValue) \(target)"
-            let subtitle = "\(Self.currencyName(sourceCode)) → \(Self.currencyName(target)) · 汇率为静态参考值"
+            let title = L10n.localized("unit.result.format", originalInput.uppercased(), displayValue, target)
+            let subtitle = L10n.localized("unit.currency.result.subtitle", Self.currencyName(sourceCode), Self.currencyName(target))
 
             let icon = NSImage(systemSymbolName: "dollarsign.circle",
                                accessibilityDescription: "Currency")

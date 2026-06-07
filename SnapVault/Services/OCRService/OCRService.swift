@@ -45,7 +45,7 @@ final class OCRService: OCRServiceProtocol {
         guard let imageSource = CGImageSourceCreateWithData(imageData as CFData, nil),
               let cgImage = CGImageSourceCreateImageAtIndex(imageSource, 0, nil) else {
             logger.error("Failed to decode image data")
-            throw SnapVaultError.ocrFailed(reason: "Unable to decode image data")
+            throw SnapVaultError.ocrFailed(reason: L10n.localized("error.invalidImageData"))
         }
 
         let width = CGFloat(cgImage.width)
@@ -60,7 +60,7 @@ final class OCRService: OCRServiceProtocol {
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async { [weak self] in
                 guard let self else {
-                    continuation.resume(throwing: SnapVaultError.ocrFailed(reason: "OCRService deallocated"))
+                    continuation.resume(throwing: SnapVaultError.ocrFailed(reason: L10n.localized("error.ocrServiceDeallocated")))
                     return
                 }
                 do {

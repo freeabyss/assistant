@@ -1,0 +1,1420 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "settings.general" : {
+      "comment" : "Tab title for General settings",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "General" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "通用" } }
+      }
+    },
+    "settings.shortcuts" : {
+      "comment" : "Tab title for Shortcuts settings",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shortcuts" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "快捷键" } }
+      }
+    },
+    "settings.data" : {
+      "comment" : "Tab title for Data settings",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Data" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "数据" } }
+      }
+    },
+    "settings.about" : {
+      "comment" : "Tab title for About settings",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "About" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关于" } }
+      }
+    },
+    "settings.retention.label" : {
+      "comment" : "Label for retention days setting",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Keep history for:" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "保留历史：" } }
+      }
+    },
+    "settings.retention.format" : {
+      "comment" : "Format string for retention days. %d is the number of days.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%d days" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%d 天" } }
+      }
+    },
+    "settings.storage.label" : {
+      "comment" : "Label for storage limit setting",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Storage limit:" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "存储上限：" } }
+      }
+    },
+    "settings.storage.format" : {
+      "comment" : "Format string for storage limit. %d is the megabytes.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%d MB" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%d MB" } }
+      }
+    },
+    "settings.retention.header" : {
+      "comment" : "Section header for Retention settings",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Retention" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "保留策略" } }
+      }
+    },
+    "settings.retention.footer" : {
+      "comment" : "Section footer for Retention settings",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Clipboard items older than the retention period will be automatically deleted. Pinned items are never removed." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "超过保留期限的剪贴板内容将被自动删除。置顶内容不受影响。" } }
+      }
+    },
+    "settings.launchAtLogin" : {
+      "comment" : "Toggle label for launch at login",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Launch at login" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开机启动" } }
+      }
+    },
+    "settings.ocrEnabled" : {
+      "comment" : "Toggle label for OCR text recognition",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "OCR text recognition" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "OCR 文字识别" } }
+      }
+    },
+    "settings.polling.label" : {
+      "comment" : "Label for polling interval setting",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Polling interval:" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "轮询间隔：" } }
+      }
+    },
+    "settings.polling.500ms" : {
+      "comment" : "Polling interval option: 500 ms",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "500 ms" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "500 毫秒" } }
+      }
+    },
+    "settings.polling.1000ms" : {
+      "comment" : "Polling interval option: 1000 ms",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "1000 ms" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "1000 毫秒" } }
+      }
+    },
+    "settings.polling.2000ms" : {
+      "comment" : "Polling interval option: 2000 ms",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "2000 ms" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "2000 毫秒" } }
+      }
+    },
+    "settings.behavior.header" : {
+      "comment" : "Section header for Behavior settings",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Behavior" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "行为" } }
+      }
+    },
+    "settings.behavior.footer" : {
+      "comment" : "Section footer for Behavior settings",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "OCR extracts text from images for search. Polling interval controls how often SnapVault checks the clipboard for new content." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "OCR 从图片中提取文字用于搜索。轮询间隔控制 SnapVault 检查剪贴板新内容的频率。" } }
+      }
+    },
+    "settings.restoreDefaults" : {
+      "comment" : "Button to restore default settings",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Restore Defaults" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "恢复默认" } }
+      }
+    },
+    "settings.restoreDefaults.help" : {
+      "comment" : "Tooltip for Restore Defaults button",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Reset all general settings to their default values" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "将所有通用设置恢复为默认值" } }
+      }
+    },
+    "settings.save" : {
+      "comment" : "Button to save settings",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "保存" } }
+      }
+    },
+    "settings.save.help" : {
+      "comment" : "Tooltip for Save button",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save all settings changes" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "保存所有设置更改" } }
+      }
+    },
+    "settings.shortcuts.togglePanel" : {
+      "comment" : "Label for Toggle Panel shortcut",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Toggle Panel:" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "切换面板：" } }
+      }
+    },
+    "settings.shortcuts.captureRegion" : {
+      "comment" : "Label for Capture Region shortcut",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Capture Region:" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "区域截图：" } }
+      }
+    },
+    "settings.shortcuts.captureWindow" : {
+      "comment" : "Label for Capture Window shortcut",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Capture Window:" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "窗口截图：" } }
+      }
+    },
+    "settings.shortcuts.header" : {
+      "comment" : "Section header for Shortcuts settings",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Global Shortcuts" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "全局快捷键" } }
+      }
+    },
+    "settings.shortcuts.footer.defaults" : {
+      "comment" : "Footer showing default shortcut values",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Defaults: Toggle Panel ⌘Space · Capture Region ⌘⇧A · Capture Window ⌘⇧W." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "默认：切换面板 ⌘空格 · 区域截图 ⌘⇧A · 窗口截图 ⌘⇧W。" } }
+      }
+    },
+    "settings.shortcuts.footer.spotlightWarning" : {
+      "comment" : "Warning about ⌘Space conflicting with Spotlight",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Heads up: ⌘Space conflicts with macOS Spotlight by default. To use SnapVault's Command Bar, either change Spotlight's shortcut in System Settings → Keyboard → Keyboard Shortcuts → Spotlight, or pick a different shortcut here." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "注意：⌘空格默认与 macOS Spotlight 冲突。要使用 SnapVault 的命令栏，请在系统设置 → 键盘 → 键盘快捷键 → Spotlight 中修改 Spotlight 的快捷键，或在此处选择其他快捷键。" } }
+      }
+    },
+    "settings.shortcuts.footer.instructions" : {
+      "comment" : "Instructions for recording shortcuts",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Click a recorder field and press your desired key combination. Capture Region lets you select an area to screenshot. Capture Window captures the window under your cursor." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "点击录制区域并按下你想要的组合键。区域截图可让你选择截图区域，窗口截图可捕捉光标下的窗口。" } }
+      }
+    },
+    "settings.data.dbSize" : {
+      "comment" : "Label for database size",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Database size:" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "数据库大小：" } }
+      }
+    },
+    "settings.data.refresh" : {
+      "comment" : "Button to refresh database stats",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Refresh" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "刷新" } }
+      }
+    },
+    "settings.data.totalItems" : {
+      "comment" : "Label for total item count",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Total items:" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "总条目数：" } }
+      }
+    },
+    "settings.data.storage.header" : {
+      "comment" : "Section header for Storage info",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Storage" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "存储" } }
+      }
+    },
+    "settings.data.exportJson" : {
+      "comment" : "Button to export JSON",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Export JSON..." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导出 JSON..." } }
+      }
+    },
+    "settings.data.exportCsv" : {
+      "comment" : "Button to export CSV",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Export CSV..." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导出 CSV..." } }
+      }
+    },
+    "settings.data.exportDb" : {
+      "comment" : "Button to export database file",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Export Database..." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导出数据库..." } }
+      }
+    },
+    "settings.data.export.header" : {
+      "comment" : "Section header for Export",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Export" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导出" } }
+      }
+    },
+    "settings.data.export.footer" : {
+      "comment" : "Section footer for Export",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "JSON includes all data (images as Base64). CSV includes text fields only. Database exports the raw SQLite file." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "JSON 包含所有数据（图片以 Base64 编码）。CSV 仅包含文本字段。数据库导出原始 SQLite 文件。" } }
+      }
+    },
+    "settings.data.importJson" : {
+      "comment" : "Button to import JSON",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import JSON..." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导入 JSON..." } }
+      }
+    },
+    "settings.data.importing" : {
+      "comment" : "Label shown during import",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Importing..." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在导入..." } }
+      }
+    },
+    "settings.data.import.header" : {
+      "comment" : "Section header for Import",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导入" } }
+      }
+    },
+    "settings.data.import.footer" : {
+      "comment" : "Section footer for Import",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import data from a previously exported JSON file. Duplicate items (same content hash) will be skipped." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "从之前导出的 JSON 文件导入数据。重复内容（相同哈希值）将被跳过。" } }
+      }
+    },
+    "settings.data.status.dismiss" : {
+      "comment" : "Button to dismiss status message",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Dismiss" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关闭" } }
+      }
+    },
+    "settings.data.clearHistory" : {
+      "comment" : "Button to clear clipboard history",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Clear History..." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "清除历史..." } }
+      }
+    },
+    "settings.data.clearHistory.confirm.title" : {
+      "comment" : "Title for clear history confirmation dialog",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Are you sure you want to clear all clipboard history?" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "确定要清除所有剪贴板历史吗？" } }
+      }
+    },
+    "settings.data.clearHistory.confirm.message" : {
+      "comment" : "Message for clear history confirmation dialog",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "This will permanently delete all non-pinned clipboard items. Pinned items will be preserved. This action cannot be undone." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "这将永久删除所有非置顶的剪贴板内容。置顶内容将被保留。此操作不可撤销。" } }
+      }
+    },
+    "settings.data.clearHistory.confirm.action" : {
+      "comment" : "Action button for clear history confirmation",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Clear All History" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "清除全部历史" } }
+      }
+    },
+    "settings.data.clearHistory.cancel" : {
+      "comment" : "Cancel button for clear history confirmation",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "取消" } }
+      }
+    },
+    "settings.data.dangerZone.header" : {
+      "comment" : "Section header for Danger Zone",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Danger Zone" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "危险区域" } }
+      }
+    },
+    "settings.alert.ok" : {
+      "comment" : "OK button in settings alert",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "OK" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "确定" } }
+      }
+    },
+    "settings.alert.cancel" : {
+      "comment" : "Cancel button in settings alert",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "取消" } }
+      }
+    },
+    "settings.savePanel.json" : {
+      "comment" : "Save panel title for JSON export",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Export Clipboard History as JSON" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导出剪贴板历史为 JSON" } }
+      }
+    },
+    "settings.savePanel.csv" : {
+      "comment" : "Save panel title for CSV export",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Export Clipboard History as CSV" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导出剪贴板历史为 CSV" } }
+      }
+    },
+    "settings.savePanel.db" : {
+      "comment" : "Save panel title for database export",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Export Database File" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导出数据库文件" } }
+      }
+    },
+    "settings.openPanel.import" : {
+      "comment" : "Open panel title for JSON import",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import Clipboard History" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导入剪贴板历史" } }
+      }
+    },
+    "settings.about.appName" : {
+      "comment" : "App name in About tab",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "SnapVault" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "SnapVault" } }
+      }
+    },
+    "settings.about.version" : {
+      "comment" : "Version label format in About. %@ is version string, %@ is build number.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Version %@ (%@)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "版本 %@ (%@)" } }
+      }
+    },
+    "settings.about.description" : {
+      "comment" : "App description in About tab",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "A fast, local clipboard manager for macOS." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "一款快速、本地的 macOS 剪贴板管理器。" } }
+      }
+    },
+    "settings.about.checkUpdates" : {
+      "comment" : "Check for Updates button in About tab",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Check for Updates..." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "检查更新..." } }
+      }
+    },
+    "settings.about.techStack" : {
+      "comment" : "Tech stack description in About tab",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Built with SwiftUI + GRDB" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "使用 SwiftUI + GRDB 构建" } }
+      }
+    },
+    "settings.about.dataNote" : {
+      "comment" : "Data storage note in About tab",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Data is stored locally on your Mac." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "数据仅存储在你的 Mac 本地。" } }
+      }
+    },
+    "settings.saveError.title" : {
+      "comment" : "Alert title for save error",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save Error" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "保存错误" } }
+      }
+    },
+    "settings.saveError.message" : {
+      "comment" : "Alert message for save error. %@ is the error description.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Failed to save settings: %@" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "保存设置失败：%@" } }
+      }
+    },
+    "settings.exportError.title" : {
+      "comment" : "Alert title for export error",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Export Error" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导出错误" } }
+      }
+    },
+    "settings.exportError.message" : {
+      "comment" : "Alert message for export error. %@ is the error description.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Failed to export: %@" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导出失败：%@" } }
+      }
+    },
+    "settings.export.json.success" : {
+      "comment" : "Success message for JSON export. %d is item count.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Exported %d items to JSON" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已导出 %d 条记录为 JSON" } }
+      }
+    },
+    "settings.export.csv.success" : {
+      "comment" : "Success message for CSV export. %d is item count.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Exported %d items to CSV" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已导出 %d 条记录为 CSV" } }
+      }
+    },
+    "settings.export.db.success" : {
+      "comment" : "Success message for database export",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Database exported" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "数据库已导出" } }
+      }
+    },
+    "settings.importError.title" : {
+      "comment" : "Alert title for import error",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import Error" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导入错误" } }
+      }
+    },
+    "settings.importError.message" : {
+      "comment" : "Alert message for import error. %@ is the error description.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Failed to import JSON: %@" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导入 JSON 失败：%@" } }
+      }
+    },
+    "settings.clearError.title" : {
+      "comment" : "Alert title for clear history error",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Clear Error" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "清除错误" } }
+      }
+    },
+    "settings.clearError.message" : {
+      "comment" : "Alert message for clear history error. %@ is the error description.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Failed to clear history: %@" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "清除历史失败：%@" } }
+      }
+    },
+    "settings.clear.success" : {
+      "comment" : "Success message for clear history. %d is the count of cleared items.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cleared %d items" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已清除 %d 条记录" } }
+      }
+    },
+    "annotation.window.title" : {
+      "comment" : "Title of the annotation editor window",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Annotate Screenshot" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "标注截图" } }
+      }
+    },
+    "annotation.tool.arrow" : {
+      "comment" : "Arrow annotation tool name",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Arrow" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "箭头" } }
+      }
+    },
+    "annotation.tool.rectangle" : {
+      "comment" : "Rectangle annotation tool name",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rectangle" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "矩形" } }
+      }
+    },
+    "annotation.tool.mosaic" : {
+      "comment" : "Mosaic annotation tool name",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Mosaic" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "马赛克" } }
+      }
+    },
+    "annotation.tool.text" : {
+      "comment" : "Text annotation tool name",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Text" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "文字" } }
+      }
+    },
+    "annotation.undo.help" : {
+      "comment" : "Tooltip for Undo button",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Undo (⌘Z)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "撤销 (⌘Z)" } }
+      }
+    },
+    "annotation.redo.help" : {
+      "comment" : "Tooltip for Redo button",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Redo (⌘⇧Z)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重做 (⌘⇧Z)" } }
+      }
+    },
+    "annotation.cancel" : {
+      "comment" : "Cancel button in annotation editor",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "取消" } }
+      }
+    },
+    "annotation.copy" : {
+      "comment" : "Copy button in annotation editor",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Copy" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "复制" } }
+      }
+    },
+    "annotation.save" : {
+      "comment" : "Save button in annotation editor",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "保存" } }
+      }
+    },
+    "annotation.textInput.title" : {
+      "comment" : "Title for text input alert",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter Text" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "输入文字" } }
+      }
+    },
+    "annotation.textInput.message" : {
+      "comment" : "Message for text input alert",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Text will appear at the clicked position." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "文字将显示在点击位置。" } }
+      }
+    },
+    "annotation.textInput.add" : {
+      "comment" : "Add button for text input alert",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Add" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "添加" } }
+      }
+    },
+    "annotation.textInput.cancel" : {
+      "comment" : "Cancel button for text input alert",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "取消" } }
+      }
+    },
+    "annotation.textInput.placeholder" : {
+      "comment" : "Placeholder for text input field",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Label text" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "标注文字" } }
+      }
+    },
+    "annotation.savePanel.title" : {
+      "comment" : "Title for annotation save panel",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save Annotated Screenshot" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "保存标注截图" } }
+      }
+    },
+    "annotation.savePanel.filename" : {
+      "comment" : "Filename format for annotation save. %@ is date-time string.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Screenshot %@.png" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "截图 %@.png" } }
+      }
+    },
+    "preview.empty" : {
+      "comment" : "Placeholder for empty text content in preview",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Empty content" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "空内容" } }
+      }
+    },
+    "preview.ocrText" : {
+      "comment" : "Header for OCR text section in preview",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "OCR Text" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "OCR 文本" } }
+      }
+    },
+    "preview.imageNotAvailable" : {
+      "comment" : "Message when image data is not available",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Image data not available" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "图片数据不可用" } }
+      }
+    },
+    "preview.fileName" : {
+      "comment" : "Label for file name in preview",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "File Name" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "文件名" } }
+      }
+    },
+    "preview.filePath" : {
+      "comment" : "Label for file path in preview",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Path" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "路径" } }
+      }
+    },
+    "preview.fileSize" : {
+      "comment" : "Label for file size in preview",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Size" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "大小" } }
+      }
+    },
+    "preview.fileType" : {
+      "comment" : "Label for file type in preview",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Type" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "类型" } }
+      }
+    },
+    "preview.fileModified" : {
+      "comment" : "Label for file modification date in preview",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Modified" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "修改时间" } }
+      }
+    },
+    "preview.showInFinder" : {
+      "comment" : "Button to show file in Finder",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Show in Finder" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在 Finder 中显示" } }
+      }
+    },
+    "preview.fileNotAvailable" : {
+      "comment" : "Message when file path is not available",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "File path not available" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "文件路径不可用" } }
+      }
+    },
+    "preview.delete" : {
+      "comment" : "Delete button in preview panel",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Delete" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "删除" } }
+      }
+    },
+    "preview.copy" : {
+      "comment" : "Copy button in preview panel",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Copy" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "复制" } }
+      }
+    },
+    "screenshot.toolbar.ocr" : {
+      "comment" : "OCR button in screenshot toolbar",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "OCR" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "识别" } }
+      }
+    },
+    "screenshot.toolbar.copy" : {
+      "comment" : "Copy button in screenshot toolbar",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Copy" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "复制" } }
+      }
+    },
+    "screenshot.toolbar.save" : {
+      "comment" : "Save button in screenshot toolbar",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "保存" } }
+      }
+    },
+    "screenshot.toolbar.annotate" : {
+      "comment" : "Annotate button in screenshot toolbar",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Annotate" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "标注" } }
+      }
+    },
+    "screenshot.toolbar.discard" : {
+      "comment" : "Discard button in screenshot toolbar",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Discard" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "丢弃" } }
+      }
+    },
+    "screenshot.savePanel.title" : {
+      "comment" : "Title for screenshot save panel",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Save Screenshot" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "保存截图" } }
+      }
+    },
+    "screenshot.savePanel.filename" : {
+      "comment" : "Filename format for screenshot save. %@ is date-time string.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Screenshot %@.png" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "截图 %@.png" } }
+      }
+    },
+    "screenshot.ocr.progress" : {
+      "comment" : "Progress label during OCR recognition",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Recognizing text…" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在识别文字…" } }
+      }
+    },
+    "screenshot.ocr.noText" : {
+      "comment" : "Message when OCR found no text",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "(no text recognized)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "（未识别到文字）" } }
+      }
+    },
+    "screenshot.ocr.failed" : {
+      "comment" : "Format for OCR failure message. %@ is error description.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "OCR failed: %@" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "OCR 失败：%@" } }
+      }
+    },
+    "screenshot.ocr.lines" : {
+      "comment" : "Format for OCR line count. %d is line count.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%d lines" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%d 行" } }
+      }
+    },
+    "screenshot.ocr.confidence" : {
+      "comment" : "Format for OCR confidence. %.0f is percentage.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%.0f%% confidence" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%.0f%% 置信度" } }
+      }
+    },
+    "screenshot.ocr.close" : {
+      "comment" : "Close button in OCR result window",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Close" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关闭" } }
+      }
+    },
+    "screenshot.ocr.copyAll" : {
+      "comment" : "Copy All button in OCR result window",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Copy All" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "复制全部" } }
+      }
+    },
+    "screenshot.ocr.copied" : {
+      "comment" : "Toast shown after copying OCR text",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Copied" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已复制" } }
+      }
+    },
+    "screenshot.ocr.window.title" : {
+      "comment" : "Title of the OCR result window",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "OCR Result" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "OCR 结果" } }
+      }
+    },
+    "system.sleep.title" : {
+      "comment" : "Title for sleep system command",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sleep" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "睡眠" } }
+      }
+    },
+    "system.sleep.subtitle" : {
+      "comment" : "Subtitle for sleep system command",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Put the Mac to sleep" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "让 Mac 进入睡眠" } }
+      }
+    },
+    "system.restart.title" : {
+      "comment" : "Title for restart system command",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Restart" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重启" } }
+      }
+    },
+    "system.restart.subtitle" : {
+      "comment" : "Subtitle for restart system command",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Restart the Mac (confirmation required)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重新启动 Mac（需要确认）" } }
+      }
+    },
+    "system.shutdown.title" : {
+      "comment" : "Title for shutdown system command",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shut Down" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关机" } }
+      }
+    },
+    "system.shutdown.subtitle" : {
+      "comment" : "Subtitle for shutdown system command",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shut down the Mac (confirmation required)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关闭 Mac（需要确认）" } }
+      }
+    },
+    "system.lock.title" : {
+      "comment" : "Title for lock screen command (CGSession)",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Lock Screen" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "锁定屏幕" } }
+      }
+    },
+    "system.lock.subtitle" : {
+      "comment" : "Subtitle for lock screen command",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Lock the screen immediately" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "立即锁定屏幕" } }
+      }
+    },
+    "system.lockScreen.title" : {
+      "comment" : "Title for lock screen (display sleep) command",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Lock Screen (Display Sleep)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "锁屏（关闭显示器）" } }
+      }
+    },
+    "system.lockScreen.subtitle" : {
+      "comment" : "Subtitle for lock screen (display sleep) command",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Turn off the display" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关闭显示器" } }
+      }
+    },
+    "system.emptyTrash.title" : {
+      "comment" : "Title for empty trash command",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Empty Trash" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "清倒废纸篓" } }
+      }
+    },
+    "system.emptyTrash.subtitle" : {
+      "comment" : "Subtitle for empty trash command",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Permanently delete all items in Trash (confirmation required)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "永久删除废纸篓中的所有项目（需要确认）" } }
+      }
+    },
+    "system.showDesktop.title" : {
+      "comment" : "Title for show desktop command",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Show Desktop" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "显示桌面" } }
+      }
+    },
+    "system.showDesktop.subtitle" : {
+      "comment" : "Subtitle for show desktop command",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Hide all windows and show the desktop" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "隐藏所有窗口并显示桌面" } }
+      }
+    },
+    "system.confirm.restart.title" : {
+      "comment" : "Confirmation title for restart",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Restart your Mac?" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重新启动 Mac？" } }
+      }
+    },
+    "system.confirm.restart.message" : {
+      "comment" : "Confirmation message for restart",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "All open applications will be closed and the computer will restart." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "所有打开的应用程序将被关闭，电脑将重新启动。" } }
+      }
+    },
+    "system.confirm.shutdown.title" : {
+      "comment" : "Confirmation title for shutdown",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Shut down your Mac?" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关闭 Mac？" } }
+      }
+    },
+    "system.confirm.shutdown.message" : {
+      "comment" : "Confirmation message for shutdown",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "All open applications will be closed and the computer will turn off." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "所有打开的应用程序将被关闭，电脑将关机。" } }
+      }
+    },
+    "system.confirm.emptyTrash.title" : {
+      "comment" : "Confirmation title for empty trash",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Empty the Trash?" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "清倒废纸篓？" } }
+      }
+    },
+    "system.confirm.emptyTrash.message" : {
+      "comment" : "Confirmation message for empty trash",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Items in the Trash will be permanently deleted." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "废纸篓中的项目将被永久删除。" } }
+      }
+    },
+    "system.confirm.fallback" : {
+      "comment" : "Fallback confirmation format for system commands. %@ is command name.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Run %@?" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "执行 %@？" } }
+      }
+    },
+    "search.type.applications" : {
+      "comment" : "Display name for Applications search type",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Applications" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "应用程序" } }
+      }
+    },
+    "search.type.files" : {
+      "comment" : "Display name for Files search type",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Files" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "文件" } }
+      }
+    },
+    "search.type.clipboard" : {
+      "comment" : "Display name for Clipboard search type",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Clipboard" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "剪贴板" } }
+      }
+    },
+    "search.type.system" : {
+      "comment" : "Display name for System search type",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "System" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "系统" } }
+      }
+    },
+    "search.type.calculator" : {
+      "comment" : "Display name for Calculator search type",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Calculator" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "计算器" } }
+      }
+    },
+    "search.type.convert" : {
+      "comment" : "Display name for Convert search type",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Convert" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "换算" } }
+      }
+    },
+    "search.noResults" : {
+      "comment" : "Format for no results in a specific category. %@ is the category name.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No %@ results" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "没有 %@ 结果" } }
+      }
+    },
+    "search.action.launchApp" : {
+      "comment" : "Action hint for launching an app",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "回车" } }
+      }
+    },
+    "search.action.openFile" : {
+      "comment" : "Action hint for opening a file",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "回车" } }
+      }
+    },
+    "search.action.openInFinder" : {
+      "comment" : "Action hint for opening in Finder",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "回车" } }
+      }
+    },
+    "search.action.copyClipboard" : {
+      "comment" : "Action hint for copying to clipboard",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "回车" } }
+      }
+    },
+    "search.action.runCommand" : {
+      "comment" : "Action hint for running a system command",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "回车" } }
+      }
+    },
+    "search.action.copyText" : {
+      "comment" : "Action hint for copying text (calculator/converter)",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Copy" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "复制" } }
+      }
+    },
+    "search.searching" : {
+      "comment" : "Label shown while searching",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Searching..." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "正在搜索..." } }
+      }
+    },
+    "search.noResults.all" : {
+      "comment" : "Message when no results found across all categories",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No results found" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "未找到结果" } }
+      }
+    },
+    "error.database" : {
+      "comment" : "Database error prefix. %@ is the underlying error description.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Database error: %@" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "数据库错误：%@" } }
+      }
+    },
+    "error.ocrFailed" : {
+      "comment" : "OCR failure error. %@ is the reason.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "OCR failed: %@" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "OCR 失败：%@" } }
+      }
+    },
+    "error.clipboardDenied" : {
+      "comment" : "Clipboard access denied error",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Clipboard access denied" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "剪贴板访问被拒绝" } }
+      }
+    },
+    "error.itemNotFound" : {
+      "comment" : "Item not found error. %lld is the item ID.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Item with id %lld not found" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "ID 为 %lld 的记录未找到" } }
+      }
+    },
+    "error.storageExceeded" : {
+      "comment" : "Storage limit exceeded error",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Storage limit exceeded" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "存储空间已满" } }
+      }
+    },
+    "error.exportFailed" : {
+      "comment" : "Export failure error. %@ is the reason.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Export failed: %@" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导出失败：%@" } }
+      }
+    },
+    "error.importFailed" : {
+      "comment" : "Import failure error. %@ is the reason.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import failed: %@" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导入失败：%@" } }
+      }
+    },
+    "error.screenshotFailed" : {
+      "comment" : "Screenshot failure error. %@ is the reason.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Screenshot failed: %@" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "截图失败：%@" } }
+      }
+    },
+    "error.invalidImageData" : {
+      "comment" : "Error reason: unable to decode image data",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Unable to decode image data" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无法解码图片数据" } }
+      }
+    },
+    "error.serviceDeallocated" : {
+      "comment" : "Error reason: service deallocated",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Service deallocated" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "服务已释放" } }
+      }
+    },
+    "error.userCancelled" : {
+      "comment" : "Error reason: user cancelled",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "User cancelled" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "用户取消" } }
+      }
+    },
+    "error.noWindows" : {
+      "comment" : "Error reason: no on-screen windows available",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No on-screen windows available" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "没有可用的屏幕窗口" } }
+      }
+    },
+    "error.noMainScreen" : {
+      "comment" : "Error reason: no main screen available",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No main screen available" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "没有可用的主屏幕" } }
+      }
+    },
+    "error.noWindowAtMouse" : {
+      "comment" : "Error reason: no window found at mouse location",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No window found at mouse location" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "在鼠标位置未找到窗口" } }
+      }
+    },
+    "error.captureWindowFailed" : {
+      "comment" : "Error reason: failed to capture window image",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Failed to capture window image" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无法捕捉窗口图像" } }
+      }
+    },
+    "error.pngConversionFailed" : {
+      "comment" : "Error reason: failed to convert to PNG",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Failed to convert captured image to PNG" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无法将截图转换为 PNG" } }
+      }
+    },
+    "error.captureScreenFailed" : {
+      "comment" : "Error reason: failed to capture screen image",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Failed to capture screen image" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无法捕捉屏幕图像" } }
+      }
+    },
+    "error.cropFailed" : {
+      "comment" : "Error reason: failed to crop image",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Failed to crop image to selected region" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无法裁剪到选定区域" } }
+      }
+    },
+    "error.itemNoImageData" : {
+      "comment" : "Error reason: item has no image data",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Item has no image data" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "记录没有图片数据" } }
+      }
+    },
+    "error.itemNotFoundId" : {
+      "comment" : "Error reason: item not found by ID. %lld is the item ID.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Item id=%lld not found" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "ID=%lld 的记录未找到" } }
+      }
+    },
+    "error.itemNoImageDataId" : {
+      "comment" : "Error reason: item has no image data by ID. %lld is the item ID.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Item id=%lld has no image data" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "ID=%lld 的记录没有图片数据" } }
+      }
+    },
+    "error.ocrServiceDeallocated" : {
+      "comment" : "Error reason: OCR service deallocated",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "OCRService deallocated" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "OCR 服务已释放" } }
+      }
+    },
+    "error.export.invalidFormat" : {
+      "comment" : "Export error: invalid format. %@ is reason.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Invalid format: %@" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无效格式：%@" } }
+      }
+    },
+    "error.export.fileNotFound" : {
+      "comment" : "Export error: file not found. %@ is path.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "File not found: %@" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "文件未找到：%@" } }
+      }
+    },
+    "error.export.csvUtf8" : {
+      "comment" : "Export error: failed to encode CSV as UTF-8",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Failed to encode CSV as UTF-8" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无法将 CSV 编码为 UTF-8" } }
+      }
+    },
+    "error.export.jsonFormat" : {
+      "comment" : "Export error: invalid JSON format. %@ is error description.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Invalid JSON format: %@" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无效的 JSON 格式：%@" } }
+      }
+    },
+    "error.export.noItems" : {
+      "comment" : "Export error: no items found in export file",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "No items found in export file" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导出文件中没有找到记录" } }
+      }
+    },
+    "error.export.result.format" : {
+      "comment" : "Import result summary format. %d imported, %d skipped, %d total.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Imported %d items, skipped %d duplicates (%d total)" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已导入 %d 条，跳过 %d 条重复（共 %d 条）" } }
+      }
+    },
+    "unit.length" : {
+      "comment" : "Family name for length conversions",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Length" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "长度" } }
+      }
+    },
+    "unit.mass" : {
+      "comment" : "Family name for mass conversions",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Mass" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "质量" } }
+      }
+    },
+    "unit.temperature" : {
+      "comment" : "Family name for temperature conversions",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Temperature" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "温度" } }
+      }
+    },
+    "unit.volume" : {
+      "comment" : "Family name for volume conversions",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Volume" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "体积" } }
+      }
+    },
+    "unit.duration" : {
+      "comment" : "Family name for duration conversions",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Duration" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "时间" } }
+      }
+    },
+    "unit.currency.note" : {
+      "comment" : "Note that currency rates are static reference values",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rates are static reference values" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "汇率为静态参考值" } }
+      }
+    },
+    "unit.currency.usd" : {
+      "comment" : "Currency name: USD",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "US Dollar USD" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "美元 USD" } }
+      }
+    },
+    "unit.currency.cny" : {
+      "comment" : "Currency name: CNY",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Chinese Yuan CNY" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "人民币 CNY" } }
+      }
+    },
+    "unit.currency.eur" : {
+      "comment" : "Currency name: EUR",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Euro EUR" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "欧元 EUR" } }
+      }
+    },
+    "unit.currency.jpy" : {
+      "comment" : "Currency name: JPY",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Japanese Yen JPY" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "日元 JPY" } }
+      }
+    },
+    "unit.currency.gbp" : {
+      "comment" : "Currency name: GBP",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "British Pound GBP" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "英镑 GBP" } }
+      }
+    },
+    "unit.currency.hkd" : {
+      "comment" : "Currency name: HKD",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Hong Kong Dollar HKD" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "港币 HKD" } }
+      }
+    },
+    "unit.result.format" : {
+      "comment" : "Format for unit conversion result title. %@ input, %@ value, %@ target unit symbol.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ = %@ %@" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%@ = %@ %@" } }
+      }
+    },
+    "unit.result.subtitle" : {
+      "comment" : "Format for unit conversion result subtitle. %@ family, %@ source symbol, %@ target symbol.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ · %@ → %@" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%@ · %@ → %@" } }
+      }
+    },
+    "unit.currency.result.subtitle" : {
+      "comment" : "Format for currency conversion result subtitle. %@ source, %@ target, includes static rate note.",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "%@ → %@ · Rates are static reference values" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "%@ → %@ · 汇率为静态参考值" } }
+      }
+    },
+    "clipboard.untitled" : {
+      "comment" : "Fallback title for clipboard items without text",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Untitled" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "无标题" } }
+      }
+    },
+    "clipboard.richText" : {
+      "comment" : "Label for rich text clipboard items",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rich Text" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "富文本" } }
+      }
+    },
+    "clipboard.image" : {
+      "comment" : "Label for image clipboard items",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Image" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "图片" } }
+      }
+    },
+    "clipboard.ocrAvailable" : {
+      "comment" : "Label indicating OCR text is available for an image",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "OCR text available" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "OCR 文本可用" } }
+      }
+    },
+    "clipboard.file" : {
+      "comment" : "Label for file clipboard items",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "File" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "文件" } }
+      }
+    }
+  },
+  "version" : "1.0"
+}

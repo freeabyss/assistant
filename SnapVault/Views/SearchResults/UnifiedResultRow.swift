@@ -114,22 +114,22 @@ struct UnifiedResultRow: View {
     private var actionHint: some View {
         switch result.action {
         case .launchApp:
-            Text("Enter")
+            Text(L10n.localized("search.action.launchApp"))
                 .font(.system(size: 10, design: .monospaced))
         case .openFile:
-            Text("Enter")
+            Text(L10n.localized("search.action.openFile"))
                 .font(.system(size: 10, design: .monospaced))
         case .openInFinder:
-            Text("Enter")
+            Text(L10n.localized("search.action.openInFinder"))
                 .font(.system(size: 10, design: .monospaced))
         case .copyToClipboard:
-            Text("Enter")
+            Text(L10n.localized("search.action.copyClipboard"))
                 .font(.system(size: 10, design: .monospaced))
         case .runSystemCommand:
-            Text("Enter")
+            Text(L10n.localized("search.action.runCommand"))
                 .font(.system(size: 10, design: .monospaced))
         case .copyText:
-            Text("Copy ⏎")
+            Text(L10n.localized("search.action.copyText") + " ⏎")
                 .font(.system(size: 10, design: .monospaced))
         }
     }

@@ -218,14 +218,14 @@ final class ScreenshotToolbarController {
 
     private func performSave(imageData: Data) {
         let panel = NSSavePanel()
-        panel.title = "Save Screenshot"
+        panel.title = L10n.localized("screenshot.savePanel.title")
         panel.allowedContentTypes = [.png]
         panel.canCreateDirectories = true
         panel.isExtensionHidden = false
 
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH.mm.ss"
-        panel.nameFieldStringValue = "Screenshot \(formatter.string(from: Date())).png"
+        panel.nameFieldStringValue = L10n.localized("screenshot.savePanel.filename", formatter.string(from: Date()))
 
         // Run modally relative to the floating panel so the save dialog
         // attaches to the foreground app's window stack.
@@ -273,7 +273,7 @@ final class ScreenshotToolbarController {
                 await MainActor.run {
                     self.updateOCRWindow(
                         progressWindow,
-                        text: result.text.isEmpty ? "(no text recognized)" : result.text,
+                        text: result.text.isEmpty ? L10n.localized("screenshot.ocr.noText") : result.text,
                         lineCount: self.countLines(result.text),
                         confidence: result.text.isEmpty ? nil : result.confidence
                     )
@@ -281,7 +281,7 @@ final class ScreenshotToolbarController {
             } catch {
                 self.logger.error("On-demand OCR failed: \(error.localizedDescription, privacy: .public)")
                 await MainActor.run {
-                    self.updateOCRWindow(progressWindow, text: "OCR failed: \(error.localizedDescription)", lineCount: 0, confidence: nil)
+                    self.updateOCRWindow(progressWindow, text: L10n.localized("screenshot.ocr.failed", error.localizedDescription), lineCount: 0, confidence: nil)
                 }
             }
         }
@@ -299,7 +299,7 @@ final class ScreenshotToolbarController {
             backing: .buffered,
             defer: false
         )
-        window.title = "OCR Result"
+        window.title = L10n.localized("screenshot.ocr.window.title")
         window.isReleasedWhenClosed = false
         window.center()
 
@@ -383,7 +383,7 @@ private struct OCRResultView: View {
             case .loading:
                 VStack {
                     Spacer()
-                    ProgressView("Recognizing text…")
+                    ProgressView(L10n.localized("screenshot.ocr.progress"))
                         .progressViewStyle(.circular)
                     Spacer()
                 }
@@ -392,11 +392,11 @@ private struct OCRResultView: View {
             case .result(let text, let lineCount, let confidence):
                 // Stats bar
                 HStack(spacing: 12) {
-                    Label("\(lineCount) line\(lineCount == 1 ? "" : "s")", systemImage: "text.alignleft")
+                    Label(L10n.localized("screenshot.ocr.lines", lineCount), systemImage: "text.alignleft")
                         .font(.system(size: 11))
                         .foregroundColor(.secondary)
                     if let c = confidence {
-                        Label(String(format: "%.0f%% confidence", c * 100), systemImage: "checkmark.seal")
+                        Label(L10n.localized("screenshot.ocr.confidence", c * 100), systemImage: "checkmark.seal")
                             .font(.system(size: 11))
                             .foregroundColor(.secondary)
                     }
@@ -424,11 +424,11 @@ private struct OCRResultView: View {
                 // Action bar
                 HStack {
                     Spacer()
-                    Button("Close") {
+                    Button(L10n.localized("screenshot.ocr.close")) {
                         NSApp.keyWindow?.close()
                     }
                     .keyboardShortcut(.cancelAction)
-                    Button("Copy All") {
+                    Button(L10n.localized("screenshot.ocr.copyAll")) {
                         let pb = NSPasteboard.general
                         pb.clearContents()
                         pb.setString(editableText, forType: .string)
@@ -446,7 +446,7 @@ private struct OCRResultView: View {
         .frame(minWidth: 480, minHeight: 360)
         .overlay(alignment: .bottom) {
             if toastVisible {
-                Text("Copied")
+                Text(L10n.localized("screenshot.ocr.copied"))
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.white)
                     .padding(.horizontal, 14)
@@ -489,28 +489,28 @@ struct ScreenshotToolbarView: View {
         HStack(spacing: 4) {
             ToolbarButton(
                 systemName: "textformat",
-                label: "OCR",
+                label: L10n.localized("screenshot.toolbar.ocr"),
                 tint: .accentColor
             ) { onAction(.ocr) }
 
             ToolbarButton(
                 systemName: "doc.on.doc",
-                label: "Copy"
+                label: L10n.localized("screenshot.toolbar.copy")
             ) { onAction(.copy) }
 
             ToolbarButton(
                 systemName: "square.and.arrow.down",
-                label: "Save"
+                label: L10n.localized("screenshot.toolbar.save")
             ) { onAction(.save) }
 
             ToolbarButton(
                 systemName: "pencil",
-                label: "Annotate"
+                label: L10n.localized("screenshot.toolbar.annotate")
             ) { onAction(.annotate) }
 
             ToolbarButton(
                 systemName: "xmark",
-                label: "Discard",
+                label: L10n.localized("screenshot.toolbar.discard"),
                 tint: .red
             ) { onAction(.discard) }
         }

@@ -36,7 +36,7 @@ final class ClipboardSearchSource: SearchSource, SearchServiceProtocol {
     /// Convert a legacy SearchResult to a UnifiedSearchResult.
     private func convertToUnified(_ result: SearchResult) -> UnifiedSearchResult {
         let item = result.item
-        let title = item.textContent ?? item.ocrText ?? item.filePath ?? "Untitled"
+        let title = item.textContent ?? item.ocrText ?? item.filePath ?? L10n.localized("clipboard.untitled")
         let subtitle = buildSubtitle(for: item)
         let icon = iconForContentType(item.contentType)
         let itemID = item.id ?? 0
@@ -59,11 +59,11 @@ final class ClipboardSearchSource: SearchSource, SearchServiceProtocol {
         case .text:
             return item.createdAt.formatted(.relative(presentation: .named))
         case .rtf:
-            return "Rich Text - \(item.createdAt.formatted(.relative(presentation: .named)))"
+            return L10n.localized("clipboard.richText") + " - \(item.createdAt.formatted(.relative(presentation: .named)))"
         case .image:
-            var parts: [String] = ["Image"]
+            var parts: [String] = [L10n.localized("clipboard.image")]
             if let ocr = item.ocrText, !ocr.isEmpty {
-                parts.append("OCR text available")
+                parts.append(L10n.localized("clipboard.ocrAvailable"))
             }
             parts.append(item.createdAt.formatted(.relative(presentation: .named)))
             return parts.joined(separator: " - ")
@@ -71,7 +71,7 @@ final class ClipboardSearchSource: SearchSource, SearchServiceProtocol {
             if let path = item.filePath {
                 return (path as NSString).lastPathComponent
             }
-            return "File"
+            return L10n.localized("clipboard.file")
         }
     }
 

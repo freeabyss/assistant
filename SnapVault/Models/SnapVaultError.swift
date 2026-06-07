@@ -14,21 +14,21 @@ enum SnapVaultError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .databaseError(let underlying):
-            return "Database error: \(underlying.localizedDescription)"
+            return L10n.localized("error.database", underlying.localizedDescription)
         case .ocrFailed(let reason):
-            return "OCR failed: \(reason)"
+            return L10n.localized("error.ocrFailed", reason)
         case .clipboardAccessDenied:
-            return "Clipboard access denied"
+            return L10n.localized("error.clipboardDenied")
         case .itemNotFound(let id):
-            return "Item with id \(id) not found"
+            return L10n.localized("error.itemNotFound", id)
         case .storageLimitExceeded:
-            return "Storage limit exceeded"
+            return L10n.localized("error.storageExceeded")
         case .exportFailed(let reason):
-            return "Export failed: \(reason)"
+            return L10n.localized("error.exportFailed", reason)
         case .importFailed(let reason):
-            return "Import failed: \(reason)"
+            return L10n.localized("error.importFailed", reason)
         case .screenshotFailed(let reason):
-            return "Screenshot failed: \(reason)"
+            return L10n.localized("error.screenshotFailed", reason)
         }
     }
 }

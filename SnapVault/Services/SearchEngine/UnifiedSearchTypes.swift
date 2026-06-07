@@ -14,12 +14,12 @@ enum SearchResultType: String, Codable, CaseIterable {
 
     var displayName: String {
         switch self {
-        case .application: return "Applications"
-        case .file: return "Files"
-        case .clipboard: return "Clipboard"
-        case .systemCommand: return "System"
-        case .calculator: return "Calculator"
-        case .unitConversion: return "Convert"
+        case .application: return L10n.localized("search.type.applications")
+        case .file: return L10n.localized("search.type.files")
+        case .clipboard: return L10n.localized("search.type.clipboard")
+        case .systemCommand: return L10n.localized("search.type.system")
+        case .calculator: return L10n.localized("search.type.calculator")
+        case .unitConversion: return L10n.localized("search.type.convert")
         }
     }
 

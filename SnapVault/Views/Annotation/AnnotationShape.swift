@@ -53,10 +53,10 @@ enum AnnotationTool: String, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .arrow:     return "Arrow"
-        case .rectangle: return "Rectangle"
-        case .mosaic:    return "Mosaic"
-        case .text:      return "Text"
+        case .arrow:     return L10n.localized("annotation.tool.arrow")
+        case .rectangle: return L10n.localized("annotation.tool.rectangle")
+        case .mosaic:    return L10n.localized("annotation.tool.mosaic")
+        case .text:      return L10n.localized("annotation.tool.text")
         }
     }
 

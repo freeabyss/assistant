@@ -53,9 +53,9 @@ final class SettingsViewModel: ObservableObject {
     // MARK: - Poll Interval Options
 
     static let pollIntervalOptions: [(label: String, value: Int)] = [
-        ("500 ms", 500),
-        ("1000 ms", 1000),
-        ("2000 ms", 2000)
+        (L10n.localized("settings.polling.500ms"), 500),
+        (L10n.localized("settings.polling.1000ms"), 1000),
+        (L10n.localized("settings.polling.2000ms"), 2000)
     ]
 
     // MARK: - Initialization
@@ -113,8 +113,8 @@ final class SettingsViewModel: ObservableObject {
             logger.info("Settings saved to database")
         } catch {
             logger.error("Failed to save settings: \(error.localizedDescription, privacy: .public)")
-            alertTitle = "Save Error"
-            alertMessage = "Failed to save settings: \(error.localizedDescription)"
+            alertTitle = L10n.localized("settings.saveError.title")
+            alertMessage = L10n.localized("settings.saveError.message", error.localizedDescription)
             showAlert = true
         }
     }
@@ -164,12 +164,12 @@ final class SettingsViewModel: ObservableObject {
         do {
             try exportService.exportToJSON(to: url)
             let count = totalItemCount
-            dataOperationStatus = "Exported \(count) items to JSON"
+            dataOperationStatus = L10n.localized("settings.export.json.success", count)
             logger.info("Exported \(count) items to JSON: \(url.path, privacy: .public)")
         } catch {
             logger.error("JSON export failed: \(error.localizedDescription, privacy: .public)")
-            alertTitle = "Export Error"
-            alertMessage = "Failed to export JSON: \(error.localizedDescription)"
+            alertTitle = L10n.localized("settings.exportError.title")
+            alertMessage = L10n.localized("settings.exportError.message", error.localizedDescription)
             showAlert = true
         }
     }
@@ -184,12 +184,12 @@ final class SettingsViewModel: ObservableObject {
         do {
             try exportService.exportToCSV(to: url)
             let count = totalItemCount
-            dataOperationStatus = "Exported \(count) items to CSV"
+            dataOperationStatus = L10n.localized("settings.export.csv.success", count)
             logger.info("Exported \(count) items to CSV: \(url.path, privacy: .public)")
         } catch {
             logger.error("CSV export failed: \(error.localizedDescription, privacy: .public)")
-            alertTitle = "Export Error"
-            alertMessage = "Failed to export CSV: \(error.localizedDescription)"
+            alertTitle = L10n.localized("settings.exportError.title")
+            alertMessage = L10n.localized("settings.exportError.message", error.localizedDescription)
             showAlert = true
         }
     }
@@ -203,12 +203,12 @@ final class SettingsViewModel: ObservableObject {
 
         do {
             try exportService.exportDatabase(to: url)
-            dataOperationStatus = "Database exported"
+            dataOperationStatus = L10n.localized("settings.export.db.success")
             logger.info("Database exported to \(url.path, privacy: .public)")
         } catch {
             logger.error("Database export failed: \(error.localizedDescription, privacy: .public)")
-            alertTitle = "Export Error"
-            alertMessage = "Failed to export database: \(error.localizedDescription)"
+            alertTitle = L10n.localized("settings.exportError.title")
+            alertMessage = L10n.localized("settings.exportError.message", error.localizedDescription)
             showAlert = true
         }
     }
@@ -237,8 +237,8 @@ final class SettingsViewModel: ObservableObject {
             logger.info("JSON import complete: \(result.summary, privacy: .public)")
         } catch {
             logger.error("JSON import failed: \(error.localizedDescription, privacy: .public)")
-            alertTitle = "Import Error"
-            alertMessage = "Failed to import JSON: \(error.localizedDescription)"
+            alertTitle = L10n.localized("settings.importError.title")
+            alertMessage = L10n.localized("settings.importError.message", error.localizedDescription)
             showAlert = true
         }
     }
@@ -252,14 +252,14 @@ final class SettingsViewModel: ObservableObject {
 
         do {
             let deleted = try repository.clearAllHistory()
-            dataOperationStatus = "Cleared \(deleted) items"
+            dataOperationStatus = L10n.localized("settings.clear.success", deleted)
             loadDatabaseStats()
             NotificationCenter.default.post(name: .clipboardItemSaved, object: nil)
             logger.info("Cleared \(deleted) items from history")
         } catch {
             logger.error("Clear history failed: \(error.localizedDescription, privacy: .public)")
-            alertTitle = "Clear Error"
-            alertMessage = "Failed to clear history: \(error.localizedDescription)"
+            alertTitle = L10n.localized("settings.clearError.title")
+            alertMessage = L10n.localized("settings.clearError.message", error.localizedDescription)
             showAlert = true
         }
     }

@@ -1960,3 +1960,61 @@ US-025 从零构建了完整的截图标注编辑器，替换 US-024 的 Annotat
 - **马赛克强度**：当前固定 CIPixellate scale=8.0。后续可在工具栏加滑杆让用户调节，per-shape 存储 intensity。
 - **颜色透明度**：当前颜色为纯色。后续可加 alpha 滑杆（如矩形半透明填充）。
 - **缩放/平移**：当前 canvas 不缩放不拖拽。后续可加 `scrollWheel` 缩放（magnification）+ `mouseDown` with Space 键平移（`NSCursor.openHand`）。
+
+## 2026-06-07 - US-026 多语言国际化 Phase 1
+
+### 完成内容
+1. **创建 String Catalog（Localizable.xcstrings）**
+   - 路径: SnapVault/Resources/Localizable.xcstrings
+   - 202 个 key，全部含 en + zh-Hans 两种翻译
+   - 覆盖 Settings/Annotation/Preview/Toolbar/SystemCommand/Search/Error/Unit/Clipboard 全部模块
+   - Xcode 正确编译 String Catalog 并输出 en.lproj + zh-Hans.lproj
+
+2. **创建 L10n 辅助（L10n.swift）**
+   - 路径: SnapVault/Utilities/L10n.swift
+   - enum L10n 提供 localized(_ key:) 和 localized(_ key: _ args:) 两个方法
+
+3. **代码替换（以下文件全部完成 L10n 迁移）**
+   - SettingsView.swift: ~70 条字符串全部替换（Tab/Stepper/Section/Button/Panel/Alert/Footer）
+   - SettingsViewModel.swift: ~15 条字符串（Alert/success/error messages, poll interval labels）
+   - AnnotationShape.swift: 4 个 tool displayName
+   - AnnotationToolbar.swift: 6 条按钮/help 文案
+   - AnnotationEditorWindow.swift: 8 条（窗口标题/Alert/SavePanel）
+   - PreviewPanel.swift: ~20 条（所有标签/按钮/占位文本）
+   - ScreenshotToolbarController.swift: ~15 条（工具条按钮/OCR 结果窗口）
+   - UnifiedSearchTypes.swift: 6 个 SearchResultType.displayName
+   - SystemCommandSource.swift: 14 个 title/subtitle
+   - UnitConverterSource.swift: familyName + 货币 + 格式字符串
+   - ClipboardSearchSource.swift: subtitle 字符串（~5 条）
+   - SnapVaultError.swift: 8 个 errorDescription
+   - OCRService.swift: 2 个错误 reason
+   - ScreenshotService.swift: ~9 个错误 reason
+   - ContentStore.swift: 2 个错误 reason
+   - ExportService.swift: 错误消息/结果文案
+   - UnifiedSearchViewModel.swift: 确认 Alert/Toast
+   - ResultGroupView.swift: "No X results"
+   - UnifiedResultRow.swift: action hint
+   - UnifiedResultList.swift: searching/no results
+
+4. **Xcode 项目更新**
+   - pbxproj 中新增 L10n.swift（Utilities group, Sources phase）
+   - pbxproj 中新增 Localizable.xcstrings（Resources group, Resources phase）
+
+5. **Info.plist**
+   - 添加 CFBundleLocalizations: ["en", "zh-Hans"]
+
+### 编译验证
+- BUILD SUCCEEDED，零 error（仅 Swift 6 并发相关 warnings，与本次无关）
+
+### 未完成（留给 US-027）
+- 代码替换中 familyName 保留双语格式（如 "Length 长度"），适合单位换算场景
+- 未添加 DateFormatter/相对时间本地化
+- 未添加语言切换 UI
+- MenuBarView / RecentContentView / ClipboardListView / ClipboardItemRow 等视图文件未替换
+- PreviewPanel.swift 中的相对时间仍是硬编码中文
+
+### 关键指标
+- xcstrings: 202 个 key（完整）
+- 代码替换: ~20 个文件已替换，远超 60% 目标
+- 构建: BUILD SUCCEEDED
+

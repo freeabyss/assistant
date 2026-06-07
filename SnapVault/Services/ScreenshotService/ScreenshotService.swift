@@ -74,7 +74,7 @@ final class ScreenshotService: ScreenshotServiceProtocol {
         return try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.main.async { [weak self] in
                 guard let self else {
-                    continuation.resume(throwing: SnapVaultError.screenshotFailed(reason: "Service deallocated"))
+                    continuation.resume(throwing: SnapVaultError.screenshotFailed(reason: L10n.localized("error.serviceDeallocated")))
                     return
                 }
 
@@ -92,7 +92,7 @@ final class ScreenshotService: ScreenshotServiceProtocol {
                         }
                     } else {
                         self.logger.info("Region capture cancelled by user")
-                        continuation.resume(throwing: SnapVaultError.screenshotFailed(reason: "User cancelled"))
+                        continuation.resume(throwing: SnapVaultError.screenshotFailed(reason: L10n.localized("error.userCancelled")))
                     }
                 }
 
@@ -119,14 +119,14 @@ final class ScreenshotService: ScreenshotServiceProtocol {
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
 
         guard !content.windows.isEmpty else {
-            throw SnapVaultError.screenshotFailed(reason: "No on-screen windows available")
+            throw SnapVaultError.screenshotFailed(reason: L10n.localized("error.noWindows"))
         }
 
         // Find the window under the mouse cursor.
         // SCWindow.frame uses top-left origin (Core Graphics coordinates).
         // NSEvent.mouseLocation uses bottom-left origin (AppKit coordinates).
         guard let screen = NSScreen.main else {
-            throw SnapVaultError.screenshotFailed(reason: "No main screen available")
+            throw SnapVaultError.screenshotFailed(reason: L10n.localized("error.noMainScreen"))
         }
         let screenHeight = screen.frame.height
 
@@ -143,7 +143,7 @@ final class ScreenshotService: ScreenshotServiceProtocol {
             )
             return appKitFrame.contains(mouseLocation)
         }) else {
-            throw SnapVaultError.screenshotFailed(reason: "No window found at mouse location")
+            throw SnapVaultError.screenshotFailed(reason: L10n.localized("error.noWindowAtMouse"))
         }
 
         let windowID = targetWindow.windowID
@@ -156,11 +156,11 @@ final class ScreenshotService: ScreenshotServiceProtocol {
             CGWindowID(windowID),
             .bestResolution
         ) else {
-            throw SnapVaultError.screenshotFailed(reason: "Failed to capture window image")
+            throw SnapVaultError.screenshotFailed(reason: L10n.localized("error.captureWindowFailed"))
         }
 
         guard let data = cgImage.pngData() else {
-            throw SnapVaultError.screenshotFailed(reason: "Failed to convert captured image to PNG")
+            throw SnapVaultError.screenshotFailed(reason: L10n.localized("error.pngConversionFailed"))
         }
 
         logger.info("Window capture complete: \(cgImage.width)x\(cgImage.height), \(data.count) bytes")
@@ -182,11 +182,11 @@ final class ScreenshotService: ScreenshotServiceProtocol {
         logger.info("Starting full screen capture")
 
         guard let cgImage = CGDisplayCreateImage(CGMainDisplayID()) else {
-            throw SnapVaultError.screenshotFailed(reason: "Failed to capture screen image")
+            throw SnapVaultError.screenshotFailed(reason: L10n.localized("error.captureScreenFailed"))
         }
 
         guard let data = cgImage.pngData() else {
-            throw SnapVaultError.screenshotFailed(reason: "Failed to convert captured image to PNG")
+            throw SnapVaultError.screenshotFailed(reason: L10n.localized("error.pngConversionFailed"))
         }
 
         logger.info("Full screen capture complete: \(cgImage.width)x\(cgImage.height), \(data.count) bytes")
@@ -213,7 +213,7 @@ final class ScreenshotService: ScreenshotServiceProtocol {
 
         // Capture the full screen first
         guard let fullImage = CGDisplayCreateImage(CGMainDisplayID()) else {
-            throw SnapVaultError.screenshotFailed(reason: "Failed to capture screen image")
+            throw SnapVaultError.screenshotFailed(reason: L10n.localized("error.captureScreenFailed"))
         }
 
         // Convert AppKit coordinates (bottom-left origin) to CG coordinates (top-left origin).
@@ -232,11 +232,11 @@ final class ScreenshotService: ScreenshotServiceProtocol {
 
         // Crop to the selected region
         guard let croppedImage = fullImage.cropping(to: cgRect) else {
-            throw SnapVaultError.screenshotFailed(reason: "Failed to crop image to selected region")
+            throw SnapVaultError.screenshotFailed(reason: L10n.localized("error.cropFailed"))
         }
 
         guard let data = croppedImage.pngData() else {
-            throw SnapVaultError.screenshotFailed(reason: "Failed to convert captured image to PNG")
+            throw SnapVaultError.screenshotFailed(reason: L10n.localized("error.pngConversionFailed"))
         }
 
         logger.info("Region capture complete: \(croppedImage.width)x\(croppedImage.height), \(data.count) bytes")

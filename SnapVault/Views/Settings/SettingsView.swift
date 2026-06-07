@@ -14,22 +14,22 @@ struct SettingsView: View {
         TabView {
             GeneralSettingsView(viewModel: viewModel)
                 .tabItem {
-                    Label("General", systemImage: "gear")
+                    Label(L10n.localized("settings.general"), systemImage: "gear")
                 }
 
             ShortcutsSettingsView()
                 .tabItem {
-                    Label("Shortcuts", systemImage: "keyboard")
+                    Label(L10n.localized("settings.shortcuts"), systemImage: "keyboard")
                 }
 
             DataSettingsView(viewModel: viewModel)
                 .tabItem {
-                    Label("Data", systemImage: "externaldrive")
+                    Label(L10n.localized("settings.data"), systemImage: "externaldrive")
                 }
 
             AboutSettingsView()
                 .tabItem {
-                    Label("About", systemImage: "info.circle")
+                    Label(L10n.localized("settings.about"), systemImage: "info.circle")
                 }
         }
         .frame(width: 480, height: 420)
@@ -46,10 +46,10 @@ struct GeneralSettingsView: View {
             // -- Retention & Storage --
             Section {
                 HStack {
-                    Text("Keep history for:")
+                    Text(L10n.localized("settings.retention.label"))
                         .frame(width: 140, alignment: .trailing)
                     Stepper(
-                        "\(viewModel.retentionDays) days",
+                        L10n.localized("settings.retention.format", viewModel.retentionDays),
                         value: $viewModel.retentionDays,
                         in: 1...365,
                         step: 1
@@ -57,19 +57,19 @@ struct GeneralSettingsView: View {
                 }
 
                 HStack {
-                    Text("Storage limit:")
+                    Text(L10n.localized("settings.storage.label"))
                         .frame(width: 140, alignment: .trailing)
                     Stepper(
-                        "\(viewModel.maxStorageMB) MB",
+                        L10n.localized("settings.storage.format", viewModel.maxStorageMB),
                         value: $viewModel.maxStorageMB,
                         in: 100...2000,
                         step: 50
                     )
                 }
             } header: {
-                Text("Retention")
+                Text(L10n.localized("settings.retention.header"))
             } footer: {
-                Text("Clipboard items older than the retention period will be automatically deleted. Pinned items are never removed.")
+                Text(L10n.localized("settings.retention.footer"))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -77,15 +77,15 @@ struct GeneralSettingsView: View {
             // -- Behavior --
             Section {
                 Toggle(isOn: $viewModel.launchAtLogin) {
-                    Text("Launch at login")
+                    Text(L10n.localized("settings.launchAtLogin"))
                 }
 
                 Toggle(isOn: $viewModel.ocrEnabled) {
-                    Text("OCR text recognition")
+                    Text(L10n.localized("settings.ocrEnabled"))
                 }
 
                 HStack {
-                    Text("Polling interval:")
+                    Text(L10n.localized("settings.polling.label"))
                         .frame(width: 140, alignment: .trailing)
                     Picker("", selection: $viewModel.pollInterval) {
                         ForEach(SettingsViewModel.pollIntervalOptions, id: \.value) { option in
@@ -96,9 +96,9 @@ struct GeneralSettingsView: View {
                     .frame(width: 140)
                 }
             } header: {
-                Text("Behavior")
+                Text(L10n.localized("settings.behavior.header"))
             } footer: {
-                Text("OCR extracts text from images for search. Polling interval controls how often SnapVault checks the clipboard for new content.")
+                Text(L10n.localized("settings.behavior.footer"))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -106,18 +106,18 @@ struct GeneralSettingsView: View {
             // -- Save / Reset --
             HStack {
                 Spacer()
-                Button("Restore Defaults") {
+                Button(L10n.localized("settings.restoreDefaults")) {
                     viewModel.resetToDefaults()
                 }
-                .help("Reset all general settings to their default values")
+                .help(L10n.localized("settings.restoreDefaults.help"))
 
-                Button("Save") {
+                Button(L10n.localized("settings.save")) {
                     Task {
                         await viewModel.save()
                     }
                 }
                 .keyboardShortcut(.defaultAction)
-                .help("Save all settings changes")
+                .help(L10n.localized("settings.save.help"))
             }
         }
         .padding()
@@ -131,21 +131,21 @@ struct ShortcutsSettingsView: View {
         Form {
             Section {
                 HStack {
-                    Text("Toggle Panel:")
+                    Text(L10n.localized("settings.shortcuts.togglePanel"))
                         .frame(width: 120, alignment: .trailing)
                     KeyboardShortcuts.Recorder(for: .togglePanel)
                     Spacer()
                 }
 
                 HStack {
-                    Text("Capture Region:")
+                    Text(L10n.localized("settings.shortcuts.captureRegion"))
                         .frame(width: 120, alignment: .trailing)
                     KeyboardShortcuts.Recorder(for: .captureRegion)
                     Spacer()
                 }
 
                 HStack {
-                    Text("Capture Window:")
+                    Text(L10n.localized("settings.shortcuts.captureWindow"))
                         .frame(width: 120, alignment: .trailing)
                     KeyboardShortcuts.Recorder(for: .captureWindow)
                     Spacer()
@@ -153,24 +153,24 @@ struct ShortcutsSettingsView: View {
 
                 HStack {
                     Spacer()
-                    Button("Restore Defaults") {
+                    Button(L10n.localized("settings.restoreDefaults")) {
                         KeyboardShortcuts.reset(.togglePanel)
                         KeyboardShortcuts.reset(.captureRegion)
                         KeyboardShortcuts.reset(.captureWindow)
                     }
-                    .help("Reset all shortcuts to their default values")
+                    .help(L10n.localized("settings.restoreDefaults.help"))
                 }
             } header: {
-                Text("Global Shortcuts")
+                Text(L10n.localized("settings.shortcuts.header"))
             } footer: {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Defaults: Toggle Panel ⌘Space · Capture Region ⌘⇧A · Capture Window ⌘⇧W.")
+                    Text(L10n.localized("settings.shortcuts.footer.defaults"))
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    Text("Heads up: ⌘Space conflicts with macOS Spotlight by default. To use SnapVault's Command Bar, either change Spotlight's shortcut in System Settings → Keyboard → Keyboard Shortcuts → Spotlight, or pick a different shortcut here.")
+                    Text(L10n.localized("settings.shortcuts.footer.spotlightWarning"))
                         .font(.caption)
                         .foregroundColor(.orange)
-                    Text("Click a recorder field and press your desired key combination. Capture Region lets you select an area to screenshot. Capture Window captures the window under your cursor.")
+                    Text(L10n.localized("settings.shortcuts.footer.instructions"))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
@@ -190,12 +190,12 @@ struct DataSettingsView: View {
             // -- Database Info --
             Section {
                 HStack {
-                    Text("Database size:")
+                    Text(L10n.localized("settings.data.dbSize"))
                         .frame(width: 140, alignment: .trailing)
                     Text(formatSize(viewModel.databaseSizeMB))
                         .foregroundColor(.secondary)
                     Spacer()
-                    Button("Refresh") {
+                    Button(L10n.localized("settings.data.refresh")) {
                         viewModel.loadDatabaseStats()
                     }
                     .buttonStyle(.borderless)
@@ -203,44 +203,44 @@ struct DataSettingsView: View {
                 }
 
                 HStack {
-                    Text("Total items:")
+                    Text(L10n.localized("settings.data.totalItems"))
                         .frame(width: 140, alignment: .trailing)
                     Text("\(viewModel.totalItemCount)")
                         .foregroundColor(.secondary)
                     Spacer()
                 }
             } header: {
-                Text("Storage")
+                Text(L10n.localized("settings.data.storage.header"))
             }
 
             // -- Export --
             Section {
                 HStack {
                     Button(action: { exportJSON() }) {
-                        Label("Export JSON...", systemImage: "doc.text")
+                        Label(L10n.localized("settings.data.exportJson"), systemImage: "doc.text")
                     }
                     .disabled(viewModel.isExporting)
 
                     Spacer()
 
                     Button(action: { exportCSV() }) {
-                        Label("Export CSV...", systemImage: "tablecells")
+                        Label(L10n.localized("settings.data.exportCsv"), systemImage: "tablecells")
                     }
                     .disabled(viewModel.isExporting)
                 }
 
                 HStack {
                     Button(action: { exportDatabase() }) {
-                        Label("Export Database...", systemImage: "internaldrive")
+                        Label(L10n.localized("settings.data.exportDb"), systemImage: "internaldrive")
                     }
                     .disabled(viewModel.isExporting)
 
                     Spacer()
                 }
             } header: {
-                Text("Export")
+                Text(L10n.localized("settings.data.export.header"))
             } footer: {
-                Text("JSON includes all data (images as Base64). CSV includes text fields only. Database exports the raw SQLite file.")
+                Text(L10n.localized("settings.data.export.footer"))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -248,21 +248,21 @@ struct DataSettingsView: View {
             // -- Import --
             Section {
                 Button(action: { importJSON() }) {
-                    Label("Import JSON...", systemImage: "square.and.arrow.down")
+                    Label(L10n.localized("settings.data.importJson"), systemImage: "square.and.arrow.down")
                 }
                 .disabled(viewModel.isImporting)
 
                 if viewModel.isImporting {
                     ProgressView(value: viewModel.importProgress)
                         .progressViewStyle(.linear)
-                    Text("Importing...")
+                    Text(L10n.localized("settings.data.importing"))
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
             } header: {
-                Text("Import")
+                Text(L10n.localized("settings.data.import.header"))
             } footer: {
-                Text("Import data from a previously exported JSON file. Duplicate items (same content hash) will be skipped.")
+                Text(L10n.localized("settings.data.import.footer"))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
@@ -277,7 +277,7 @@ struct DataSettingsView: View {
                             .font(.caption)
                             .foregroundColor(.green)
                         Spacer()
-                        Button("Dismiss") {
+                        Button(L10n.localized("settings.data.status.dismiss")) {
                             viewModel.dataOperationStatus = nil
                         }
                         .buttonStyle(.borderless)
@@ -290,34 +290,34 @@ struct DataSettingsView: View {
             Section {
                 HStack {
                     Button(action: { viewModel.showClearHistoryConfirm = true }) {
-                        Label("Clear History...", systemImage: "trash")
+                        Label(L10n.localized("settings.data.clearHistory"), systemImage: "trash")
                             .foregroundColor(.red)
                     }
                     .disabled(viewModel.isClearingHistory)
                     .confirmationDialog(
-                        "Are you sure you want to clear all clipboard history?",
+                        L10n.localized("settings.data.clearHistory.confirm.title"),
                         isPresented: $viewModel.showClearHistoryConfirm,
                         titleVisibility: .visible
                     ) {
-                        Button("Clear All History", role: .destructive) {
+                        Button(L10n.localized("settings.data.clearHistory.confirm.action"), role: .destructive) {
                             Task {
                                 await viewModel.clearHistory()
                             }
                         }
-                        Button("Cancel", role: .cancel) {}
+                        Button(L10n.localized("settings.data.clearHistory.cancel"), role: .cancel) {}
                     } message: {
-                        Text("This will permanently delete all non-pinned clipboard items. Pinned items will be preserved. This action cannot be undone.")
+                        Text(L10n.localized("settings.data.clearHistory.confirm.message"))
                     }
 
                     Spacer()
                 }
             } header: {
-                Text("Danger Zone")
+                Text(L10n.localized("settings.data.dangerZone.header"))
             }
         }
         .padding()
         .alert(viewModel.alertTitle, isPresented: $viewModel.showAlert) {
-            Button("OK") {}
+            Button(L10n.localized("settings.alert.ok")) {}
         } message: {
             Text(viewModel.alertMessage)
         }
@@ -327,7 +327,7 @@ struct DataSettingsView: View {
 
     private func exportJSON() {
         let panel = NSSavePanel()
-        panel.title = "Export Clipboard History as JSON"
+        panel.title = L10n.localized("settings.savePanel.json")
         panel.nameFieldStringValue = "snapvault-export.json"
         panel.allowedContentTypes = [.json]
         panel.canCreateDirectories = true
@@ -341,7 +341,7 @@ struct DataSettingsView: View {
 
     private func exportCSV() {
         let panel = NSSavePanel()
-        panel.title = "Export Clipboard History as CSV"
+        panel.title = L10n.localized("settings.savePanel.csv")
         panel.nameFieldStringValue = "snapvault-export.csv"
         panel.allowedContentTypes = [.commaSeparatedText]
         panel.canCreateDirectories = true
@@ -355,7 +355,7 @@ struct DataSettingsView: View {
 
     private func exportDatabase() {
         let panel = NSSavePanel()
-        panel.title = "Export Database File"
+        panel.title = L10n.localized("settings.savePanel.db")
         panel.nameFieldStringValue = "snapvault.db"
         panel.allowedContentTypes = [.init(filenameExtension: "db")!]
         panel.canCreateDirectories = true
@@ -371,7 +371,7 @@ struct DataSettingsView: View {
 
     private func importJSON() {
         let panel = NSOpenPanel()
-        panel.title = "Import Clipboard History"
+        panel.title = L10n.localized("settings.openPanel.import")
         panel.allowedContentTypes = [.json]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
@@ -419,21 +419,21 @@ struct AboutSettingsView: View {
                     .foregroundColor(.accentColor)
             }
 
-            Text("SnapVault")
+            Text(L10n.localized("settings.about.appName"))
                 .font(.title)
                 .fontWeight(.bold)
 
-            Text("Version \(appVersion) (\(buildNumber))")
+            Text(L10n.localized("settings.about.version", appVersion, buildNumber))
                 .font(.subheadline)
                 .foregroundColor(.secondary)
 
-            Text("A fast, local clipboard manager for macOS.")
+            Text(L10n.localized("settings.about.description"))
                 .font(.body)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
 
             // Check for Updates button
-            Button("Check for Updates...") {
+            Button(L10n.localized("settings.about.checkUpdates")) {
                 NotificationCenter.default.post(name: .checkForUpdates, object: nil)
             }
             .buttonStyle(.bordered)
@@ -441,11 +441,11 @@ struct AboutSettingsView: View {
             Divider()
 
             VStack(spacing: 4) {
-                Text("Built with SwiftUI + GRDB")
+                Text(L10n.localized("settings.about.techStack"))
                     .font(.caption)
                     .foregroundColor(.secondary)
 
-                Text("Data is stored locally on your Mac.")
+                Text(L10n.localized("settings.about.dataNote"))
                     .font(.caption)
                     .foregroundColor(.secondary)
             }

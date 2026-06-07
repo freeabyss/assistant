@@ -9,7 +9,7 @@ struct ImportResult {
     let total: Int
 
     var summary: String {
-        "Imported \(imported) items, skipped \(skipped) duplicates (\(total) total)"
+        L10n.localized("error.export.result.format", imported, skipped, total)
     }
 }
 
@@ -24,15 +24,15 @@ enum ExportError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .databaseNotReady:
-            return "Database is not initialized"
+            return L10n.localized("error.database")
         case .exportFailed(let reason):
-            return "Export failed: \(reason)"
+            return L10n.localized("error.exportFailed", reason)
         case .importFailed(let reason):
-            return "Import failed: \(reason)"
+            return L10n.localized("error.importFailed", reason)
         case .invalidFormat(let reason):
-            return "Invalid format: \(reason)"
+            return L10n.localized("error.export.invalidFormat", reason)
         case .fileNotFound(let path):
-            return "File not found: \(path)"
+            return L10n.localized("error.export.fileNotFound", path)
         }
     }
 }
@@ -153,7 +153,7 @@ final class ExportService {
         }
 
         guard let data = csv.data(using: .utf8) else {
-            throw ExportError.exportFailed("Failed to encode CSV as UTF-8")
+            throw ExportError.exportFailed(L10n.localized("error.export.csvUtf8"))
         }
 
         try data.write(to: url, options: .atomic)
@@ -231,12 +231,12 @@ final class ExportService {
             do {
                 items = try decoder.decode([ClipboardItem].self, from: data)
             } catch {
-                throw ExportError.invalidFormat("Invalid JSON format: \(error.localizedDescription)")
+                throw ExportError.invalidFormat(L10n.localized("error.export.jsonFormat", error.localizedDescription))
             }
         }
 
         guard !items.isEmpty else {
-            throw ExportError.invalidFormat("No items found in export file")
+            throw ExportError.invalidFormat(L10n.localized("error.export.noItems"))
         }
 
         logger.info("Parsed \(items.count) items from import file")

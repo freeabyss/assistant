@@ -343,7 +343,7 @@ final class UnifiedSearchViewModel: ObservableObject {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
-        showCopyToast(message: "Copied: \(text)")
+        showCopyToast(message: L10n.localized("screenshot.ocr.copied") + ": \(text)")
         logger.debug("Copied text to pasteboard: \(text, privacy: .public)")
     }
 
@@ -364,20 +364,20 @@ final class UnifiedSearchViewModel: ObservableObject {
             let alert = NSAlert()
             switch command {
             case .restart:
-                alert.messageText = "Restart your Mac?"
-                alert.informativeText = "All open applications will be closed and the computer will restart."
+                alert.messageText = L10n.localized("system.confirm.restart.title")
+                alert.informativeText = L10n.localized("system.confirm.restart.message")
             case .shutdown:
-                alert.messageText = "Shut down your Mac?"
-                alert.informativeText = "All open applications will be closed and the computer will turn off."
+                alert.messageText = L10n.localized("system.confirm.shutdown.title")
+                alert.informativeText = L10n.localized("system.confirm.shutdown.message")
             case .emptyTrash:
-                alert.messageText = "Empty the Trash?"
-                alert.informativeText = "Items in the Trash will be permanently deleted."
+                alert.messageText = L10n.localized("system.confirm.emptyTrash.title")
+                alert.informativeText = L10n.localized("system.confirm.emptyTrash.message")
             default:
-                alert.messageText = "Run \(command.rawValue)?"
+                alert.messageText = L10n.localized("system.confirm.fallback", command.rawValue)
             }
             alert.alertStyle = .warning
-            alert.addButton(withTitle: "OK")
-            alert.addButton(withTitle: "Cancel")
+            alert.addButton(withTitle: L10n.localized("settings.alert.ok"))
+            alert.addButton(withTitle: L10n.localized("settings.alert.cancel"))
 
             let response = alert.runModal()
             guard response == .alertFirstButtonReturn else {

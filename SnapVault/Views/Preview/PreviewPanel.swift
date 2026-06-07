@@ -91,7 +91,7 @@ struct PreviewPanel: View {
 
     private var textPreview: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(item.textContent ?? "Empty content")
+            Text(item.textContent ?? L10n.localized("preview.empty"))
                 .font(.system(size: 14, design: .monospaced))
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -121,7 +121,7 @@ struct PreviewPanel: View {
                     )
             } else {
                 // Fallback to plain text
-                Text(item.textContent ?? item.rtfContent ?? "Empty content")
+                Text(item.textContent ?? item.rtfContent ?? L10n.localized("preview.empty"))
                     .font(.system(size: 14))
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -173,7 +173,7 @@ struct PreviewPanel: View {
                 // OCR text if available
                 if let ocr = item.ocrText, !ocr.isEmpty {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("OCR Text")
+                        Text(L10n.localized("preview.ocrText"))
                             .font(.system(size: 11, weight: .semibold))
                             .foregroundColor(.secondary)
                         Text(ocr)
@@ -190,7 +190,7 @@ struct PreviewPanel: View {
                     Image(systemName: "photo")
                         .font(.system(size: 40))
                         .foregroundColor(.secondary.opacity(0.5))
-                    Text("Image data not available")
+                    Text(L10n.localized("preview.imageNotAvailable"))
                         .font(.system(size: 13))
                         .foregroundColor(.secondary)
                 }
@@ -215,16 +215,16 @@ struct PreviewPanel: View {
 
                     // File info table
                     VStack(spacing: 8) {
-                        fileInfoRow(label: "File Name", value: fileURL.lastPathComponent)
-                        fileInfoRow(label: "Path", value: path)
+                        fileInfoRow(label: L10n.localized("preview.fileName"), value: fileURL.lastPathComponent)
+                        fileInfoRow(label: L10n.localized("preview.filePath"), value: path)
                         if let size = fileSizeString(path: path) {
-                            fileInfoRow(label: "Size", value: size)
+                            fileInfoRow(label: L10n.localized("preview.fileSize"), value: size)
                         }
                         if let type = fileType(path: path) {
-                            fileInfoRow(label: "Type", value: type)
+                            fileInfoRow(label: L10n.localized("preview.fileType"), value: type)
                         }
                         if let modified = fileModifiedDate(path: path) {
-                            fileInfoRow(label: "Modified", value: modified)
+                            fileInfoRow(label: L10n.localized("preview.fileModified"), value: modified)
                         }
                     }
                     .padding(12)
@@ -239,7 +239,7 @@ struct PreviewPanel: View {
                     Button(action: {
                         NSWorkspace.shared.selectFile(path, inFileViewerRootedAtPath: "")
                     }) {
-                        Label("Show in Finder", systemImage: "folder")
+                        Label(L10n.localized("preview.showInFinder"), systemImage: "folder")
                             .font(.system(size: 13))
                     }
                     .buttonStyle(.bordered)
@@ -249,7 +249,7 @@ struct PreviewPanel: View {
                     Image(systemName: "doc")
                         .font(.system(size: 40))
                         .foregroundColor(.secondary.opacity(0.5))
-                    Text("File path not available")
+                    Text(L10n.localized("preview.fileNotAvailable"))
                         .font(.system(size: 13))
                         .foregroundColor(.secondary)
                 }
@@ -268,7 +268,7 @@ struct PreviewPanel: View {
                 onDelete()
                 dismiss()
             }) {
-                Label("Delete", systemImage: "trash")
+                Label(L10n.localized("preview.delete"), systemImage: "trash")
                     .font(.system(size: 13))
                     .foregroundColor(.red)
             }
@@ -278,7 +278,7 @@ struct PreviewPanel: View {
                 onCopy()
                 dismiss()
             }) {
-                Label("Copy", systemImage: "doc.on.doc")
+                Label(L10n.localized("preview.copy"), systemImage: "doc.on.doc")
                     .font(.system(size: 13))
             }
             .buttonStyle(.borderedProminent)

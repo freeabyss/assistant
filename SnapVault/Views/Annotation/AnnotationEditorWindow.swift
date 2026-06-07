@@ -69,7 +69,7 @@ final class AnnotationEditorWindow: NSWindowController, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "Annotate Screenshot"
+        window.title = L10n.localized("annotation.window.title")
         window.contentViewController = NSHostingController(rootView: root)
         window.delegate = self
         window.isReleasedWhenClosed = false
@@ -113,14 +113,14 @@ final class AnnotationEditorWindow: NSWindowController, NSWindowDelegate {
 
     private func requestTextInput(at point: CGPoint, completion: @escaping (String?) -> Void) {
         let alert = NSAlert()
-        alert.messageText = "Enter Text"
-        alert.informativeText = "Text will appear at the clicked position."
+        alert.messageText = L10n.localized("annotation.textInput.title")
+        alert.informativeText = L10n.localized("annotation.textInput.message")
         alert.alertStyle = .informational
-        alert.addButton(withTitle: "Add")
-        alert.addButton(withTitle: "Cancel")
+        alert.addButton(withTitle: L10n.localized("annotation.textInput.add"))
+        alert.addButton(withTitle: L10n.localized("annotation.textInput.cancel"))
 
         let textField = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
-        textField.placeholderString = "Label text"
+        textField.placeholderString = L10n.localized("annotation.textInput.placeholder")
         textField.bezelStyle = .roundedBezel
         alert.accessoryView = textField
 
@@ -158,12 +158,12 @@ final class AnnotationEditorWindow: NSWindowController, NSWindowDelegate {
 
         // Also offer a NSSavePanel for explicit file save.
         let panel = NSSavePanel()
-        panel.title = "Save Annotated Screenshot"
+        panel.title = L10n.localized("annotation.savePanel.title")
         panel.allowedContentTypes = [.png]
         panel.canCreateDirectories = true
         let fmt = DateFormatter()
         fmt.dateFormat = "yyyy-MM-dd HH.mm.ss"
-        panel.nameFieldStringValue = "Screenshot \(fmt.string(from: Date())).png"
+        panel.nameFieldStringValue = L10n.localized("annotation.savePanel.filename", fmt.string(from: Date()))
         panel.begin { [weak self] resp in
             guard resp == .OK, let url = panel.url else { return }
             do {

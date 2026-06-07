@@ -37,56 +37,56 @@ final class SystemCommandSource: SearchSource {
                 command: .sleep,
                 primaryKeyword: "sleep",
                 aliases: ["睡眠", "休眠", "sleep", "zzz"],
-                title: "Sleep",
-                subtitle: "Put the Mac to sleep",
+                title: L10n.localized("system.sleep.title"),
+                subtitle: L10n.localized("system.sleep.subtitle"),
                 iconName: "moon.fill"
             ),
             CommandEntry(
                 command: .restart,
                 primaryKeyword: "restart",
                 aliases: ["重启", "重新启动", "restart", "reboot"],
-                title: "Restart",
-                subtitle: "Restart the Mac (confirmation required)",
+                title: L10n.localized("system.restart.title"),
+                subtitle: L10n.localized("system.restart.subtitle"),
                 iconName: "arrow.clockwise.circle.fill"
             ),
             CommandEntry(
                 command: .shutdown,
                 primaryKeyword: "shutdown",
                 aliases: ["关机", "关闭", "shutdown", "shut down", "power off", "poweroff"],
-                title: "Shut Down",
-                subtitle: "Shut down the Mac (confirmation required)",
+                title: L10n.localized("system.shutdown.title"),
+                subtitle: L10n.localized("system.shutdown.subtitle"),
                 iconName: "power"
             ),
             CommandEntry(
                 command: .lock,
                 primaryKeyword: "lock",
                 aliases: ["锁定", "锁屏", "lock", "lock screen"],
-                title: "Lock Screen",
-                subtitle: "Lock the screen immediately",
+                title: L10n.localized("system.lock.title"),
+                subtitle: L10n.localized("system.lock.subtitle"),
                 iconName: "lock.fill"
             ),
             CommandEntry(
                 command: .lockScreen,
                 primaryKeyword: "lockscreen",
                 aliases: ["锁屏", "lockscreen", "lock screen"],
-                title: "Lock Screen (Display Sleep)",
-                subtitle: "Turn off the display",
+                title: L10n.localized("system.lockScreen.title"),
+                subtitle: L10n.localized("system.lockScreen.subtitle"),
                 iconName: "lock.display"
             ),
             CommandEntry(
                 command: .emptyTrash,
                 primaryKeyword: "emptytrash",
                 aliases: ["清空废纸篓", "清空垃圾桶", "empty trash", "emptytrash", "trash"],
-                title: "Empty Trash",
-                subtitle: "Permanently delete all items in Trash (confirmation required)",
+                title: L10n.localized("system.emptyTrash.title"),
+                subtitle: L10n.localized("system.emptyTrash.subtitle"),
                 iconName: "trash.fill"
             ),
             CommandEntry(
                 command: .showDesktop,
                 primaryKeyword: "showdesktop",
                 aliases: ["显示桌面", "桌面", "show desktop", "showdesktop", "desktop"],
-                title: "Show Desktop",
-                subtitle: "Hide all windows and show the desktop",
+                title: L10n.localized("system.showDesktop.title"),
+                subtitle: L10n.localized("system.showDesktop.subtitle"),
                 iconName: "macwindow.on.rectangle"
             )
         ]

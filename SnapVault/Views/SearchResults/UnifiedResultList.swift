@@ -148,7 +148,7 @@ struct UnifiedResultList: View {
             VStack(spacing: 8) {
                 ProgressView()
                     .scaleEffect(0.8)
-                Text("Searching...")
+                Text(L10n.localized("search.searching"))
                     .font(.system(size: 12))
                     .foregroundColor(.secondary)
             }
@@ -166,7 +166,7 @@ struct UnifiedResultList: View {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 28))
                     .foregroundColor(.secondary.opacity(0.4))
-                Text("No results found")
+                Text(L10n.localized("search.noResults.all"))
                     .font(.system(size: 13))
                     .foregroundColor(.secondary)
             }

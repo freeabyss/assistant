@@ -122,10 +122,10 @@ final class ContentStore {
     /// - Throws: `RepositoryError`, `SnapVaultError.ocrFailed`, or underlying I/O errors.
     func recognizeOCR(itemId: Int64) async throws -> OCRResult {
         guard let item = try repository.fetch(id: itemId) else {
-            throw SnapVaultError.ocrFailed(reason: "Item id=\(itemId) not found")
+            throw SnapVaultError.ocrFailed(reason: L10n.localized("error.itemNotFoundId", itemId))
         }
         guard let data = item.imageData else {
-            throw SnapVaultError.ocrFailed(reason: "Item id=\(itemId) has no image data")
+            throw SnapVaultError.ocrFailed(reason: L10n.localized("error.itemNoImageDataId", itemId))
         }
 
         let result = try await ocrService.recognizeText(from: data, languages: ["zh-Hans", "en"])

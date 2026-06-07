@@ -34,6 +34,13 @@
     <key>NSAppleEventsUsageDescription</key>
     <string>SnapVault uses AppleScript to execute system commands like Sleep, Restart, Shut Down, and Empty Trash from the Command Bar.</string>
 
+    <!-- Localization -->
+    <key>CFBundleLocalizations</key>
+    <array>
+        <string>en</string>
+        <string>zh-Hans</string>
+    </array>
+
     <!-- Sparkle auto-update configuration -->
     <key>SUFeedURL</key>
     <string>https://snapvault.app/appcast.xml</string>

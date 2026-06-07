@@ -57,8 +57,8 @@ struct AnnotationTopToolbar: View {
 
             // --- Undo / Redo ---
             HStack(spacing: 6) {
-                IconButton(systemName: "arrow.uturn.backward", tooltip: "Undo (⌘Z)", action: onUndo)
-                IconButton(systemName: "arrow.uturn.forward", tooltip: "Redo (⌘⇧Z)", action: onRedo)
+                IconButton(systemName: "arrow.uturn.backward", tooltip: L10n.localized("annotation.undo.help"), action: onUndo)
+                IconButton(systemName: "arrow.uturn.forward", tooltip: L10n.localized("annotation.redo.help"), action: onRedo)
             }
 
             Spacer()
@@ -76,11 +76,11 @@ struct AnnotationBottomToolbar: View {
     var body: some View {
         HStack {
             Spacer()
-            Button("Cancel") { onCancel() }
+            Button(L10n.localized("annotation.cancel")) { onCancel() }
                 .keyboardShortcut(.cancelAction)
-            Button("Copy") { onCopy() }
+            Button(L10n.localized("annotation.copy")) { onCopy() }
                 .keyboardShortcut("c", modifiers: .command)
-            Button("Save") { onSave() }
+            Button(L10n.localized("annotation.save")) { onSave() }
                 .keyboardShortcut("s", modifiers: .command)
                 .buttonStyle(.borderedProminent)
         }
