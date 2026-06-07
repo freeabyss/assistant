@@ -19,10 +19,10 @@ enum RecentFilter: Equatable, Hashable, Identifiable, CaseIterable {
 
     var title: String {
         switch self {
-        case .all: return "All"
-        case .screenshot: return "Screenshot"
-        case .ocr: return "OCR"
-        case .clipboard: return "Clipboard"
+        case .all: return L10n.localized("recent.filter.all")
+        case .screenshot: return L10n.localized("recent.filter.screenshot")
+        case .ocr: return L10n.localized("recent.filter.ocr")
+        case .clipboard: return L10n.localized("recent.filter.clipboard")
         }
     }
 
@@ -58,8 +58,8 @@ enum DateGroup: Identifiable, Hashable {
 
     var title: String {
         switch self {
-        case .today: return "今天"
-        case .yesterday: return "昨天"
+        case .today: return L10n.localized("date.today")
+        case .yesterday: return L10n.localized("date.yesterday")
         case .weekday(let name): return name
         case .older(let monthDay): return monthDay
         }
@@ -256,7 +256,7 @@ final class RecentContentViewModel: ObservableObject {
     }
 
     private func showCopyToast() {
-        toastMessage = "已复制"
+        toastMessage = L10n.localized("toast.copied")
         showToast = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
             self?.showToast = false
@@ -305,11 +305,11 @@ final class RecentContentViewModel: ObservableObject {
         let calendar = Calendar.current
         let now = Date()
         let weekdayFormatter = DateFormatter()
-        weekdayFormatter.locale = Locale(identifier: "zh_CN")
-        weekdayFormatter.dateFormat = "EEEE" // 星期一
+        weekdayFormatter.locale = Locale.current
+        weekdayFormatter.dateFormat = L10n.localized("date.weekdayFormat")
         let monthDayFormatter = DateFormatter()
-        monthDayFormatter.locale = Locale(identifier: "zh_CN")
-        monthDayFormatter.dateFormat = "M月d日"
+        monthDayFormatter.locale = Locale.current
+        monthDayFormatter.dateFormat = L10n.localized("date.olderFormat")
 
         // Preserve first-seen group order using an ordered list + lookup map.
         var orderedGroups: [DateGroup] = []

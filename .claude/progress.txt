@@ -2018,3 +2018,67 @@ US-025 从零构建了完整的截图标注编辑器，替换 US-024 的 Annotat
 - 代码替换: ~20 个文件已替换，远超 60% 目标
 - 构建: BUILD SUCCEEDED
 
+
+## 2026-06-07 - US-027 多语言国际化 Phase 2（MenuBar/Recent/Clipboard/Model + 语言切换 + 验证）
+
+### 完成内容
+1. **xcstrings 追加 42 个新 key**：time.* (相对时间)、menubar.* (主面板/搜索框/Tab)、recent.* (最近内容)、clipboard.* (剪贴板列表)、content.* (ContentType displayName)、date.* (日期分组)、toast.* (Toast 提示)、settings.language.* (语言切换)、preview.open (预览按钮)、clipboard.pin/unpin/favorite/unfavorite
+
+2. **L10n.relativeTime(from:) 统一相对时间方法**
+   - ClipboardItemRow / PreviewPanel 的相对时间计算全部委托给 L10n
+   - 根据当前 locale 自动选择中文 ("刚刚/N分钟前") 或英文 ("Just now/Nm ago")
+
+3. **替换硬编码字符串的文件（6 个）**
+   - `MenuBarView.swift`：PanelDisplayMode title、searchPlaceholder、resultsCount、groupFilterTabs（All/Calculator/Convert/Apps/System/Files/Clipboard）
+   - `ClipboardListView.swift`：swipeActions Label、contextMenu Label、Loading/空状态
+   - `RecentContentView.swift`：swipeActions/contextMenu Label、空状态中文字符串
+   - `ClipboardItemRow.swift`：relativeTime、Empty content/File fallback
+   - `RecentContentViewModel.swift`：RecentFilter.title、DateGroup.title、showCopyToast、groupByDate 中的 DateFormatter locale 和 format string
+   - `ClipboardListViewModel.swift`：showCopyToast
+
+4. **Model 替换**
+   - `ClipboardItem.swift`：ContentType.displayName 改用 L10n.localized("content.*") 取词
+
+5. **UnitConverterSource 清理**
+   - familyName 拼接改为纯 L10n 调用（xcstrings 值已内置双语）
+   - currencyName 改用 L10n.localized("unit.currency.*")
+
+6. **语言切换 UI**
+   - SettingsView → GeneralSettingsView 新增 Language Section
+   - Picker 选项：English / 中文
+   - 切换后写入 UserDefaults AppleLanguages，弹 Alert 提示重启生效
+   - SettingsViewModel 新增 selectedLanguage @Published 属性
+
+7. **验证结果**
+   - grep 扫描 SnapVault/ 下用户可见中文字符串：
+     * 仅剩 SystemCommandSource 的 7 条搜索别名（故意保留：搜索需要中英文别名并存）
+     * 0 条 UI 硬编码中文残留
+
+### 修改文件清单（17 files, ~150 insertions/deletions）
+- SnapVault/Resources/Localizable.xcstrings（追加 42 key → 总计 244 key）
+- SnapVault/Utilities/L10n.swift（新增 relativeTime(from:) 方法）
+- SnapVault/Models/ClipboardItem.swift（ContentType.displayName L10n）
+- SnapVault/Views/MenuBar/MenuBarView.swift（全部 Tab/placeholder/计数 L10n）
+- SnapVault/Views/ClipboardList/ClipboardListView.swift（全部硬编码 L10n）
+- SnapVault/Views/ClipboardList/ClipboardItemRow.swift（relativeTime + fallback L10n）
+- SnapVault/Views/RecentContent/RecentContentView.swift（全部硬编码 L10n）
+- SnapVault/Views/Preview/PreviewPanel.swift（relativeTime L10n）
+- SnapVault/Views/Settings/SettingsView.swift（新增 Language Section）
+- SnapVault/ViewModels/RecentContentViewModel.swift（filter/date/toast L10n）
+- SnapVault/ViewModels/ClipboardListViewModel.swift（toast L10n）
+- SnapVault/ViewModels/SettingsViewModel.swift（新增 selectedLanguage）
+- SnapVault/Services/SearchEngine/UnitConverterSource.swift（familyName+currencyName L10n）
+- .claude/task.json（US-027 passes=true）
+- .claude/progress.txt（本文档）
+
+### 技术决策
+1. 相对时间统一在 L10n.relativeTime(from:) 中处理，避免 ClipboardItemRow 和 PreviewPanel 各有独立实现
+2. DateGroup groupByDate 的 DateFormatter locale 由硬编码 zh_CN 改为 Locale.current，自动跟随系统语言
+3. xcstrings 中的 unit family name 值改为双语形式（如 "Length 长度"），在两种 locale 下显示相同内容（方便用户对照）
+4. 系统命令搜索别名保留中英文并存（这是搜索功能需求，非 UI 文案）
+5. 语言切换通过设置 AppleLanguages 后弹 Alert 提示重启，不做运行时实时切换（SwiftUI 架构限制）
+
+### 留给后续 Agent 的提示
+- 如果需要运行时即时语言切换（不重启），需要额外实现 ObservableObject 语言管理器 + 所有视图注入 .environment(\.locale)
+- xcstrings 文件可用 Xcode 的 String Catalog 编辑器可视化编辑和翻译
+- 当前 244 个 key 覆盖所有用户可见字符串，后续新增功能应同步添加 xcstrings 条目

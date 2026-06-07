@@ -197,9 +197,9 @@ final class ClipboardListViewModel: ObservableObject {
         logger.debug("Copied item id=\(String(describing: item.id)) to clipboard")
     }
 
-    /// Show a brief "已复制" toast notification.
+    /// Show a brief localized toast notification.
     private func showCopyToast() {
-        toastMessage = "已复制"
+        toastMessage = L10n.localized("toast.copied")
         showToast = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
             self?.showToast = false

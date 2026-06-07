@@ -63,7 +63,7 @@ struct ClipboardListView: View {
                                 await viewModel.deleteItem(item)
                             }
                         } label: {
-                            Label("Delete", systemImage: "trash")
+                            Label(L10n.localized("preview.delete"), systemImage: "trash")
                         }
                     }
                     .swipeActions(edge: .leading, allowsFullSwipe: false) {
@@ -73,7 +73,7 @@ struct ClipboardListView: View {
                             }
                         } label: {
                             Label(
-                                item.isFavorite ? "Unfavorite" : "Favorite",
+                                item.isFavorite ? L10n.localized("clipboard.unfavorite") : L10n.localized("clipboard.favorite"),
                                 systemImage: item.isFavorite ? "star.slash" : "star"
                             )
                         }
@@ -98,7 +98,7 @@ struct ClipboardListView: View {
                     Spacer()
                     ProgressView()
                         .scaleEffect(0.8)
-                    Text("Loading...")
+                    Text(L10n.localized("clipboard.loading"))
                         .font(.caption)
                         .foregroundColor(.secondary)
                     Spacer()
@@ -119,11 +119,11 @@ struct ClipboardListView: View {
                 .font(.system(size: 40))
                 .foregroundColor(.secondary.opacity(0.5))
 
-            Text("No clipboard history")
+            Text(L10n.localized("clipboard.empty.title"))
                 .font(.title3)
                 .foregroundColor(.secondary)
 
-            Text("Items you copy will appear here")
+            Text(L10n.localized("clipboard.empty.subtitle"))
                 .font(.caption)
                 .foregroundColor(.secondary.opacity(0.7))
 
@@ -139,13 +139,13 @@ struct ClipboardListView: View {
         Button(action: {
             viewModel.copyToClipboard(item)
         }) {
-            Label("Copy", systemImage: "doc.on.doc")
+            Label(L10n.localized("preview.copy"), systemImage: "doc.on.doc")
         }
 
         Button(action: {
             previewItem = item
         }) {
-            Label("Preview", systemImage: "eye")
+            Label(L10n.localized("preview.open"), systemImage: "eye")
         }
 
         Button(action: {
@@ -154,7 +154,7 @@ struct ClipboardListView: View {
             }
         }) {
             Label(
-                item.isPinned ? "Unpin" : "Pin",
+                item.isPinned ? L10n.localized("clipboard.unpin") : L10n.localized("clipboard.pin"),
                 systemImage: item.isPinned ? "pin.slash" : "pin"
             )
         }
@@ -165,7 +165,7 @@ struct ClipboardListView: View {
             }
         }) {
             Label(
-                item.isFavorite ? "Unfavorite" : "Favorite",
+                item.isFavorite ? L10n.localized("clipboard.unfavorite") : L10n.localized("clipboard.favorite"),
                 systemImage: item.isFavorite ? "star.slash" : "star"
             )
         }
@@ -177,7 +177,7 @@ struct ClipboardListView: View {
                 await viewModel.deleteItem(item)
             }
         }) {
-            Label("Delete", systemImage: "trash")
+            Label(L10n.localized("preview.delete"), systemImage: "trash")
         }
     }
 }

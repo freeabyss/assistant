@@ -93,8 +93,8 @@ enum PanelDisplayMode: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .search: return "Search"
-        case .recent: return "Recent"
+        case .search: return L10n.localized("menubar.search")
+        case .recent: return L10n.localized("menubar.recent")
         }
     }
 }
@@ -224,7 +224,7 @@ struct MenuBarView: View {
 
             AutoFocusTextField(
                 text: $searchViewModel.searchText,
-                placeholder: "Search..."
+                placeholder: L10n.localized("menubar.searchPlaceholder")
             )
             .frame(height: 22)
 
@@ -257,7 +257,7 @@ struct MenuBarView: View {
                     .scaleEffect(0.6)
                     .frame(width: 12, height: 12)
             }
-            Text("\(searchViewModel.totalCount) results")
+            Text(L10n.localized("menubar.resultsCount", searchViewModel.totalCount))
                 .font(.system(size: 10))
                 .foregroundColor(.secondary.opacity(0.7))
             Text("·")
@@ -278,7 +278,7 @@ struct MenuBarView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
                 GroupTabButton(
-                    title: "All",
+                    title: L10n.localized("menubar.tab.all"),
                     icon: "tray",
                     count: searchViewModel.totalCount,
                     isSelected: searchViewModel.selectedGroup == nil,
@@ -287,7 +287,7 @@ struct MenuBarView: View {
 
                 if !searchViewModel.calculations.isEmpty || searchViewModel.selectedGroup == .calculator {
                     GroupTabButton(
-                        title: "Calculator",
+                        title: L10n.localized("menubar.tab.calculator"),
                         icon: "function",
                         count: searchViewModel.calculations.count,
                         isSelected: searchViewModel.selectedGroup == .calculator,
@@ -297,7 +297,7 @@ struct MenuBarView: View {
 
                 if !searchViewModel.conversions.isEmpty || searchViewModel.selectedGroup == .unitConversion {
                     GroupTabButton(
-                        title: "Convert",
+                        title: L10n.localized("menubar.tab.convert"),
                         icon: "arrow.left.arrow.right",
                         count: searchViewModel.conversions.count,
                         isSelected: searchViewModel.selectedGroup == .unitConversion,
@@ -307,7 +307,7 @@ struct MenuBarView: View {
 
                 if !searchViewModel.applications.isEmpty || searchViewModel.selectedGroup == .application {
                     GroupTabButton(
-                        title: "Apps",
+                        title: L10n.localized("menubar.tab.apps"),
                         icon: "app.fill",
                         count: searchViewModel.applications.count,
                         isSelected: searchViewModel.selectedGroup == .application,
@@ -317,7 +317,7 @@ struct MenuBarView: View {
 
                 if !searchViewModel.systemCommands.isEmpty || searchViewModel.selectedGroup == .systemCommand {
                     GroupTabButton(
-                        title: "System",
+                        title: L10n.localized("menubar.tab.system"),
                         icon: "gearshape",
                         count: searchViewModel.systemCommands.count,
                         isSelected: searchViewModel.selectedGroup == .systemCommand,
@@ -327,7 +327,7 @@ struct MenuBarView: View {
 
                 if !searchViewModel.files.isEmpty || searchViewModel.selectedGroup == .file {
                     GroupTabButton(
-                        title: "Files",
+                        title: L10n.localized("menubar.tab.files"),
                         icon: "doc.fill",
                         count: searchViewModel.files.count,
                         isSelected: searchViewModel.selectedGroup == .file,
@@ -337,7 +337,7 @@ struct MenuBarView: View {
 
                 if !searchViewModel.clipboard.isEmpty || searchViewModel.selectedGroup == .clipboard {
                     GroupTabButton(
-                        title: "Clipboard",
+                        title: L10n.localized("menubar.tab.clipboard"),
                         icon: "clipboard.fill",
                         count: searchViewModel.clipboard.count,
                         isSelected: searchViewModel.selectedGroup == .clipboard,

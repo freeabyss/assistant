@@ -12,10 +12,10 @@ enum ContentType: String, Codable, CaseIterable, Identifiable {
 
     var displayName: String {
         switch self {
-        case .text: return "Text"
-        case .rtf: return "Rich Text"
-        case .image: return "Image"
-        case .file: return "File"
+        case .text: return L10n.localized("content.text")
+        case .rtf: return L10n.localized("content.richText")
+        case .image: return L10n.localized("content.image")
+        case .file: return L10n.localized("content.file")
         }
     }
 

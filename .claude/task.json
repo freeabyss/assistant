@@ -471,15 +471,17 @@
       "priority": "high",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-025"],
+      "depends_on": [
+        "US-025"
+      ],
       "steps": [
         "创建 Localizable.xcstrings（Xcode String Catalog），含 en + zh-Hans 两种语言",
         "创建 L10n 辅助枚举/函数（LocalizedString 封装），统一取词方式",
         "P0 级别 169 条 UI 硬编码字符串全部迁移到 xcstrings + 替换为 L10n 调用",
         "P1 级别 87 条系统命令/错误消息等结构化文案迁移",
         "P2 级别 27 条运行时生成文案迁移（日期格式/相对时间/ContentType displayName）",
-        "DateFormatter 根据当前语言自动选择格式（如中文 "M月d日" vs 英文 "MMM d"）",
-        "Relative time 格式化：中文 "刚刚/N分钟前" vs 英文 "Just now/Nm ago"",
+        "DateFormatter 根据当前语言自动选择格式（如中文 M月d日 vs 英文 MMM d）",
+        "Relative time 格式化：中文 刚刚/N分钟前 vs 英文 Just now/Nm ago",
         "Info.plist 添加应用本地化声明",
         "在 Settings → General 中添加语言切换选项（AppStorage 存储偏好，下次启动生效）",
         "验证：grep 确认 SnapVault/ 下所有用户可见硬编码中文字符串已迁移（除注释/日志外）"
@@ -490,9 +492,11 @@
       "id": "US-027",
       "title": "多语言国际化 Phase 2（MenuBar/Recent/Clipboard/Model + 语言切换 + 验证）",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
-      "depends_on": ["US-026"],
+      "depends_on": [
+        "US-026"
+      ],
       "steps": [
         "替换 MenuBarView / RecentContentView / ClipboardListView / ClipboardItemRow 中剩余硬编码字符串",
         "替换 Models 中 ContentType.displayName / SnapVaultError 等 P1/P2 字符串",

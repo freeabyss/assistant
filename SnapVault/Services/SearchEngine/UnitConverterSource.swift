@@ -56,7 +56,7 @@ final class UnitConverterSource: SearchSource {
         if let lengthUnit = Self.lengthUnit(for: unitToken) {
             let targets = Self.lengthTargets(excluding: lengthUnit)
             return makeResults(
-                familyName: L10n.localized("unit.length") + " " + "长度",
+                familyName: L10n.localized("unit.length"),
                 originalInput: trimmed,
                 value: value,
                 sourceUnit: lengthUnit,
@@ -67,7 +67,7 @@ final class UnitConverterSource: SearchSource {
         if let massUnit = Self.massUnit(for: unitToken) {
             let targets = Self.massTargets(excluding: massUnit)
             return makeResults(
-                familyName: L10n.localized("unit.mass") + " " + "质量",
+                familyName: L10n.localized("unit.mass"),
                 originalInput: trimmed,
                 value: value,
                 sourceUnit: massUnit,
@@ -78,7 +78,7 @@ final class UnitConverterSource: SearchSource {
         if let tempUnit = Self.temperatureUnit(for: unitToken) {
             let targets = Self.temperatureTargets(excluding: tempUnit)
             return makeResults(
-                familyName: L10n.localized("unit.temperature") + " " + "温度",
+                familyName: L10n.localized("unit.temperature"),
                 originalInput: trimmed,
                 value: value,
                 sourceUnit: tempUnit,
@@ -89,7 +89,7 @@ final class UnitConverterSource: SearchSource {
         if let volumeUnit = Self.volumeUnit(for: unitToken) {
             let targets = Self.volumeTargets(excluding: volumeUnit)
             return makeResults(
-                familyName: L10n.localized("unit.volume") + " " + "体积",
+                familyName: L10n.localized("unit.volume"),
                 originalInput: trimmed,
                 value: value,
                 sourceUnit: volumeUnit,
@@ -100,7 +100,7 @@ final class UnitConverterSource: SearchSource {
         if let durationUnit = Self.durationUnit(for: unitToken) {
             let targets = Self.durationTargets(excluding: durationUnit)
             return makeResults(
-                familyName: L10n.localized("unit.duration") + " " + "时间",
+                familyName: L10n.localized("unit.duration"),
                 originalInput: trimmed,
                 value: value,
                 sourceUnit: durationUnit,
@@ -363,12 +363,12 @@ final class UnitConverterSource: SearchSource {
 
     private static func currencyName(_ code: String) -> String {
         switch code {
-        case "USD": return "美元 USD"
-        case "CNY": return "人民币 CNY"
-        case "EUR": return "欧元 EUR"
-        case "JPY": return "日元 JPY"
-        case "GBP": return "英镑 GBP"
-        case "HKD": return "港币 HKD"
+        case "USD": return L10n.localized("unit.currency.usd")
+        case "CNY": return L10n.localized("unit.currency.cny")
+        case "EUR": return L10n.localized("unit.currency.eur")
+        case "JPY": return L10n.localized("unit.currency.jpy")
+        case "GBP": return L10n.localized("unit.currency.gbp")
+        case "HKD": return L10n.localized("unit.currency.hkd")
         default: return code
         }
     }

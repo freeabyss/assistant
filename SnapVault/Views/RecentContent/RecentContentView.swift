@@ -108,7 +108,7 @@ struct RecentContentView: View {
                                 Button(role: .destructive) {
                                     Task { await viewModel.deleteItem(item) }
                                 } label: {
-                                    Label("Delete", systemImage: "trash")
+                                    Label(L10n.localized("preview.delete"), systemImage: "trash")
                                 }
                             }
                             .swipeActions(edge: .leading, allowsFullSwipe: false) {
@@ -116,7 +116,7 @@ struct RecentContentView: View {
                                     Task { await viewModel.toggleFavorite(item) }
                                 } label: {
                                     Label(
-                                        item.isFavorite ? "Unfavorite" : "Favorite",
+                                        item.isFavorite ? L10n.localized("clipboard.unfavorite") : L10n.localized("clipboard.favorite"),
                                         systemImage: item.isFavorite ? "star.slash" : "star"
                                     )
                                 }
@@ -147,20 +147,20 @@ struct RecentContentView: View {
     @ViewBuilder
     private func contextMenu(for item: ClipboardItem) -> some View {
         Button(action: { viewModel.copyToClipboard(item) }) {
-            Label("Copy", systemImage: "doc.on.doc")
+            Label(L10n.localized("preview.copy"), systemImage: "doc.on.doc")
         }
         Button(action: { previewItem = item }) {
-            Label("Preview", systemImage: "eye")
+            Label(L10n.localized("preview.open"), systemImage: "eye")
         }
         Button(action: { Task { await viewModel.togglePin(item) } }) {
             Label(
-                item.isPinned ? "Unpin" : "Pin",
+                item.isPinned ? L10n.localized("clipboard.unpin") : L10n.localized("clipboard.pin"),
                 systemImage: item.isPinned ? "pin.slash" : "pin"
             )
         }
         Button(action: { Task { await viewModel.toggleFavorite(item) } }) {
             Label(
-                item.isFavorite ? "Unfavorite" : "Favorite",
+                item.isFavorite ? L10n.localized("clipboard.unfavorite") : L10n.localized("clipboard.favorite"),
                 systemImage: item.isFavorite ? "star.slash" : "star"
             )
         }
@@ -168,7 +168,7 @@ struct RecentContentView: View {
         Button(role: .destructive, action: {
             Task { await viewModel.deleteItem(item) }
         }) {
-            Label("Delete", systemImage: "trash")
+            Label(L10n.localized("preview.delete"), systemImage: "trash")
         }
     }
 
@@ -180,10 +180,10 @@ struct RecentContentView: View {
             Image(systemName: "tray")
                 .font(.system(size: 40))
                 .foregroundColor(.secondary.opacity(0.5))
-            Text("暂无记录")
+            Text(L10n.localized("recent.empty.title"))
                 .font(.title3)
                 .foregroundColor(.secondary)
-            Text("复制内容或截图后将出现在这里")
+            Text(L10n.localized("recent.empty.subtitle"))
                 .font(.caption)
                 .foregroundColor(.secondary.opacity(0.7))
             Spacer()

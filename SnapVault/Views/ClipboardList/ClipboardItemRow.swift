@@ -132,7 +132,7 @@ struct ClipboardItemRow: View {
                     .font(.system(size: 13, design: .monospaced))
                     .lineLimit(2)
             } else {
-                Text(item.textContent ?? "Empty content")
+                Text(item.textContent ?? L10n.localized("preview.empty"))
                     .font(.system(size: 13, design: .monospaced))
                     .foregroundColor(.primary)
                     .lineLimit(2)
@@ -168,7 +168,7 @@ struct ClipboardItemRow: View {
         case .file:
             // File: filename + file size
             VStack(alignment: .leading, spacing: 2) {
-                Text(item.filePath.map { URL(fileURLWithPath: $0).lastPathComponent } ?? "File")
+                Text(item.filePath.map { URL(fileURLWithPath: $0).lastPathComponent } ?? L10n.localized("content.file"))
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(.primary)
                     .lineLimit(1)
@@ -212,27 +212,9 @@ struct ClipboardItemRow: View {
         return ByteCountFormatter.string(fromByteCount: size, countStyle: .file)
     }
 
-    /// Chinese relative time display.
+    /// Localized relative time display.
     private var relativeTime: String {
-        let now = Date()
-        let interval = now.timeIntervalSince(item.createdAt)
-
-        if interval < 60 {
-            return "刚刚"
-        } else if interval < 3600 {
-            let minutes = Int(interval / 60)
-            return "\(minutes)分钟前"
-        } else if interval < 86400 {
-            let hours = Int(interval / 3600)
-            return "\(hours)小时前"
-        } else if interval < 604800 {
-            let days = Int(interval / 86400)
-            return "\(days)天前"
-        } else {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "MM/dd"
-            return formatter.string(from: item.createdAt)
-        }
+        L10n.relativeTime(from: item.createdAt)
     }
 }
 

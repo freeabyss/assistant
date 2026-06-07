@@ -40,6 +40,7 @@ struct SettingsView: View {
 
 struct GeneralSettingsView: View {
     @ObservedObject var viewModel: SettingsViewModel
+    @State private var showRestartAlert = false
 
     var body: some View {
         Form {
@@ -101,6 +102,29 @@ struct GeneralSettingsView: View {
                 Text(L10n.localized("settings.behavior.footer"))
                     .font(.caption)
                     .foregroundColor(.secondary)
+            }
+
+            // -- Language --
+            Section {
+                Picker(L10n.localized("settings.language"), selection: $viewModel.selectedLanguage) {
+                    Text("English").tag("en")
+                    Text("中文").tag("zh-Hans")
+                }
+                .onChange(of: viewModel.selectedLanguage) { newValue in
+                    UserDefaults.standard.set([newValue], forKey: "AppleLanguages")
+                    showRestartAlert = true
+                }
+            } header: {
+                Text(L10n.localized("settings.language.header"))
+            } footer: {
+                Text(L10n.localized("settings.language.footer"))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .alert(L10n.localized("settings.language.header"), isPresented: $showRestartAlert) {
+                Button(L10n.localized("settings.alert.ok"), role: .cancel) {}
+            } message: {
+                Text(L10n.localized("settings.language.footer"))
             }
 
             // -- Save / Reset --

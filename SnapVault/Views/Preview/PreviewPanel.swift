@@ -299,16 +299,7 @@ struct PreviewPanel: View {
     }
 
     private var relativeTime: String {
-        let interval = Date().timeIntervalSince(item.createdAt)
-        if interval < 60 { return "刚刚" }
-        else if interval < 3600 { return "\(Int(interval / 60))分钟前" }
-        else if interval < 86400 { return "\(Int(interval / 3600))小时前" }
-        else if interval < 604800 { return "\(Int(interval / 86400))天前" }
-        else {
-            let f = DateFormatter()
-            f.dateFormat = "MM/dd HH:mm"
-            return f.string(from: item.createdAt)
-        }
+        L10n.relativeTime(from: item.createdAt)
     }
 
     private func parseRTF() -> NSAttributedString? {

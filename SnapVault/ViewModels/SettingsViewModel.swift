@@ -26,6 +26,15 @@ final class SettingsViewModel: ObservableObject {
     @Published var pollInterval: Int = 500
     @Published var launchAtLogin: Bool = false
 
+    /// Current language preference (persisted to UserDefaults AppleLanguages).
+    @Published var selectedLanguage: String = {
+        if let langs = UserDefaults.standard.stringArray(forKey: "AppleLanguages"),
+           let first = langs.first, first.hasPrefix("zh") {
+            return "zh-Hans"
+        }
+        return "en"
+    }()
+
     // MARK: - Data Management
 
     @Published var databaseSizeMB: Double = 0
