@@ -42,6 +42,7 @@
 		A10001000000000000000024 /* AppSearchSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000024; };
 		A10001000000000000000025 /* FileSearchSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000025; };
 		A1000100000000000000002D /* SystemCommandSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002D; };
+		A1000100000000000000002E /* CalculatorSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002E; };
 		A10001000000000000000026 /* ScreenshotService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000026; };
 		A10001000000000000000027 /* ScreenshotOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000027; };
 		A10001000000000000000028 /* UnifiedSearchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000028; };
@@ -90,6 +91,7 @@
 		A10000000000000000000024 /* AppSearchSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSearchSource.swift; sourceTree = "<group>"; };
 		A10000000000000000000025 /* FileSearchSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchSource.swift; sourceTree = "<group>"; };
 		A1000000000000000000002D /* SystemCommandSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemCommandSource.swift; sourceTree = "<group>"; };
+		A1000000000000000000002E /* CalculatorSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorSource.swift; sourceTree = "<group>"; };
 		A10000000000000000000026 /* ScreenshotService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotService.swift; sourceTree = "<group>"; };
 		A10000000000000000000027 /* ScreenshotOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotOverlay.swift; sourceTree = "<group>"; };
 		A10000000000000000000028 /* UnifiedSearchViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedSearchViewModel.swift; sourceTree = "<group>"; };
@@ -308,6 +310,7 @@
 				A10000000000000000000024 /* AppSearchSource.swift */,
 				A10000000000000000000025 /* FileSearchSource.swift */,
 				A1000000000000000000002D /* SystemCommandSource.swift */,
+				A1000000000000000000002E /* CalculatorSource.swift */,
 			);
 			path = SearchEngine;
 			sourceTree = "<group>";
@@ -490,6 +493,7 @@
 				A10001000000000000000024 /* AppSearchSource.swift in Sources */,
 				A10001000000000000000025 /* FileSearchSource.swift in Sources */,
 				A1000100000000000000002D /* SystemCommandSource.swift in Sources */,
+				A1000100000000000000002E /* CalculatorSource.swift in Sources */,
 				A10001000000000000000026 /* ScreenshotService.swift in Sources */,
 				A10001000000000000000027 /* ScreenshotOverlay.swift in Sources */,
 				A10001000000000000000028 /* UnifiedSearchViewModel.swift in Sources */,

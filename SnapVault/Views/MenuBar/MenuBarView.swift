@@ -139,6 +139,7 @@ struct MenuBarView: View {
         .onReceive(NotificationCenter.default.publisher(for: .focusSearchField)) { _ in
             isSearchFocused = true
         }
+        .toast(message: searchViewModel.toastMessage, isShowing: searchViewModel.showToast)
     }
 
     // MARK: - Search Bar
@@ -211,6 +212,16 @@ struct MenuBarView: View {
                     isSelected: searchViewModel.selectedGroup == nil,
                     action: { searchViewModel.selectedGroup = nil }
                 )
+
+                if !searchViewModel.calculations.isEmpty || searchViewModel.selectedGroup == .calculator {
+                    GroupTabButton(
+                        title: "Calculator",
+                        icon: "function",
+                        count: searchViewModel.calculations.count,
+                        isSelected: searchViewModel.selectedGroup == .calculator,
+                        action: { searchViewModel.selectedGroup = .calculator }
+                    )
+                }
 
                 if !searchViewModel.applications.isEmpty || searchViewModel.selectedGroup == .application {
                     GroupTabButton(

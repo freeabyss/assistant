@@ -1268,3 +1268,83 @@
 - SystemCommandSource 当前命令清单是 v1 最小集合；后续可考虑加入：toggleNightShift / toggleDarkMode / openSystemSettings / showHidden 等。
 - `NSAppleEventsUsageDescription` 已加入 Info.plist；首次运行 sleep/restart/shutdown/emptyTrash 时 macOS 会弹"SnapVault 想要控制 System Events"权限弹窗，用户允许后才能执行。
 - 如果用户反馈 lock 不生效：CGSession 路径在某些 macOS 版本可能变化，可改用 `pmset displaysleepnow` 作为 fallback（已在 lockScreenViaCGSession 中处理路径不存在的情况）。
+
+## 2026-06-07 - US-019 计算器搜索源
+
+### 完成内容
+1. **新建 CalculatorSource.swift**（Services/SearchEngine/）
+   - 实现 SearchSource 协议，sourceType = .calculator
+   - 双层闸门防御 NSExpression 对畸形输入抛 ObjC 异常：
+     - 第一层 `looksLikeExpression`：正则限定字符集（数字 / `.,` / `+ - * / % ^ ( )` / 空白），同时要求存在数字 + 真正的运算符（排除单纯 `-5`/`+3`）
+     - 第二层 `isSyntacticallySafe`：括号平衡 + 禁止 `()`、`(*`、首字符为二元运算符（`* / % ^`）、尾字符为运算符或 `(`、连续二元运算符（仅允许 `**` 与紧随其后的一元 `+/-`）
+   - `^` 在送入 NSExpression 前 normalize 为 `**`（NSExpression 原生支持 `**` 作为幂）
+   - NumberFormatter（en_US_POSIX、最多 10 位小数、去尾零、无千分位）确保 `888*0.8 -> "710.4"` 而非 `"710.4000000000"`
+   - 失败统一返回 `[]`：NSExpression 求值得到非 NSNumber、`.isFinite == false`（如除零得 ±∞）、语法 sniff 不过都静默掉
+   - 单一结果，title `= 710.4`，subtitle 原表达式，icon SF Symbol `function`，action `.copyText("710.4")`
+
+2. **扩展 UnifiedSearchTypes.swift**
+   - `SearchResultType` 新增 `case calculator`（displayName "Calculator", iconName "function"）
+   - `SearchResultAction` 新增 `case copyText(String)`（也供 US-020 单位/货币换算复用）
+   - `UnifiedSearchResponse` 新增 `calculations: [UnifiedSearchResult]` 字段
+
+3. **UnifiedSearchService.swift**
+   - `typePriorityScore`：`case .calculator: return 1.0`（与 application 并列，置顶）
+   - `search()` 增加 `calculations` 分组并填入 response
+   - 空响应也补 `calculations: []`
+
+4. **UnifiedSearchViewModel.swift**
+   - 新增 `@Published var calculations: [UnifiedSearchResult] = []`
+   - 新增 `@Published var showToast: Bool = false` + `@Published var toastMessage: String = ""`（Toast 复制反馈）
+   - `flatResults` "All" 模式新顺序：calculator → apps → system → files → clipboard
+   - `executeAction` 新增 `case .copyText(let text)` → `copyTextToClipboard(text)`：写入 NSPasteboard.general.clearContents + setString + 1.5s "Copied: <text>" Toast
+   - `cycleGroupForward/Backward` / `resultsForGroup` / `totalCount` / `clearResults` / `search` log 全部覆盖 calculator
+
+5. **视图层**
+   - `UnifiedResultRow.swift`：`typeColor` 增加 `.calculator: .green`；`actionHint` 增加 `case .copyText: Text("Copy ⏎")`
+   - `UnifiedResultList.swift`："All" 模式按 calculator → apps → system → files → clipboard 顺序渲染分组，每段间补 Divider
+   - `MenuBarView.swift` 新增 "Calculator" Tab（icon "function"，位于 Apps 之前）；根容器追加 `.toast(message:isShowing:)` modifier（复用 Views/Components/ToastView.swift 的 ToastModifier）
+
+6. **AppDelegate.swift**
+   - 新增 `calculatorSource = CalculatorSource()` 属性
+   - `applicationDidFinishLaunching` 中 `unifiedSearchService.registerSource(calculatorSource)`，日志更新为 "5 sources"
+
+7. **Xcode 工程**
+   - `project.pbxproj` 新增 PBXBuildFile / PBXFileReference / SearchEngine group child / Sources build phase 四处条目，UUID `A1000000000000000000002E`（fileRef）+ `A1000100000000000000002E`（buildFile）
+
+8. **架构文档 doc/architecture.md**
+   - 搜索架构图增加 `CalculatorSource` 行
+   - 新增"10. 计算器搜索源（CalculatorSource）"小节，详述表达式识别、防御性语法校验、求值、格式化、typePriority 与 copyText action 复用
+   - 追加 v6 变更日志条目
+
+### 修改文件清单
+- SnapVault/Services/SearchEngine/CalculatorSource.swift（新建）
+- SnapVault/Services/SearchEngine/UnifiedSearchTypes.swift（扩展枚举 + UnifiedSearchResponse）
+- SnapVault/Services/SearchEngine/UnifiedSearchService.swift（calculations 分组 + 权重 1.0）
+- SnapVault/ViewModels/UnifiedSearchViewModel.swift（calculations + Toast + copyText action + executeAction 等）
+- SnapVault/Views/SearchResults/UnifiedResultList.swift（calculator 分组优先渲染）
+- SnapVault/Views/SearchResults/UnifiedResultRow.swift（typeColor + actionHint）
+- SnapVault/Views/MenuBar/MenuBarView.swift（Calculator Tab + .toast modifier）
+- SnapVault/App/AppDelegate.swift（注册 CalculatorSource）
+- SnapVault.xcodeproj/project.pbxproj（4 处条目）
+- doc/architecture.md（架构图 + 新增 10 节 + v6 变更日志）
+
+### 验证方式（静态阅读 + grep 自检）
+- grep `switch.*type|switch.*action|switch.*selectedGroup` 确认 UnifiedResultRow.typeColor / UnifiedResultRow.actionHint / UnifiedSearchViewModel.executeAction / cycleGroupForward / cycleGroupBackward / resultsForGroup 全部穷举 calculator / copyText 分支
+- grep `case \\.copyText` 在 ViewModel 和 UnifiedResultRow 中均出现
+- grep `UnifiedSearchResponse(` 所有 4 处调用点均补全 `calculations:` 参数
+- grep `CalculatorSource` 在 pbxproj 中出现 4 次（PBXBuildFile / PBXFileReference / group / Sources phase）
+- 手动推演 `888*0.8`：通过两层闸门 → NSExpression → 710.4 → NumberFormatter 输出 "710.4" → title "= 710.4" + action .copyText("710.4")
+
+### 关键技术决策
+1. **双层防御 NSExpression 异常**：NSExpression(format:) 对畸形输入会抛 ObjC 异常，Swift 侧无法 try/catch。因此采用前置正则白名单 + 防御性语法校验（括号平衡 / 禁连续二元运算符 / 禁畸形开头收尾）拦截大部分崩溃源。剩余仍可能崩的边角（如极少见的内部异常）属于可接受风险——失败会让 app 崩溃但表达式输入空间已极小。
+2. **typePriority 1.0 与 application 并列**：按 PRD 要求"顶到最上方"。考虑到 calculator 实际只在用户输入数学表达式时才返回结果（其他场景返回 `[]` 不污染），即使与 application 同优先级也不会抢占普通搜索。
+3. **`^` → `**` 自动转换**：用户习惯写 `2^10`，NSExpression 不支持 `^` 作幂；统一在 source 内 normalize，无需暴露给上层。
+4. **Toast 状态放在 ViewModel 而非 View**：复用 ClipboardListView 已有的 ToastModifier 模式（`@Published showToast/toastMessage` + `DispatchQueue.main.asyncAfter` 1.5s 自动隐藏），与项目既有风格一致。
+5. **copyText 复用预留给 US-020**：单位/货币换算同样需要"显示结果 + 回车复制"，复用 `.copyText(String)` action 即可，无需另起一种 action 类型。
+6. **score 1.0 + typePriority 1.0**：聚合分数 = 0.3*1.0 + 0.4*1.0 + 0.3*frequency ≥ 0.7，叠加 application 通常的 relevance < 1.0，calculator 排序仍会稳定置顶。
+
+### 留给后续 Agent 的提示
+- **US-020（单位/货币换算搜索源）是下一个 high priority 任务**，可直接复用 `.copyText(String)` action（本任务已铺好）；UnitConverterSource 类型建议设为 `.unitConversion`（或直接复用 calculator？业务上分开更清晰，建议新增），typePriority 可设 0.9。
+- CalculatorSource 当前不支持函数（sin/cos/log/sqrt/...）和常数（pi/e）；NSExpression 原生支持 `sqrt(16)`、`pow(2,10)` 等，未来要扩展只需放宽正则字符集（增加 `a-zA-Z` 与逗号）并放宽 `isSyntacticallySafe`。
+- CalculatorSource 的 limit 参数未使用（单一结果）；将来若要返回"= 710.4 (88.8% of 800)" 等多种解读结果可再扩展。
+- Toast 当前位置由 ToastModifier 控制（VStack Spacer + center），如希望在搜索面板内更靠上/底部可微调 ToastModifier，但本任务保持与 ClipboardListView 一致的位置以减少视觉跳跃。

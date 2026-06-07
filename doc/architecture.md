@@ -189,7 +189,8 @@ UnifiedSearchService
     ├── AppSearchSource      （内存索引，< 10ms）
     ├── FileSearchSource     （NSMetadataQuery，< 200ms）
     ├── ClipboardSearchSource（GRDB FTS5，< 50ms）
-    └── SystemCommandSource  （内置命令清单，< 1ms）
+    ├── SystemCommandSource  （内置命令清单，< 1ms）
+    └── CalculatorSource     （NSExpression 数学表达式求值，< 1ms）
 ```
 
 优势：
@@ -280,6 +281,21 @@ UnifiedSearchService
 - **新增类型**：`SearchResultType.systemCommand`（displayName "System", iconName "gearshape", typePriority 0.8）
 - **新增 Action**：`SearchResultAction.runSystemCommand(SystemCommand)`
 
+### 10. 计算器搜索源（CalculatorSource）
+
+将数学表达式求值作为独立搜索源接入 UnifiedSearchService，遵循 `SearchSource` 协议：
+
+- **表达式识别**：先用正则限定字符集（仅允许数字 / `.,` / `+ - * / % ^` / `( )` / 空白），再要求同时存在数字和真正的运算符（排除单纯的 `-5`/`+3`）。命中后才进入 NSExpression 求值。
+- **求值**：`NSExpression(format:)`。`^` 在交给 NSExpression 前替换为 `**`（NSExpression 原生支持 `**` 作为幂运算）。
+- **防御性语法校验**：括号平衡 + 禁止 `()`、`(*`、首字符为二元运算符、尾字符为运算符或 `(`、连续二元运算符（仅允许 `**` 和紧随其后的一元 `+/-`）。这层防御用于在 Swift 侧拦截那些会让 NSExpression 抛 Obj-C 异常的输入。
+- **失败 → 空结果**：除零（结果为 ±∞）、非数字结果、解析失败统一返回 `[]`，让其他搜索源接管，不污染 UI。
+- **格式化**：`NumberFormatter`（en_US_POSIX、最多 10 位小数、去尾零、无千分位）。
+- **结果展示**：title 为 `= <result>`，subtitle 为原表达式，icon 为 SF Symbol `function`，action 为 `.copyText(<result>)`。
+- **typePriority 1.0**：与 application 并列最高，配合排序后实际会因为评分聚合（score 1.0 × relevanceWeight + 1.0 × typeWeight）排到最顶部。
+- **新增类型**：`SearchResultType.calculator`（displayName "Calculator", iconName "function", typePriority 1.0）
+- **新增 Action**：`SearchResultAction.copyText(String)`（同时供 US-020 单位/货币换算源复用）
+- **复制反馈**：UnifiedSearchViewModel 新增 `showToast` / `toastMessage` 状态，复制后通过 `ToastModifier`（与 ClipboardListView 共用）展示 1.5s "Copied: <text>"。
+
 ## 变更记录
 
 | 日期       | 变更内容 |
@@ -289,3 +305,4 @@ UnifiedSearchService
 | 2026-06-05 | v3：对齐 PRD 产品定位，增加截图模块（ScreenCaptureKit），修正系统概述为"统一效率入口"，修正默认快捷键为 ⌘+Shift+V，内存指标统一为 < 50MB |
 | 2026-06-07 | v4（US-017）：按 PRD 对齐默认快捷键 —— Command Bar 由 ⌘+Shift+V 改为 ⌘+Space（提示与 Spotlight 冲突，可在偏好设置改）；区域截图由 ⌘+Shift+S 改为 ⌘+Shift+A；窗口截图保持 ⌘+Shift+W。仅修改 `KeyboardShortcuts.Name` 的 `default:`，已自定义过的用户配置不受影响。 |
 | 2026-06-07 | v5（US-018）：新增 `SystemCommandSource` 系统命令搜索源（sleep/restart/shutdown/lock/emptyTrash/showDesktop/lockScreen），扩展 `SearchResultType.systemCommand`（typePriority 0.8，紧邻 application）与 `SearchResultAction.runSystemCommand(SystemCommand)`。restart/shutdown/emptyTrash 执行前弹 NSAlert 二次确认。 |
+| 2026-06-07 | v6（US-019）：新增 `CalculatorSource` 计算器搜索源，使用 NSExpression 实时求值数学表达式（支持 `+ - * / % ^ ( )`，`^` 自动转 `**`）。扩展 `SearchResultType.calculator`（typePriority 1.0，置顶）与 `SearchResultAction.copyText(String)`。失败静默返回空结果。MenuBarView 新增 Calculator Tab 与 Toast 复制反馈。`copyText` action 亦预留给 US-020 单位/货币换算复用。 |

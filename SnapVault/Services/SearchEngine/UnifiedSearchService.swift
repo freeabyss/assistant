@@ -63,7 +63,7 @@ final class UnifiedSearchService: UnifiedSearchServiceProtocol {
     func search(query: String, limit: Int) async throws -> UnifiedSearchResponse {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
-            return UnifiedSearchResponse(applications: [], files: [], clipboard: [], systemCommands: [], totalCount: 0, elapsed: 0)
+            return UnifiedSearchResponse(applications: [], files: [], clipboard: [], systemCommands: [], calculations: [], totalCount: 0, elapsed: 0)
         }
 
         let startTime = CFAbsoluteTimeGetCurrent()
@@ -117,16 +117,18 @@ final class UnifiedSearchService: UnifiedSearchServiceProtocol {
         let files = sorted.filter { $0.type == .file }
         let clipboard = sorted.filter { $0.type == .clipboard }
         let systemCommands = sorted.filter { $0.type == .systemCommand }
+        let calculations = sorted.filter { $0.type == .calculator }
 
         let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000 // Convert to ms
 
-        logger.info("Unified search '\(trimmed, privacy: .public)': \(applications.count) apps, \(files.count) files, \(clipboard.count) clipboard, \(systemCommands.count) system in \(String(format: "%.1f", elapsed))ms")
+        logger.info("Unified search '\(trimmed, privacy: .public)': \(applications.count) apps, \(files.count) files, \(clipboard.count) clipboard, \(systemCommands.count) system, \(calculations.count) calc in \(String(format: "%.1f", elapsed))ms")
 
         return UnifiedSearchResponse(
             applications: applications,
             files: files,
             clipboard: clipboard,
             systemCommands: systemCommands,
+            calculations: calculations,
             totalCount: sorted.count,
             elapsed: elapsed
         )
@@ -149,9 +151,10 @@ final class UnifiedSearchService: UnifiedSearchServiceProtocol {
         return typeWeight * typePriority + relevanceWeight * relevance + frequencyWeight * frequency
     }
 
-    /// Type priority: applications rank highest, then files, then clipboard.
+    /// Type priority: calculator pinned to the top, then apps, system commands, files, clipboard.
     private func typePriorityScore(for type: SearchResultType) -> Double {
         switch type {
+        case .calculator: return 1.0
         case .application: return 1.0
         case .systemCommand: return 0.8
         case .file: return 0.7

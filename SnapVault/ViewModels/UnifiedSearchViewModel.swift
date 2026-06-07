@@ -16,10 +16,16 @@ final class UnifiedSearchViewModel: ObservableObject {
     @Published var files: [UnifiedSearchResult] = []
     @Published var clipboard: [UnifiedSearchResult] = []
     @Published var systemCommands: [UnifiedSearchResult] = []
+    @Published var calculations: [UnifiedSearchResult] = []
     @Published var isLoading: Bool = false
     @Published var selectedResult: UnifiedSearchResult?
     @Published var elapsed: TimeInterval = 0
     @Published var selectedGroup: SearchResultType? = nil  // nil = "All" tab
+
+    // MARK: - Toast (for copy feedback)
+
+    @Published var showToast: Bool = false
+    @Published var toastMessage: String = ""
 
     // MARK: - Private
 
@@ -35,8 +41,9 @@ final class UnifiedSearchViewModel: ObservableObject {
         if let group = selectedGroup {
             return resultsForGroup(group)
         }
-        // "All" mode: apps -> system commands -> files -> clipboard, each max 10
+        // "All" mode: calculator (always first) -> apps -> system -> files -> clipboard
         var all: [UnifiedSearchResult] = []
+        all.append(contentsOf: calculations.prefix(maxResultsPerSource))
         all.append(contentsOf: applications.prefix(maxResultsPerSource))
         all.append(contentsOf: systemCommands.prefix(maxResultsPerSource))
         all.append(contentsOf: files.prefix(maxResultsPerSource))
@@ -77,9 +84,10 @@ final class UnifiedSearchViewModel: ObservableObject {
             files = response.files
             clipboard = response.clipboard
             systemCommands = response.systemCommands
+            calculations = response.calculations
             elapsed = response.elapsed
             selectedResult = flatResults.first
-            logger.info("Search completed: \(response.totalCount) results (apps:\(response.applications.count), files:\(response.files.count), clipboard:\(response.clipboard.count), system:\(response.systemCommands.count)) in \(String(format: "%.1f", response.elapsed))ms")
+            logger.info("Search completed: \(response.totalCount) results (apps:\(response.applications.count), files:\(response.files.count), clipboard:\(response.clipboard.count), system:\(response.systemCommands.count), calc:\(response.calculations.count)) in \(String(format: "%.1f", response.elapsed))ms")
             // Refocus the text field after results appear
             DispatchQueue.main.async {
                 NotificationCenter.default.post(name: .focusSearchField, object: nil)
@@ -139,6 +147,10 @@ final class UnifiedSearchViewModel: ObservableObject {
         case .runSystemCommand(let command):
             logger.info("Running system command: \(command.rawValue, privacy: .public)")
             runSystemCommand(command)
+
+        case .copyText(let text):
+            logger.info("Copying text to clipboard (length=\(text.count))")
+            copyTextToClipboard(text)
         }
     }
 
@@ -168,10 +180,12 @@ final class UnifiedSearchViewModel: ObservableObject {
         }
     }
 
-    /// Cycle through group tabs: All -> Applications -> System -> Files -> Clipboard -> All.
+    /// Cycle through group tabs: All -> Calculator -> Applications -> System -> Files -> Clipboard -> All.
     func cycleGroupForward() {
         switch selectedGroup {
         case nil:
+            selectedGroup = .calculator
+        case .calculator:
             selectedGroup = .application
         case .application:
             selectedGroup = .systemCommand
@@ -197,6 +211,8 @@ final class UnifiedSearchViewModel: ObservableObject {
         case .systemCommand:
             selectedGroup = .application
         case .application:
+            selectedGroup = .calculator
+        case .calculator:
             selectedGroup = nil
         }
         selectedResult = flatResults.first
@@ -209,12 +225,13 @@ final class UnifiedSearchViewModel: ObservableObject {
         case .file: return Array(files.prefix(maxResultsPerSource))
         case .clipboard: return Array(clipboard.prefix(maxResultsPerSource))
         case .systemCommand: return Array(systemCommands.prefix(maxResultsPerSource))
+        case .calculator: return Array(calculations.prefix(maxResultsPerSource))
         }
     }
 
     /// Total result count across all groups.
     var totalCount: Int {
-        applications.count + files.count + clipboard.count + systemCommands.count
+        applications.count + files.count + clipboard.count + systemCommands.count + calculations.count
     }
 
     /// Whether there are any search results.
@@ -246,6 +263,7 @@ final class UnifiedSearchViewModel: ObservableObject {
         files = []
         clipboard = []
         systemCommands = []
+        calculations = []
         elapsed = 0
         selectedResult = nil
         // Refocus when clearing (search text emptied)
@@ -308,8 +326,28 @@ final class UnifiedSearchViewModel: ObservableObject {
         }
     }
 
-    // MARK: - System Commands
+    // MARK: - Generic Copy
 
+    /// Copy an arbitrary string (calculator result, converter output, ...)
+    /// to the system pasteboard and surface a brief toast.
+    private func copyTextToClipboard(_ text: String) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
+        showCopyToast(message: "Copied: \(text)")
+        logger.debug("Copied text to pasteboard: \(text, privacy: .public)")
+    }
+
+    /// Show a brief overlay toast. Auto-dismisses after 1.5s.
+    private func showCopyToast(message: String) {
+        toastMessage = message
+        showToast = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+            self?.showToast = false
+        }
+    }
+
+    // MARK: - System Commands
     /// Dispatch a system command. Destructive commands (restart / shutdown / empty trash)
     /// show a confirmation NSAlert before execution.
     private func runSystemCommand(_ command: SystemCommand) {

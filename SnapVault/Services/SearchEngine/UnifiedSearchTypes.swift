@@ -9,6 +9,7 @@ enum SearchResultType: String, Codable, CaseIterable {
     case file
     case clipboard
     case systemCommand
+    case calculator
 
     var displayName: String {
         switch self {
@@ -16,6 +17,7 @@ enum SearchResultType: String, Codable, CaseIterable {
         case .file: return "Files"
         case .clipboard: return "Clipboard"
         case .systemCommand: return "System"
+        case .calculator: return "Calculator"
         }
     }
 
@@ -25,6 +27,7 @@ enum SearchResultType: String, Codable, CaseIterable {
         case .file: return "doc.fill"
         case .clipboard: return "clipboard.fill"
         case .systemCommand: return "gearshape"
+        case .calculator: return "function"
         }
     }
 }
@@ -78,6 +81,8 @@ enum SearchResultAction {
     case openInFinder(path: URL)
     case copyToClipboard(itemID: Int64)
     case runSystemCommand(SystemCommand)
+    /// Copy an arbitrary string (e.g. calculator result, converter output) to NSPasteboard.
+    case copyText(String)
 }
 
 // MARK: - Unified Search Response
@@ -88,6 +93,7 @@ struct UnifiedSearchResponse {
     let files: [UnifiedSearchResult]
     let clipboard: [UnifiedSearchResult]
     let systemCommands: [UnifiedSearchResult]
+    let calculations: [UnifiedSearchResult]
     let totalCount: Int
     let elapsed: TimeInterval  // Search duration in milliseconds
 }

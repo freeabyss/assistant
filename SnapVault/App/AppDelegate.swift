@@ -58,6 +58,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// System command search source (sleep/restart/shutdown/lock/...).
     private let systemCommandSource = SystemCommandSource()
 
+    /// Calculator search source (math expression evaluator).
+    private let calculatorSource = CalculatorSource()
+
     /// Unified search view model (created in applicationDidFinishLaunching on main actor).
     private var unifiedSearchViewModel: UnifiedSearchViewModel!
 
@@ -100,7 +103,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         unifiedSearchService.registerSource(appSearchSource)
         unifiedSearchService.registerSource(fileSearchSource)
         unifiedSearchService.registerSource(systemCommandSource)
-        logger.info("Unified search service initialized with 4 sources")
+        unifiedSearchService.registerSource(calculatorSource)
+        logger.info("Unified search service initialized with 5 sources")
 
         // Create unified search view model (must be on main actor)
         unifiedSearchViewModel = UnifiedSearchViewModel(unifiedSearchService: unifiedSearchService)

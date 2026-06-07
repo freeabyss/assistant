@@ -296,7 +296,7 @@
       "id": "US-019",
       "title": "计算器搜索源",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": ["US-013"],
       "steps": [

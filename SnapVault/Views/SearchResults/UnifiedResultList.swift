@@ -37,7 +37,23 @@ struct UnifiedResultList: View {
                         )
                     } else {
                         // All groups mode
+                        if !viewModel.calculations.isEmpty {
+                            ResultGroupView(
+                                type: .calculator,
+                                results: Array(viewModel.calculations.prefix(10)),
+                                selectedResult: viewModel.selectedResult,
+                                onResultTap: { result in
+                                    viewModel.executeAction(for: result)
+                                }
+                            )
+                        }
+
                         if !viewModel.applications.isEmpty {
+                            if !viewModel.calculations.isEmpty {
+                                Divider()
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                            }
                             ResultGroupView(
                                 type: .application,
                                 results: Array(viewModel.applications.prefix(10)),
@@ -49,7 +65,7 @@ struct UnifiedResultList: View {
                         }
 
                         if !viewModel.systemCommands.isEmpty {
-                            if !viewModel.applications.isEmpty {
+                            if !viewModel.applications.isEmpty || !viewModel.calculations.isEmpty {
                                 Divider()
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 4)
