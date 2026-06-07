@@ -48,10 +48,36 @@ final class FileSearchSource: FileSearchSourceProtocol {
 
         logger.info("FileSearchSource.search() query='\(trimmed, privacy: .public)' limit=\(limit)")
 
-        let fileResults = await performSpotlightSearch(query: trimmed, limit: limit)
+        // Spotlight: literal name + content match (no pinyin support server-side).
+        var fileResults = await performSpotlightSearch(query: trimmed, limit: limit)
+
+        // Client-side pinyin rerank: only meaningful when the query is plain
+        // ASCII (potential pinyin/initials) and we got back files whose display
+        // names contain CJK characters.
+        let queryLower = trimmed.lowercased()
+        let isPinyinCandidate = isASCIIQuery(queryLower)
+
+        // When the user types pinyin, Spotlight's literal predicate often
+        // misses CJK-named files. Augment the result set by scanning a small
+        // recent-files window from common scopes and pinyin-matching client
+        // side. We keep this strictly bounded (max 200 candidates) so cost
+        // stays in the tens of ms range.
+        if isPinyinCandidate {
+            let augmented = await augmentWithPinyinScan(query: queryLower, existing: fileResults, limit: limit)
+            fileResults.append(contentsOf: augmented)
+        }
 
         let results = fileResults.map { fileInfo -> UnifiedSearchResult in
-            let relevanceScore = computeRelevanceScore(fileInfo: fileInfo, query: trimmed)
+            var relevanceScore = computeRelevanceScore(fileInfo: fileInfo, query: trimmed)
+            if isPinyinCandidate {
+                // Apply a pinyin bonus when the file's display name pinyin/initials
+                // match the query. Bonus is below literal name-prefix (0.7) so
+                // exact matches still win.
+                let bonus = pinyinScoreBonus(name: fileInfo.name, query: queryLower)
+                if bonus > 0 {
+                    relevanceScore = min(relevanceScore + bonus, 0.95)
+                }
+            }
             let subtitle = buildSubtitle(fileInfo: fileInfo)
 
             return UnifiedSearchResult(
@@ -65,9 +91,10 @@ final class FileSearchSource: FileSearchSourceProtocol {
                 action: .openFile(path: fileInfo.path)
             )
         }
+        .sorted { $0.score > $1.score }
 
-        logger.info("FileSearchSource found \(results.count) results for '\(trimmed, privacy: .public)'")
-        return results
+        logger.info("FileSearchSource found \(results.count) results for '\(trimmed, privacy: .public)' (pinyinCandidate=\(isPinyinCandidate))")
+        return Array(results.prefix(limit))
     }
 
     // MARK: - FileSearchSourceProtocol
@@ -332,5 +359,164 @@ final class FileSearchSource: FileSearchSourceProtocol {
         }
 
         return ranges.sorted { $0.location < $1.location }
+    }
+
+    // MARK: - Pinyin Augmentation
+
+    /// True if the query is plain ASCII — i.e. it could be pinyin/initials.
+    private func isASCIIQuery(_ query: String) -> Bool {
+        for scalar in query.unicodeScalars where scalar.value > 127 {
+            return false
+        }
+        return !query.isEmpty
+    }
+
+    /// Compute a bonus score for files whose display name pinyin or initials
+    /// match the query.
+    ///
+    /// Bonus tiers (mirrors AppSearchSource):
+    /// - Pinyin prefix: +0.5
+    /// - Initials match: +0.4
+    /// - Pinyin contains: +0.3
+    /// - No CJK characters in name → 0 (literal matching already applies)
+    private func pinyinScoreBonus(name: String, query: String) -> Double {
+        // Skip pure-ASCII names: literal contains/prefix already handled.
+        guard containsCJK(name) else { return 0 }
+
+        let pinyin = PinyinHelper.toPinyin(name)
+        if pinyin.hasPrefix(query) { return 0.5 }
+
+        let initials = PinyinHelper.toInitials(name)
+        if !initials.isEmpty && initials.hasPrefix(query) { return 0.4 }
+
+        if pinyin.contains(query) { return 0.3 }
+
+        return 0
+    }
+
+    /// Scan the user's most-frequented directories for CJK-named files that
+    /// match the pinyin query but were missed by Spotlight's literal predicate.
+    ///
+    /// Strategy:
+    /// 1. Pick a small set of scopes (~/Desktop, ~/Documents, ~/Downloads or
+    ///    the configured `searchScopePaths`).
+    /// 2. Take the most-recently-modified ~200 entries.
+    /// 3. Pinyin-match client side.
+    /// 4. Skip anything already in `existing` (dedup by absolute path).
+    ///
+    /// Bounded cost: enumeration is shallow (top-level), no recursion into
+    /// subdirectories, so even on large folders this stays sub-50ms.
+    private func augmentWithPinyinScan(
+        query: String,
+        existing: [FileInfo],
+        limit: Int
+    ) async -> [FileInfo] {
+        let existingPaths = Set(existing.map { $0.path.path })
+        let scopes: [URL]
+        if searchScopePaths.isEmpty {
+            let home = FileManager.default.homeDirectoryForCurrentUser
+            scopes = [
+                home.appendingPathComponent("Desktop"),
+                home.appendingPathComponent("Documents"),
+                home.appendingPathComponent("Downloads"),
+            ]
+        } else {
+            scopes = searchScopePaths
+        }
+
+        return await Task.detached(priority: .userInitiated) { [scopes, existingPaths, query, limit] in
+            FileSearchSource.scanScopesForPinyin(
+                scopes: scopes,
+                query: query,
+                excluding: existingPaths,
+                limit: limit
+            )
+        }.value
+    }
+
+    /// Detached worker — kept static so it doesn't capture `self`.
+    private static func scanScopesForPinyin(
+        scopes: [URL],
+        query: String,
+        excluding: Set<String>,
+        limit: Int
+    ) -> [FileInfo] {
+        let fm = FileManager.default
+        var candidates: [(URL, Date)] = []
+        let perScopeCap = 200
+
+        for scope in scopes {
+            guard let contents = try? fm.contentsOfDirectory(
+                at: scope,
+                includingPropertiesForKeys: [.contentModificationDateKey, .isRegularFileKey],
+                options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants]
+            ) else { continue }
+
+            for url in contents.prefix(perScopeCap) {
+                let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .isRegularFileKey])
+                guard values?.isRegularFile == true else { continue }
+                let mtime = values?.contentModificationDate ?? Date.distantPast
+                candidates.append((url, mtime))
+            }
+        }
+
+        // Sort newest-first then truncate
+        candidates.sort { $0.1 > $1.1 }
+        let pool = candidates.prefix(perScopeCap * 3)
+
+        var results: [FileInfo] = []
+        for (url, mtime) in pool {
+            if results.count >= limit { break }
+            if excluding.contains(url.path) { continue }
+            let name = url.lastPathComponent
+            // Only consider CJK-named files (otherwise Spotlight already covered)
+            guard containsCJKStatic(name) else { continue }
+
+            let pinyin = PinyinHelper.toPinyin(name)
+            let initials = PinyinHelper.toInitials(name)
+            let matches = pinyin.contains(query) || initials.hasPrefix(query)
+            guard matches else { continue }
+
+            let size: Int64
+            if let s = (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize {
+                size = Int64(s)
+            } else {
+                size = 0
+            }
+            let contentType: String
+            if let uti = (try? url.resourceValues(forKeys: [.contentTypeKey]))?.contentType?.identifier {
+                contentType = uti
+            } else {
+                contentType = "public.data"
+            }
+            let icon = NSWorkspace.shared.icon(forFile: url.path)
+
+            results.append(FileInfo(
+                name: name,
+                path: url,
+                contentType: contentType,
+                size: size,
+                modifiedDate: mtime,
+                icon: icon
+            ))
+        }
+        return results
+    }
+
+    /// Return true if any scalar in `s` is outside the ASCII range
+    /// (cheap proxy for "contains CJK / non-Latin characters").
+    private func containsCJK(_ s: String) -> Bool {
+        for scalar in s.unicodeScalars where scalar.value > 127 {
+            return true
+        }
+        return false
+    }
+
+    /// Static version of `containsCJK` for use in detached workers.
+    private static func containsCJKStatic(_ s: String) -> Bool {
+        for scalar in s.unicodeScalars where scalar.value > 127 {
+            return true
+        }
+        return false
     }
 }

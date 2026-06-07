@@ -51,6 +51,7 @@
 		A1000100000000000000002A /* ResultGroupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002A; };
 		A1000100000000000000002B /* UnifiedResultList.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002B; };
 		A1000100000000000000002C /* KeyEventHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002C; };
+		A10001000000000000000030 /* PinyinHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000030; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -101,6 +102,7 @@
 		A1000000000000000000002A /* ResultGroupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultGroupView.swift; sourceTree = "<group>"; };
 		A1000000000000000000002B /* UnifiedResultList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedResultList.swift; sourceTree = "<group>"; };
 		A1000000000000000000002C /* KeyEventHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyEventHandler.swift; sourceTree = "<group>"; };
+		A10000000000000000000030 /* PinyinHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinyinHelper.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -215,6 +217,7 @@
 				A1000000000000000000000A /* Logger.swift */,
 				A1000000000000000000000B /* CryptoHelper.swift */,
 				A1000000000000000000001E /* KeyboardShortcuts+Names.swift */,
+				A10000000000000000000030 /* PinyinHelper.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -505,6 +508,7 @@
 				A1000100000000000000002A /* ResultGroupView.swift in Sources */,
 				A1000100000000000000002B /* UnifiedResultList.swift in Sources */,
 				A1000100000000000000002C /* KeyEventHandler.swift in Sources */,
+				A10001000000000000000030 /* PinyinHelper.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

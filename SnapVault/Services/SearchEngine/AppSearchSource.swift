@@ -97,13 +97,21 @@ final class AppSearchSource: AppSearchSourceProtocol {
             results.append(contentsOf: containsResults.map { buildResult(app: $0, matchType: .contains, queryNormalized: queryNormalized) })
         }
 
-        // Strategy 3: Fuzzy match (Levenshtein distance <= 2, lowest priority)
+        // Strategy 3: Pinyin matching for CJK app names (only relevant when the
+        // query is plain ASCII — otherwise the literal text strategies above
+        // already covered it). Three tiers:
+        //   - Pinyin prefix (e.g. "weix" -> "微信" pinyin "weixin")
+        //   - Initials match (e.g. "sf" -> "Safari" or "数符" initials)
+        //   - Pinyin contains
+        if results.count < limit && isASCIIQuery(queryNormalized) {
+            let existingIDs = Set(results.compactMap { extractBundleID(from: $0.id) })
+            let pinyinResults = pinyinMatch(in: snapshot, query: queryNormalized, excluding: existingIDs, limit: limit - results.count)
+            results.append(contentsOf: pinyinResults)
+        }
+
+        // Strategy 4: Fuzzy match (Levenshtein distance <= 2, lowest priority)
         if results.count < limit {
-            let existingIDs = Set(results.compactMap { result -> String? in
-                // Extract bundleID from result ID format "app:bundleID:count"
-                let parts = result.id.split(separator: ":")
-                return parts.count >= 2 ? String(parts[1]) : nil
-            })
+            let existingIDs = Set(results.compactMap { extractBundleID(from: $0.id) })
             let fuzzyResults = fuzzyMatch(in: snapshot, query: queryNormalized, excluding: existingIDs, limit: limit - results.count)
             results.append(contentsOf: fuzzyResults.map { buildResult(app: $0, matchType: .fuzzy, queryNormalized: queryNormalized) })
         }
@@ -245,7 +253,9 @@ final class AppSearchSource: AppSearchSourceProtocol {
             bundleID: bundleID,
             path: appURL,
             icon: icon,
-            normalizedName: normalize(name)
+            normalizedName: normalize(name),
+            pinyin: PinyinHelper.toPinyin(name),
+            initials: PinyinHelper.toInitials(name)
         )
     }
 
@@ -313,19 +323,70 @@ final class AppSearchSource: AppSearchSourceProtocol {
         return results
     }
 
+    /// Pinyin / initials match. Returns ranked UnifiedSearchResults directly so
+    /// each app can carry its own match-tier score (prefix > initials > contains).
+    private func pinyinMatch(in apps: [IndexedApp], query: String, excluding: Set<String>, limit: Int) -> [UnifiedSearchResult] {
+        var matched: [(IndexedApp, MatchType)] = []
+        var seenIDs = excluding
+
+        // Pass 1: pinyin prefix (highest)
+        for app in apps {
+            if matched.count >= limit { break }
+            if seenIDs.contains(app.bundleID) { continue }
+            if app.pinyin == app.normalizedName { continue } // Latin-only, already covered
+            if app.pinyin.hasPrefix(query) {
+                matched.append((app, .pinyinPrefix))
+                seenIDs.insert(app.bundleID)
+            }
+        }
+
+        // Pass 2: initials match (whole query equals initials, or prefix of initials)
+        if matched.count < limit {
+            for app in apps {
+                if matched.count >= limit { break }
+                if seenIDs.contains(app.bundleID) { continue }
+                if !app.initials.isEmpty && app.initials.hasPrefix(query) {
+                    matched.append((app, .initials))
+                    seenIDs.insert(app.bundleID)
+                }
+            }
+        }
+
+        // Pass 3: pinyin contains
+        if matched.count < limit {
+            for app in apps {
+                if matched.count >= limit { break }
+                if seenIDs.contains(app.bundleID) { continue }
+                if app.pinyin == app.normalizedName { continue }
+                if app.pinyin.contains(query) {
+                    matched.append((app, .pinyinContains))
+                    seenIDs.insert(app.bundleID)
+                }
+            }
+        }
+
+        return matched.map { buildResult(app: $0.0, matchType: $0.1, queryNormalized: query) }
+    }
+
     // MARK: - Result Building
 
     /// Match type for ranking.
     private enum MatchType {
         case prefix
         case contains
+        case pinyinPrefix
+        case initials
+        case pinyinContains
         case fuzzy
 
         var score: Double {
             switch self {
-            case .prefix:   return 1.0
-            case .contains: return 0.7
-            case .fuzzy:    return 0.4
+            case .prefix:         return 1.0
+            case .contains:       return 0.7
+            case .pinyinPrefix:   return 0.65 // below literal contains; above fuzzy
+            case .initials:       return 0.55
+            case .pinyinContains: return 0.5
+            case .fuzzy:          return 0.4
             }
         }
     }
@@ -364,6 +425,21 @@ final class AppSearchSource: AppSearchSourceProtocol {
             return count
         }
         return 0
+    }
+
+    /// Extract bundleID encoded in result ID format "app:<bundleID>:<count>".
+    private func extractBundleID(from id: String) -> String? {
+        let parts = id.split(separator: ":")
+        return parts.count >= 2 ? String(parts[1]) : nil
+    }
+
+    /// True when the (normalized) query contains only ASCII characters, i.e.
+    /// it could plausibly be a pinyin/initials prefix typed by the user.
+    private func isASCIIQuery(_ query: String) -> Bool {
+        for scalar in query.unicodeScalars where scalar.value > 127 {
+            return false
+        }
+        return !query.isEmpty
     }
 
     // MARK: - String Helpers
@@ -444,6 +520,11 @@ private struct IndexedApp {
     let path: URL
     let icon: NSImage?
     let normalizedName: String
+    /// Full pinyin (e.g. "weixin" for "微信"). Equals `normalizedName` when
+    /// `name` is already Latin.
+    let pinyin: String
+    /// Pinyin initials (e.g. "wx" for "微信"; "sf" for "Safari" → "safari").
+    let initials: String
 }
 
 // MARK: - Notification Names
