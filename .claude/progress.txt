@@ -1348,3 +1348,100 @@
 - CalculatorSource 当前不支持函数（sin/cos/log/sqrt/...）和常数（pi/e）；NSExpression 原生支持 `sqrt(16)`、`pow(2,10)` 等，未来要扩展只需放宽正则字符集（增加 `a-zA-Z` 与逗号）并放宽 `isSyntacticallySafe`。
 - CalculatorSource 的 limit 参数未使用（单一结果）；将来若要返回"= 710.4 (88.8% of 800)" 等多种解读结果可再扩展。
 - Toast 当前位置由 ToastModifier 控制（VStack Spacer + center），如希望在搜索面板内更靠上/底部可微调 ToastModifier，但本任务保持与 ClipboardListView 一致的位置以减少视觉跳跃。
+
+## 2026-06-07 - US-020 单位/货币换算搜索源
+
+### 完成内容
+1. **新建 UnitConverterSource.swift**（Services/SearchEngine/）
+   - 实现 SearchSource 协议，sourceType = .unitConversion
+   - 输入正则 `^\s*(-?\d+(?:\.\d+)?)\s*([a-zA-Z°]+)\s*$`，提取数值 + 单位 token；token 统一 lowercased，匹配不区分大小写
+   - 支持 5 种 Foundation Measurement 单位族 + 货币：
+     * 长度 UnitLength：mm/cm/m/km/in(inch/inches)/ft(feet/foot)/yd(yard/yards)/mi(mile/miles)
+     * 质量 UnitMass：mg/g/kg/lb(lbs/pound/pounds)/oz(ounce/ounces)/ton(t/tons)
+     * 温度 UnitTemperature：c/°c/celsius、f/°f/fahrenheit、k/kelvin
+     * 体积 UnitVolume：ml/l(liter/liters/litre/litres)/gal(gallon/gallons)/cup(cups)/floz
+     * 时间 UnitDuration：s(sec/second/seconds)/min(mins/minute/minutes)/h(hr/hour/hours)
+     * 货币（USD 为基准的静态汇率）：USD/CNY/EUR/JPY/GBP/HKD
+   - 每个非货币族用 `Measurement<U>(value:unit:).converted(to:)` 直接换算
+   - 每个单位族通过专用静态函数 `xxxTargets(excluding:)` 提供 3-5 个常见目标单位（排除源单位本身）
+   - 货币：value/sourceRate 得 USD 中转值，再 *targetRate 得目标值；subtitle 附加"汇率为静态参考值"提示
+   - 结果格式化用 NumberFormatter（en_US_POSIX、最多 4 位小数、去尾零、无千分位）
+   - 每个换算结果作为一条 UnifiedSearchResult：
+     * title: "100 cm = 1 m"
+     * subtitle: "Length 长度 · cm → m"（或货币的"美元 USD → 人民币 CNY · 汇率为静态参考值"）
+     * icon: SF Symbol "arrow.left.arrow.right"（货币用 "dollarsign.circle"）
+     * action: .copyText("1 m") —— 复用 US-019 已有 action 类型
+     * score: `1.0 - index*0.05`，让列表顺序有微弱排序信号
+   - 失败统一返回 `[]`：解析失败、未知单位、非有限数值（NaN/Inf）
+
+2. **扩展 UnifiedSearchTypes.swift**
+   - `SearchResultType` 新增 `case unitConversion`（displayName "Convert", iconName "arrow.left.arrow.right"）
+   - `UnifiedSearchResponse` 新增 `conversions: [UnifiedSearchResult]` 字段
+
+3. **UnifiedSearchService.swift**
+   - `typePriorityScore`：`case .unitConversion: return 0.95`（介于 application 1.0 与 systemCommand 0.8 之间）
+   - `search()` 增加 `conversions = sorted.filter { $0.type == .unitConversion }` 分组并填入 response
+   - 空响应也补 `conversions: []`
+   - 日志格式加上 "convert:\(count)"
+
+4. **UnifiedSearchViewModel.swift**
+   - 新增 `@Published var conversions: [UnifiedSearchResult] = []`
+   - `flatResults` "All" 模式新顺序：calculator → conversions → apps → system → files → clipboard
+   - `cycleGroupForward/Backward` / `resultsForGroup` / `totalCount` / `clearResults` / `search` 全部覆盖 unitConversion
+   - Tab 顺序：All → Calculator → Convert → Apps → System → Files → Clipboard → All
+
+5. **视图层**
+   - `UnifiedResultRow.swift`：`typeColor` 增加 `.unitConversion: .pink`
+   - `UnifiedResultList.swift`："All" 模式 calculator 之后插入 conversions 分组渲染，并修正其后 Divider 条件
+   - `MenuBarView.swift` 新增 "Convert" Tab（icon "arrow.left.arrow.right"，位于 Calculator 之后、Apps 之前）
+
+6. **AppDelegate.swift**
+   - 新增 `unitConverterSource = UnitConverterSource()` 属性
+   - `applicationDidFinishLaunching` 中 `unifiedSearchService.registerSource(unitConverterSource)`，日志更新为 "6 sources"
+
+7. **Xcode 工程**
+   - `project.pbxproj` 新增 PBXBuildFile / PBXFileReference / SearchEngine group child / Sources build phase 四处条目，UUID `A1000000000000000000002F`（fileRef）+ `A1000100000000000000002F`（buildFile）
+
+8. **架构文档 doc/architecture.md**
+   - 搜索架构图增加 `UnitConverterSource` 行
+   - 新增"11. 单位/货币换算搜索源（UnitConverterSource）"小节
+   - 追加 v7 变更日志条目
+
+### 修改文件清单
+- SnapVault/Services/SearchEngine/UnitConverterSource.swift（新建）
+- SnapVault/Services/SearchEngine/UnifiedSearchTypes.swift（扩展枚举 + UnifiedSearchResponse）
+- SnapVault/Services/SearchEngine/UnifiedSearchService.swift（conversions 分组 + 权重 0.95）
+- SnapVault/ViewModels/UnifiedSearchViewModel.swift（conversions + 所有 switch 穷举 unitConversion）
+- SnapVault/Views/SearchResults/UnifiedResultList.swift（conversions 分组渲染）
+- SnapVault/Views/SearchResults/UnifiedResultRow.swift（typeColor unitConversion → pink）
+- SnapVault/Views/MenuBar/MenuBarView.swift（Convert Tab）
+- SnapVault/App/AppDelegate.swift（注册 UnitConverterSource）
+- SnapVault.xcodeproj/project.pbxproj（4 处条目）
+- doc/architecture.md（架构图 + 新增 11 节 + v7 变更日志）
+
+### 验证方式（静态阅读 + grep 自检）
+- `grep "case \.unitConversion"` 确认 SearchResultType / typePriorityScore / typeColor / resultsForGroup / cycleGroupForward / cycleGroupBackward / MenuBarView Tab 7 处均添加
+- `grep "UnifiedSearchResponse("` 两处调用点均补全 `conversions:` 参数
+- `grep "UnitConverterSource" project.pbxproj` 4 处条目齐全
+- 手动推演：
+  * `100 cm` → 5 行：1000 mm / 1 m / 0.001 km / 39.3701 in / 3.2808 ft
+  * `100 kg` → 4 行：100000 g / 220.4623 lb / 3527.396 oz / 0.1 t
+  * `100 usd` → 5 行：725 CNY / 92 EUR / 15100 JPY / 79 GBP / 782 HKD
+  * `100 c` → 2 行：212 °F / 373.15 K
+- 回车通过 `.copyText("<value> <symbol>")` 复制并触发 ViewModel 已有 Toast "Copied: ..."
+
+### 关键技术决策
+1. **专用 targets 函数 vs 泛型 targets**：最初想用 `targetUnits<U>(family:excluding:) -> [Dimension]` + `as? [U]` 一锅端，但 Swift 数组协变到泛型类型的运行时 cast 不可靠（`[Dimension] as? [UnitLength]` 通常会失败）。改为每个单位族一个静态函数返回强类型 `[UnitLength]` / `[UnitMass]` / ...，编译期类型安全，零运行时开销，代码也更直白。
+2. **温度 token `°c` 处理**：正则字符集 `[a-zA-Z°]+` 把 `°` 与字母一并捕获，因此 `100°C` 会得到 token `°c`（lowercase）。`temperatureUnit(for:)` 同时识别 `c` 与 `°c`，覆盖两种写法。
+3. **货币 USD 中转**：rates 表以 USD=1.0 为基准，任意货币换算路径统一为 `src → USD → tgt = value/srcRate*tgtRate`。这种"枢纽货币"结构便于将来扩展（加币种只改字典）。
+4. **typePriority 0.95**：略低于 calculator/application(1.0) 但高于 systemCommand(0.8)。考虑到 UnitConverter 只在用户输入"数字+单位"时才返回结果（普通搜索零污染），实际排序总是稳定的，0.95 也避免与 calculator 完全打平。
+5. **score 随 index 衰减 (1.0 - index*0.05)**：在同一族内通过聚合排序保留候选目标的呈现顺序（米/克/秒等公制优先），避免被字母序或其他 source 打乱。
+6. **复用 .copyText action 而不是新增 action 类型**：US-019 已设计 `.copyText(String)` 为通用复制 action（ViewModel 已实现 Toast 反馈），UnitConverter 直接复用，无需改动 SearchResultAction 枚举。
+7. **静态汇率提示**：每条货币结果 subtitle 附加"汇率为静态参考值"中文提示，避免误导用户。如未来接入实时 FX，只需替换 `currencyRates` 字典为运行时刷新机制，UI 文案改"实时汇率（截至 ...）"即可。
+
+### 留给后续 Agent 的提示
+- **US-021（收藏功能）是下一个 high priority 任务**。涉及 GRDB v2 migration、ContentRepository 新增 API、ClipboardItemRow 增加 star.fill 图标，以及清理逻辑保护 is_favorite=1。
+- UnitConverterSource 当前不支持复合单位（如 km/h、m/s）和表达式（"5ft 3in"）；如要扩展可在 parse 阶段先尝试组合解析，再 fallback 到单一单位。
+- 货币 rates 当前硬编码常量。如要做实时汇率，建议新增 `CurrencyRateService` 单独刷新（避免污染 UnitConverterSource 的"纯函数"性质），UnitConverterSource 只读最新快照。
+- typePriority 0.95 是初步设定；如发现 UnitConverter 在 Apps 较多场景被压制，可上调到 1.0；目前置策略：calculator/application 严格置顶，unitConversion 紧随。
+- 温度规则 `°c`/`°f` 已支持；如未来发现用户输入 `100℃`（单字符）需求，需要在正则字符集补 `℃℉` 并在 temperatureUnit 中加分支。

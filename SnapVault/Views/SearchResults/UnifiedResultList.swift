@@ -48,8 +48,24 @@ struct UnifiedResultList: View {
                             )
                         }
 
-                        if !viewModel.applications.isEmpty {
+                        if !viewModel.conversions.isEmpty {
                             if !viewModel.calculations.isEmpty {
+                                Divider()
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                            }
+                            ResultGroupView(
+                                type: .unitConversion,
+                                results: Array(viewModel.conversions.prefix(10)),
+                                selectedResult: viewModel.selectedResult,
+                                onResultTap: { result in
+                                    viewModel.executeAction(for: result)
+                                }
+                            )
+                        }
+
+                        if !viewModel.applications.isEmpty {
+                            if !viewModel.calculations.isEmpty || !viewModel.conversions.isEmpty {
                                 Divider()
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 4)
@@ -65,7 +81,7 @@ struct UnifiedResultList: View {
                         }
 
                         if !viewModel.systemCommands.isEmpty {
-                            if !viewModel.applications.isEmpty || !viewModel.calculations.isEmpty {
+                            if !viewModel.applications.isEmpty || !viewModel.calculations.isEmpty || !viewModel.conversions.isEmpty {
                                 Divider()
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 4)

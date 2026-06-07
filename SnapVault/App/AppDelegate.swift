@@ -61,6 +61,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Calculator search source (math expression evaluator).
     private let calculatorSource = CalculatorSource()
 
+    /// Unit / currency converter search source (Foundation Measurement + static FX table).
+    private let unitConverterSource = UnitConverterSource()
+
     /// Unified search view model (created in applicationDidFinishLaunching on main actor).
     private var unifiedSearchViewModel: UnifiedSearchViewModel!
 
@@ -104,7 +107,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         unifiedSearchService.registerSource(fileSearchSource)
         unifiedSearchService.registerSource(systemCommandSource)
         unifiedSearchService.registerSource(calculatorSource)
-        logger.info("Unified search service initialized with 5 sources")
+        unifiedSearchService.registerSource(unitConverterSource)
+        logger.info("Unified search service initialized with 6 sources")
 
         // Create unified search view model (must be on main actor)
         unifiedSearchViewModel = UnifiedSearchViewModel(unifiedSearchService: unifiedSearchService)

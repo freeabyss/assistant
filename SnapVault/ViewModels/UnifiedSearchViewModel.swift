@@ -17,6 +17,7 @@ final class UnifiedSearchViewModel: ObservableObject {
     @Published var clipboard: [UnifiedSearchResult] = []
     @Published var systemCommands: [UnifiedSearchResult] = []
     @Published var calculations: [UnifiedSearchResult] = []
+    @Published var conversions: [UnifiedSearchResult] = []
     @Published var isLoading: Bool = false
     @Published var selectedResult: UnifiedSearchResult?
     @Published var elapsed: TimeInterval = 0
@@ -41,9 +42,10 @@ final class UnifiedSearchViewModel: ObservableObject {
         if let group = selectedGroup {
             return resultsForGroup(group)
         }
-        // "All" mode: calculator (always first) -> apps -> system -> files -> clipboard
+        // "All" mode: calculator (always first) -> conversions -> apps -> system -> files -> clipboard
         var all: [UnifiedSearchResult] = []
         all.append(contentsOf: calculations.prefix(maxResultsPerSource))
+        all.append(contentsOf: conversions.prefix(maxResultsPerSource))
         all.append(contentsOf: applications.prefix(maxResultsPerSource))
         all.append(contentsOf: systemCommands.prefix(maxResultsPerSource))
         all.append(contentsOf: files.prefix(maxResultsPerSource))
@@ -85,9 +87,10 @@ final class UnifiedSearchViewModel: ObservableObject {
             clipboard = response.clipboard
             systemCommands = response.systemCommands
             calculations = response.calculations
+            conversions = response.conversions
             elapsed = response.elapsed
             selectedResult = flatResults.first
-            logger.info("Search completed: \(response.totalCount) results (apps:\(response.applications.count), files:\(response.files.count), clipboard:\(response.clipboard.count), system:\(response.systemCommands.count), calc:\(response.calculations.count)) in \(String(format: "%.1f", response.elapsed))ms")
+            logger.info("Search completed: \(response.totalCount) results (apps:\(response.applications.count), files:\(response.files.count), clipboard:\(response.clipboard.count), system:\(response.systemCommands.count), calc:\(response.calculations.count), convert:\(response.conversions.count)) in \(String(format: "%.1f", response.elapsed))ms")
             // Refocus the text field after results appear
             DispatchQueue.main.async {
                 NotificationCenter.default.post(name: .focusSearchField, object: nil)
@@ -180,12 +183,14 @@ final class UnifiedSearchViewModel: ObservableObject {
         }
     }
 
-    /// Cycle through group tabs: All -> Calculator -> Applications -> System -> Files -> Clipboard -> All.
+    /// Cycle through group tabs: All -> Calculator -> Convert -> Applications -> System -> Files -> Clipboard -> All.
     func cycleGroupForward() {
         switch selectedGroup {
         case nil:
             selectedGroup = .calculator
         case .calculator:
+            selectedGroup = .unitConversion
+        case .unitConversion:
             selectedGroup = .application
         case .application:
             selectedGroup = .systemCommand
@@ -211,6 +216,8 @@ final class UnifiedSearchViewModel: ObservableObject {
         case .systemCommand:
             selectedGroup = .application
         case .application:
+            selectedGroup = .unitConversion
+        case .unitConversion:
             selectedGroup = .calculator
         case .calculator:
             selectedGroup = nil
@@ -226,12 +233,13 @@ final class UnifiedSearchViewModel: ObservableObject {
         case .clipboard: return Array(clipboard.prefix(maxResultsPerSource))
         case .systemCommand: return Array(systemCommands.prefix(maxResultsPerSource))
         case .calculator: return Array(calculations.prefix(maxResultsPerSource))
+        case .unitConversion: return Array(conversions.prefix(maxResultsPerSource))
         }
     }
 
     /// Total result count across all groups.
     var totalCount: Int {
-        applications.count + files.count + clipboard.count + systemCommands.count + calculations.count
+        applications.count + files.count + clipboard.count + systemCommands.count + calculations.count + conversions.count
     }
 
     /// Whether there are any search results.
@@ -264,6 +272,7 @@ final class UnifiedSearchViewModel: ObservableObject {
         clipboard = []
         systemCommands = []
         calculations = []
+        conversions = []
         elapsed = 0
         selectedResult = nil
         // Refocus when clearing (search text emptied)

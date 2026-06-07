@@ -10,6 +10,7 @@ enum SearchResultType: String, Codable, CaseIterable {
     case clipboard
     case systemCommand
     case calculator
+    case unitConversion
 
     var displayName: String {
         switch self {
@@ -18,6 +19,7 @@ enum SearchResultType: String, Codable, CaseIterable {
         case .clipboard: return "Clipboard"
         case .systemCommand: return "System"
         case .calculator: return "Calculator"
+        case .unitConversion: return "Convert"
         }
     }
 
@@ -28,6 +30,7 @@ enum SearchResultType: String, Codable, CaseIterable {
         case .clipboard: return "clipboard.fill"
         case .systemCommand: return "gearshape"
         case .calculator: return "function"
+        case .unitConversion: return "arrow.left.arrow.right"
         }
     }
 }
@@ -94,6 +97,7 @@ struct UnifiedSearchResponse {
     let clipboard: [UnifiedSearchResult]
     let systemCommands: [UnifiedSearchResult]
     let calculations: [UnifiedSearchResult]
+    let conversions: [UnifiedSearchResult]
     let totalCount: Int
     let elapsed: TimeInterval  // Search duration in milliseconds
 }

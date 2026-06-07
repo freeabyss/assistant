@@ -70,6 +70,7 @@ struct UnifiedResultRow: View {
         case .clipboard: return .orange
         case .systemCommand: return .purple
         case .calculator: return .green
+        case .unitConversion: return .pink
         }
     }
 

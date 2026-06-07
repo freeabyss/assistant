@@ -314,7 +314,7 @@
       "id": "US-020",
       "title": "单位/货币换算搜索源",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": ["US-019"],
       "steps": [

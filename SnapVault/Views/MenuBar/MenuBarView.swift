@@ -223,6 +223,16 @@ struct MenuBarView: View {
                     )
                 }
 
+                if !searchViewModel.conversions.isEmpty || searchViewModel.selectedGroup == .unitConversion {
+                    GroupTabButton(
+                        title: "Convert",
+                        icon: "arrow.left.arrow.right",
+                        count: searchViewModel.conversions.count,
+                        isSelected: searchViewModel.selectedGroup == .unitConversion,
+                        action: { searchViewModel.selectedGroup = .unitConversion }
+                    )
+                }
+
                 if !searchViewModel.applications.isEmpty || searchViewModel.selectedGroup == .application {
                     GroupTabButton(
                         title: "Apps",

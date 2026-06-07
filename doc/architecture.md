@@ -190,7 +190,8 @@ UnifiedSearchService
     ├── FileSearchSource     （NSMetadataQuery，< 200ms）
     ├── ClipboardSearchSource（GRDB FTS5，< 50ms）
     ├── SystemCommandSource  （内置命令清单，< 1ms）
-    └── CalculatorSource     （NSExpression 数学表达式求值，< 1ms）
+    ├── CalculatorSource     （NSExpression 数学表达式求值，< 1ms）
+    └── UnitConverterSource  （Foundation Measurement + 静态汇率表，< 1ms）
 ```
 
 优势：
@@ -296,6 +297,24 @@ UnifiedSearchService
 - **新增 Action**：`SearchResultAction.copyText(String)`（同时供 US-020 单位/货币换算源复用）
 - **复制反馈**：UnifiedSearchViewModel 新增 `showToast` / `toastMessage` 状态，复制后通过 `ToastModifier`（与 ClipboardListView 共用）展示 1.5s "Copied: <text>"。
 
+### 11. 单位 / 货币换算搜索源（UnitConverterSource）
+
+将"数字 + 单位 → 常见目标单位"作为独立搜索源接入 UnifiedSearchService，遵循 `SearchSource` 协议：
+
+- **输入识别**：正则 `^\s*(-?\d+(?:\.\d+)?)\s*([a-zA-Z°]+)\s*$` 解析"数值 + 单位"组合（单位 token 不区分大小写）。
+- **单位族（Foundation Measurement）**：
+  - **长度** UnitLength：mm/cm/m/km/in(inch/inches)/ft(feet/foot)/yd(yard/yards)/mi(mile/miles)
+  - **质量** UnitMass：mg/g/kg/lb(lbs/pound/pounds)/oz(ounce/ounces)/ton(t/tons)
+  - **温度** UnitTemperature：c/°c/celsius、f/°f/fahrenheit、k/kelvin
+  - **体积** UnitVolume：ml/l(liter/liters/litre/litres)/gal(gallon/gallons)/cup(cups)/floz
+  - **时间** UnitDuration：s(sec/second/seconds)/min(mins/minute/minutes)/h(hr/hour/hours)
+- **货币**：静态汇率表（USD 基准）`{USD:1.0, CNY:7.25, EUR:0.92, JPY:151.0, GBP:0.79, HKD:7.82}`，非实时。换算路径 `src → USD → tgt`，每行 subtitle 附"汇率为静态参考值"提示。
+- **结果生成**：对每个单位族预定义 3-5 个常见目标单位（按 family 候选列表 prefix(5)，并排除源单位）。每个目标作为一条 `UnifiedSearchResult`：title `"100 cm = 1 m"`、subtitle `"Length 长度 · cm → m"`、action `.copyText("1 m")`（带单位的数值串）。
+- **typePriority 0.95**：介于 application(1.0) 与 systemCommand(0.8) 之间，与 calculator 一样"只在用户真的输入数字+单位时才返回结果"，无关键字时返回 `[]` 不污染普通搜索。
+- **数值格式化**：`NumberFormatter`（en_US_POSIX、最多 4 位小数、去尾零、无千分位）。
+- **复用范式**：完全复用 US-019 已建立的 `.copyText(String)` action 与 Toast 反馈，无需新增 action 类型。
+- **失败 → 空结果**：解析失败、未知单位、非有限数值（NaN/Inf）一律返回 `[]`。
+
 ## 变更记录
 
 | 日期       | 变更内容 |
@@ -306,3 +325,4 @@ UnifiedSearchService
 | 2026-06-07 | v4（US-017）：按 PRD 对齐默认快捷键 —— Command Bar 由 ⌘+Shift+V 改为 ⌘+Space（提示与 Spotlight 冲突，可在偏好设置改）；区域截图由 ⌘+Shift+S 改为 ⌘+Shift+A；窗口截图保持 ⌘+Shift+W。仅修改 `KeyboardShortcuts.Name` 的 `default:`，已自定义过的用户配置不受影响。 |
 | 2026-06-07 | v5（US-018）：新增 `SystemCommandSource` 系统命令搜索源（sleep/restart/shutdown/lock/emptyTrash/showDesktop/lockScreen），扩展 `SearchResultType.systemCommand`（typePriority 0.8，紧邻 application）与 `SearchResultAction.runSystemCommand(SystemCommand)`。restart/shutdown/emptyTrash 执行前弹 NSAlert 二次确认。 |
 | 2026-06-07 | v6（US-019）：新增 `CalculatorSource` 计算器搜索源，使用 NSExpression 实时求值数学表达式（支持 `+ - * / % ^ ( )`，`^` 自动转 `**`）。扩展 `SearchResultType.calculator`（typePriority 1.0，置顶）与 `SearchResultAction.copyText(String)`。失败静默返回空结果。MenuBarView 新增 Calculator Tab 与 Toast 复制反馈。`copyText` action 亦预留给 US-020 单位/货币换算复用。 |
+| 2026-06-07 | v7（US-020）：新增 `UnitConverterSource` 单位/货币换算搜索源。输入 `数字+单位`（如 `100 cm`/`100 usd`/`98 f`），使用 Foundation Measurement（UnitLength/UnitMass/UnitTemperature/UnitVolume/UnitDuration）执行换算，货币使用静态汇率表（USD 基准：USD/CNY/EUR/JPY/GBP/HKD）。每个换算结果作为一行（最多 5 个目标单位），回车通过已有 `.copyText(...)` action 复制带单位的结果。新增 `SearchResultType.unitConversion`（typePriority 0.95，介于 application 与 systemCommand 之间）。MenuBarView 新增 Convert Tab。 |
