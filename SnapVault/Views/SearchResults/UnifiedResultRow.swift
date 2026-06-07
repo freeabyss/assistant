@@ -68,6 +68,7 @@ struct UnifiedResultRow: View {
         case .application: return .blue
         case .file: return .green
         case .clipboard: return .orange
+        case .systemCommand: return .purple
         }
     }
 
@@ -120,6 +121,9 @@ struct UnifiedResultRow: View {
             Text("Enter")
                 .font(.system(size: 10, design: .monospaced))
         case .copyToClipboard:
+            Text("Enter")
+                .font(.system(size: 10, design: .monospaced))
+        case .runSystemCommand:
             Text("Enter")
                 .font(.system(size: 10, design: .monospaced))
         }

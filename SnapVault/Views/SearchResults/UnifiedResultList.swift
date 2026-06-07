@@ -48,6 +48,23 @@ struct UnifiedResultList: View {
                             )
                         }
 
+                        if !viewModel.systemCommands.isEmpty {
+                            if !viewModel.applications.isEmpty {
+                                Divider()
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                            }
+
+                            ResultGroupView(
+                                type: .systemCommand,
+                                results: Array(viewModel.systemCommands.prefix(10)),
+                                selectedResult: viewModel.selectedResult,
+                                onResultTap: { result in
+                                    viewModel.executeAction(for: result)
+                                }
+                            )
+                        }
+
                         if !viewModel.files.isEmpty {
                             Divider()
                                 .padding(.horizontal, 8)

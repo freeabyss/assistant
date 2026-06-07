@@ -188,7 +188,8 @@ NSPasteboard ──poll/changeCount──> ClipboardMonitor
 UnifiedSearchService
     ├── AppSearchSource      （内存索引，< 10ms）
     ├── FileSearchSource     （NSMetadataQuery，< 200ms）
-    └── ClipboardSearchSource（GRDB FTS5，< 50ms）
+    ├── ClipboardSearchSource（GRDB FTS5，< 50ms）
+    └── SystemCommandSource  （内置命令清单，< 1ms）
 ```
 
 优势：
@@ -257,12 +258,27 @@ UnifiedSearchService
 
 四种搜索源的结果合并后，按以下规则排序：
 
-1. **类型权重**：应用 > 文件 > 剪贴板（应用启动最常用）
+1. **类型权重**：应用 > 系统命令 > 文件 > 剪贴板（应用启动最常用；系统命令权重 0.8 紧随其后，保证 sleep/restart 等可被精准命中）
 2. **相关度分数**：各源内部的匹配分数归一化到 0-1
 3. **使用频率**：记录用户选择次数，高频结果提升排名
 4. **时效性**：剪贴板按时间衰减，文件按修改时间排序
 
 最终分数 = 类型权重 × 0.3 + 相关度 × 0.4 + 使用频率 × 0.2 + 时效性 × 0.1
+
+### 9. 系统命令搜索源（SystemCommandSource）
+
+将系统级操作（sleep / restart / shutdown / lock / empty trash / show desktop）
+作为一个独立搜索源接入 UnifiedSearchService，遵循 `SearchSource` 协议：
+
+- **命令清单**：内置 7 条命令，含 `primaryKeyword`、`aliases`（中英文混合）、`title`、`subtitle`、`iconName`
+- **匹配策略**：primaryKeyword 前缀匹配 > primaryKeyword 包含匹配 > aliases 前缀/包含匹配
+- **执行方式**：
+  - `sleep` / `restart` / `shutdown` / `emptyTrash` / `showDesktop`：`NSAppleScript`
+  - `lock`：调用 `/System/Library/CoreServices/Menu Extras/User.menu/Contents/Resources/CGSession -suspend`
+  - `lockScreen`：`/usr/bin/pmset displaysleepnow`（display sleep，配合系统"需密码解锁"实现锁屏）
+- **安全确认**：`restart` / `shutdown` / `emptyTrash` 标记 `requiresConfirmation = true`，执行前弹 `NSAlert` 二次确认
+- **新增类型**：`SearchResultType.systemCommand`（displayName "System", iconName "gearshape", typePriority 0.8）
+- **新增 Action**：`SearchResultAction.runSystemCommand(SystemCommand)`
 
 ## 变更记录
 
@@ -272,3 +288,4 @@ UnifiedSearchService
 | 2026-06-05 | v2：重构为统一效率入口，增加应用搜索、文件搜索、统一搜索管线 |
 | 2026-06-05 | v3：对齐 PRD 产品定位，增加截图模块（ScreenCaptureKit），修正系统概述为"统一效率入口"，修正默认快捷键为 ⌘+Shift+V，内存指标统一为 < 50MB |
 | 2026-06-07 | v4（US-017）：按 PRD 对齐默认快捷键 —— Command Bar 由 ⌘+Shift+V 改为 ⌘+Space（提示与 Spotlight 冲突，可在偏好设置改）；区域截图由 ⌘+Shift+S 改为 ⌘+Shift+A；窗口截图保持 ⌘+Shift+W。仅修改 `KeyboardShortcuts.Name` 的 `default:`，已自定义过的用户配置不受影响。 |
+| 2026-06-07 | v5（US-018）：新增 `SystemCommandSource` 系统命令搜索源（sleep/restart/shutdown/lock/emptyTrash/showDesktop/lockScreen），扩展 `SearchResultType.systemCommand`（typePriority 0.8，紧邻 application）与 `SearchResultAction.runSystemCommand(SystemCommand)`。restart/shutdown/emptyTrash 执行前弹 NSAlert 二次确认。 |

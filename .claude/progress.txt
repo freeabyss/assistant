@@ -1182,3 +1182,89 @@
 - US-018（系统命令搜索源）是下一个 high priority 任务
 - 如果用户反馈 ⌘Space 与 Spotlight 冲突无法触发，可指引到 System Settings → Keyboard → Keyboard Shortcuts → Spotlight 禁用，或在 SettingsView → Shortcuts Tab 自定义
 - 截图快捷键 ⌘+Shift+A 与少数应用（如 macOS 自带"截图与录屏"中的"截取所选部分"）可能冲突，用户层面可自定义
+
+## 2026-06-07 - US-018 系统命令搜索源
+
+### 完成内容
+1. **扩展 UnifiedSearchTypes.swift**
+   - `SearchResultType` 新增 `case systemCommand`（displayName "System", iconName "gearshape"）
+   - 新增 `enum SystemCommand: String, Codable, CaseIterable { sleep, restart, shutdown, lock, lockScreen, emptyTrash, showDesktop }`
+   - `SystemCommand.requiresConfirmation`：restart / shutdown / emptyTrash 返回 true
+   - `SearchResultAction` 新增 `case runSystemCommand(SystemCommand)`
+   - `UnifiedSearchResponse` 新增 `systemCommands: [UnifiedSearchResult]` 字段（并更新所有调用方）
+
+2. **新建 SystemCommandSource.swift**（Services/SearchEngine/）
+   - 内置 7 条命令清单：sleep / restart / shutdown / lock / lockScreen / emptyTrash / showDesktop
+   - 每条含 primaryKeyword（英文）、aliases（中英文混合，如 ["睡眠","休眠","sleep","zzz"]）、title、subtitle、iconName
+   - 匹配策略：primaryKeyword 前缀（priority 0, score 1.0）> primaryKeyword 包含（priority 1, score 0.75）> aliases 前缀/包含（priority 2, score 0.6）
+   - 大小写 + 变音符不敏感（`.folding(options: .diacriticInsensitive)`）
+   - 同优先级按 title 字母序
+
+3. **UnifiedSearchService.swift**
+   - `typePriorityScore(for:)` 新增 `case .systemCommand: return 0.8`（紧邻 application 1.0）
+   - `search()` 新增 `systemCommands` 分组并填入 `UnifiedSearchResponse`
+   - 空响应也补齐 `systemCommands: []`
+
+4. **UnifiedSearchViewModel.swift**
+   - 新增 `@Published var systemCommands: [UnifiedSearchResult] = []`
+   - `flatResults` "All" 模式排列：apps → system → files → clipboard
+   - `executeAction` 新增 `case .runSystemCommand(let command)` 分支 → `runSystemCommand(command)`
+   - `runSystemCommand()`：requiresConfirmation 命令先弹 NSAlert（OK / Cancel），通过后执行
+     - sleep / restart / shutdown / emptyTrash / showDesktop：`NSAppleScript` 后台执行
+     - lock：`/System/Library/CoreServices/Menu Extras/User.menu/Contents/Resources/CGSession -suspend`
+     - lockScreen：`/usr/bin/pmset displaysleepnow`
+   - `cycleGroupForward/Backward` / `resultsForGroup` / `totalCount` / `clearResults` 全部覆盖 systemCommand
+   - 后台队列内只用 `Logger.search`（避免 @MainActor 隔离问题，不再 capture self.logger）
+
+5. **AppDelegate.swift**
+   - 新增 `systemCommandSource = SystemCommandSource()` 属性
+   - 在 `applicationDidFinishLaunching` 中 `unifiedSearchService.registerSource(systemCommandSource)`，并更新日志为 "4 sources"
+
+6. **视图层**
+   - `UnifiedResultList.swift`："All" 模式按 apps → system → files → clipboard 顺序渲染分组，分组间补 Divider
+   - `MenuBarView.swift` 新增 "System" Tab（icon "gearshape"），位于 Apps 之后
+   - `UnifiedResultRow.swift`：`typeColor` 增加 `.systemCommand: .purple`；`actionHint` 增加 `case .runSystemCommand` 显示 "Enter"
+
+7. **Xcode 工程**
+   - `project.pbxproj` 新增 PBXBuildFile / PBXFileReference / SearchEngine group child / Sources build phase 四处条目，UUID `A1000000000000000000002D`（fileRef）+ `A1000100000000000000002D`（buildFile）
+
+8. **Info.plist**
+   - 新增 `NSAppleEventsUsageDescription`（AppleScript 控制 System Events / Finder 必需，否则首次执行会触发权限弹窗或失败）
+
+9. **架构文档 doc/architecture.md**
+   - 搜索架构图增加 `SystemCommandSource` 行
+   - 新增"9. 系统命令搜索源（SystemCommandSource）"小节，详述命令清单、匹配策略、执行方式与安全确认
+   - 排序权重描述更新为"应用 > 系统命令 > 文件 > 剪贴板"
+   - 追加 v5 变更日志条目
+
+### 修改文件清单
+- SnapVault/Services/SearchEngine/SystemCommandSource.swift（新建）
+- SnapVault/Services/SearchEngine/UnifiedSearchTypes.swift（扩展枚举 + 新增 SystemCommand）
+- SnapVault/Services/SearchEngine/UnifiedSearchService.swift（systemCommand 分组 + 权重）
+- SnapVault/ViewModels/UnifiedSearchViewModel.swift（systemCommands 状态 + executeAction + runSystemCommand）
+- SnapVault/Views/SearchResults/UnifiedResultList.swift（system 分组渲染）
+- SnapVault/Views/SearchResults/UnifiedResultRow.swift（typeColor + actionHint）
+- SnapVault/Views/MenuBar/MenuBarView.swift（System Tab）
+- SnapVault/App/AppDelegate.swift（注册 SystemCommandSource）
+- SnapVault/Info.plist（NSAppleEventsUsageDescription）
+- SnapVault.xcodeproj/project.pbxproj（4 处条目）
+- doc/architecture.md（架构图 + 新增 9 节 + v5 变更日志）
+
+### 验证方式（静态阅读 + grep 自检）
+- `grep "switch.*\\.type\\|switch.*\\.action\\|switch.*selectedGroup"` 确认所有 SearchResultType / SearchResultAction 的 switch 已穷举 systemCommand / runSystemCommand 分支
+- `grep "case \\.application\\|case \\.systemCommand\\|case \\.file\\|case \\.clipboard"` 全部 4 个分支齐全
+- `grep "case \\.launchApp\\|case \\.runSystemCommand"` 5 个 action 在 ViewModel 和 UnifiedResultRow 中均完整
+- `grep "SystemCommandSource" project.pbxproj` 4 处条目（PBXBuildFile / PBXFileReference / group / Sources phase）
+
+### 关键技术决策
+1. **lock vs lockScreen**：lock 用 CGSession suspend（立即锁定）；lockScreen 用 pmset displaysleepnow（display sleep）。如系统勾选"需密码解锁"，display sleep 也起到锁屏作用。两条命令分别保留以满足不同用户偏好。
+2. **showDesktop AppleScript**：使用 `key code 103 using {fn down}`（fn+F11）模拟系统快捷键，需要辅助功能（Accessibility）权限；如未授权，会触发系统权限弹窗。
+3. **后台执行 + Logger.search**：runAppleScript / runProcess 在 `DispatchQueue.global` 内仅访问 `Logger.search` 静态属性，不捕获 `self.logger`，避免 @MainActor 隔离编译错误。
+4. **typePriority 0.8**：系统命令权重高于 file/clipboard 但低于 application，确保用户输入 "sleep" 时不会被 Sleep.app 之类（如有）压制，但也不会污染普通应用搜索（无 "sleep" 关键字时 SystemCommandSource 返回空）。
+
+### 留给后续 Agent 的提示
+- US-019（计算器搜索源）是下一个 high priority 任务。已铺好 `runSystemCommand` 等"非启动应用类"action 的范式，CalculatorSource 可参考 SystemCommandSource 的"零状态、纯函数"结构，无需 index 构建。
+- CalculatorSource 需要新增 `.copyText(String)` action 到 SearchResultAction，并在 ViewModel executeAction 中处理；同时记得给 UnifiedResultRow.actionHint 补 case。
+- SystemCommandSource 当前命令清单是 v1 最小集合；后续可考虑加入：toggleNightShift / toggleDarkMode / openSystemSettings / showHidden 等。
+- `NSAppleEventsUsageDescription` 已加入 Info.plist；首次运行 sleep/restart/shutdown/emptyTrash 时 macOS 会弹"SnapVault 想要控制 System Events"权限弹窗，用户允许后才能执行。
+- 如果用户反馈 lock 不生效：CGSession 路径在某些 macOS 版本可能变化，可改用 `pmset displaysleepnow` 作为 fallback（已在 lockScreenViaCGSession 中处理路径不存在的情况）。

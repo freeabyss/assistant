@@ -15,6 +15,7 @@ final class UnifiedSearchViewModel: ObservableObject {
     @Published var applications: [UnifiedSearchResult] = []
     @Published var files: [UnifiedSearchResult] = []
     @Published var clipboard: [UnifiedSearchResult] = []
+    @Published var systemCommands: [UnifiedSearchResult] = []
     @Published var isLoading: Bool = false
     @Published var selectedResult: UnifiedSearchResult?
     @Published var elapsed: TimeInterval = 0
@@ -34,9 +35,10 @@ final class UnifiedSearchViewModel: ObservableObject {
         if let group = selectedGroup {
             return resultsForGroup(group)
         }
-        // "All" mode: apps -> files -> clipboard, each max 10
+        // "All" mode: apps -> system commands -> files -> clipboard, each max 10
         var all: [UnifiedSearchResult] = []
         all.append(contentsOf: applications.prefix(maxResultsPerSource))
+        all.append(contentsOf: systemCommands.prefix(maxResultsPerSource))
         all.append(contentsOf: files.prefix(maxResultsPerSource))
         all.append(contentsOf: clipboard.prefix(maxResultsPerSource))
         return all
@@ -74,9 +76,10 @@ final class UnifiedSearchViewModel: ObservableObject {
             applications = response.applications
             files = response.files
             clipboard = response.clipboard
+            systemCommands = response.systemCommands
             elapsed = response.elapsed
             selectedResult = flatResults.first
-            logger.info("Search completed: \(response.totalCount) results (apps:\(response.applications.count), files:\(response.files.count), clipboard:\(response.clipboard.count)) in \(String(format: "%.1f", response.elapsed))ms")
+            logger.info("Search completed: \(response.totalCount) results (apps:\(response.applications.count), files:\(response.files.count), clipboard:\(response.clipboard.count), system:\(response.systemCommands.count)) in \(String(format: "%.1f", response.elapsed))ms")
             // Refocus the text field after results appear
             DispatchQueue.main.async {
                 NotificationCenter.default.post(name: .focusSearchField, object: nil)
@@ -132,6 +135,10 @@ final class UnifiedSearchViewModel: ObservableObject {
         case .copyToClipboard(let itemID):
             logger.info("Copying clipboard item: \(itemID)")
             copyClipboardItem(itemID: itemID)
+
+        case .runSystemCommand(let command):
+            logger.info("Running system command: \(command.rawValue, privacy: .public)")
+            runSystemCommand(command)
         }
     }
 
@@ -161,12 +168,14 @@ final class UnifiedSearchViewModel: ObservableObject {
         }
     }
 
-    /// Cycle through group tabs: All -> Applications -> Files -> Clipboard -> All.
+    /// Cycle through group tabs: All -> Applications -> System -> Files -> Clipboard -> All.
     func cycleGroupForward() {
         switch selectedGroup {
         case nil:
             selectedGroup = .application
         case .application:
+            selectedGroup = .systemCommand
+        case .systemCommand:
             selectedGroup = .file
         case .file:
             selectedGroup = .clipboard
@@ -184,6 +193,8 @@ final class UnifiedSearchViewModel: ObservableObject {
         case .clipboard:
             selectedGroup = .file
         case .file:
+            selectedGroup = .systemCommand
+        case .systemCommand:
             selectedGroup = .application
         case .application:
             selectedGroup = nil
@@ -197,12 +208,13 @@ final class UnifiedSearchViewModel: ObservableObject {
         case .application: return Array(applications.prefix(maxResultsPerSource))
         case .file: return Array(files.prefix(maxResultsPerSource))
         case .clipboard: return Array(clipboard.prefix(maxResultsPerSource))
+        case .systemCommand: return Array(systemCommands.prefix(maxResultsPerSource))
         }
     }
 
     /// Total result count across all groups.
     var totalCount: Int {
-        applications.count + files.count + clipboard.count
+        applications.count + files.count + clipboard.count + systemCommands.count
     }
 
     /// Whether there are any search results.
@@ -233,6 +245,7 @@ final class UnifiedSearchViewModel: ObservableObject {
         applications = []
         files = []
         clipboard = []
+        systemCommands = []
         elapsed = 0
         selectedResult = nil
         // Refocus when clearing (search text emptied)
@@ -292,6 +305,101 @@ final class UnifiedSearchViewModel: ObservableObject {
         counts[bundleID, default: 0] += 1
         if let data = try? JSONEncoder().encode(counts) {
             UserDefaults.standard.set(data, forKey: key)
+        }
+    }
+
+    // MARK: - System Commands
+
+    /// Dispatch a system command. Destructive commands (restart / shutdown / empty trash)
+    /// show a confirmation NSAlert before execution.
+    private func runSystemCommand(_ command: SystemCommand) {
+        if command.requiresConfirmation {
+            let alert = NSAlert()
+            switch command {
+            case .restart:
+                alert.messageText = "Restart your Mac?"
+                alert.informativeText = "All open applications will be closed and the computer will restart."
+            case .shutdown:
+                alert.messageText = "Shut down your Mac?"
+                alert.informativeText = "All open applications will be closed and the computer will turn off."
+            case .emptyTrash:
+                alert.messageText = "Empty the Trash?"
+                alert.informativeText = "Items in the Trash will be permanently deleted."
+            default:
+                alert.messageText = "Run \(command.rawValue)?"
+            }
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: "OK")
+            alert.addButton(withTitle: "Cancel")
+
+            let response = alert.runModal()
+            guard response == .alertFirstButtonReturn else {
+                logger.info("User cancelled system command: \(command.rawValue, privacy: .public)")
+                return
+            }
+        }
+
+        switch command {
+        case .sleep:
+            runAppleScript(#"tell application "System Events" to sleep"#)
+        case .restart:
+            runAppleScript(#"tell application "System Events" to restart"#)
+        case .shutdown:
+            runAppleScript(#"tell application "System Events" to shut down"#)
+        case .lock:
+            lockScreenViaCGSession()
+        case .lockScreen:
+            // Turn off the display (pmset displaysleepnow)
+            runProcess(launchPath: "/usr/bin/pmset", arguments: ["displaysleepnow"])
+        case .emptyTrash:
+            runAppleScript(#"tell application "Finder" to empty the trash"#)
+        case .showDesktop:
+            runAppleScript(#"tell application "System Events" to key code 103 using {fn down}"#)
+        }
+    }
+
+    /// Execute an AppleScript snippet via NSAppleScript on a background queue.
+    private func runAppleScript(_ source: String) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            var errorInfo: NSDictionary?
+            if let script = NSAppleScript(source: source) {
+                script.executeAndReturnError(&errorInfo)
+                if let errorInfo = errorInfo {
+                    Logger.search.error("AppleScript error: \(errorInfo, privacy: .public)")
+                } else {
+                    Logger.search.info("AppleScript executed successfully")
+                }
+            } else {
+                Logger.search.error("Failed to create NSAppleScript from source")
+            }
+        }
+    }
+
+    /// Lock the screen using the legacy CGSession suspend command. This is the
+    /// canonical way to lock immediately without sleeping the display.
+    private func lockScreenViaCGSession() {
+        let path = "/System/Library/CoreServices/Menu Extras/User.menu/Contents/Resources/CGSession"
+        if FileManager.default.isExecutableFile(atPath: path) {
+            runProcess(launchPath: path, arguments: ["-suspend"])
+        } else {
+            // Fallback: trigger display sleep (still effectively locks if Login is required after sleep)
+            runProcess(launchPath: "/usr/bin/pmset", arguments: ["displaysleepnow"])
+        }
+    }
+
+    /// Spawn an external process on a background queue.
+    private func runProcess(launchPath: String, arguments: [String]) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            let process = Process()
+            process.launchPath = launchPath
+            process.arguments = arguments
+            do {
+                try process.run()
+                process.waitUntilExit()
+                Logger.search.info("Process \(launchPath, privacy: .public) exited with status \(process.terminationStatus)")
+            } catch {
+                Logger.search.error("Failed to run \(launchPath, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            }
         }
     }
 }

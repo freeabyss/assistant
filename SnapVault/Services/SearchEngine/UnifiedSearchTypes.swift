@@ -8,12 +8,14 @@ enum SearchResultType: String, Codable, CaseIterable {
     case application
     case file
     case clipboard
+    case systemCommand
 
     var displayName: String {
         switch self {
         case .application: return "Applications"
         case .file: return "Files"
         case .clipboard: return "Clipboard"
+        case .systemCommand: return "System"
         }
     }
 
@@ -22,6 +24,7 @@ enum SearchResultType: String, Codable, CaseIterable {
         case .application: return "app.fill"
         case .file: return "doc.fill"
         case .clipboard: return "clipboard.fill"
+        case .systemCommand: return "gearshape"
         }
     }
 }
@@ -40,6 +43,32 @@ struct UnifiedSearchResult: Identifiable {
     let action: SearchResultAction // Action when selected
 }
 
+// MARK: - System Command
+
+/// System-level commands that can be triggered from the Command Bar.
+///
+/// Commands marked as `requiresConfirmation` will surface an NSAlert before
+/// execution to avoid accidentally restarting or shutting down the machine.
+enum SystemCommand: String, Codable, CaseIterable {
+    case sleep
+    case restart
+    case shutdown
+    case lock
+    case lockScreen
+    case emptyTrash
+    case showDesktop
+
+    /// Whether this command is destructive enough to warrant a confirmation dialog.
+    var requiresConfirmation: Bool {
+        switch self {
+        case .restart, .shutdown, .emptyTrash:
+            return true
+        case .sleep, .lock, .lockScreen, .showDesktop:
+            return false
+        }
+    }
+}
+
 // MARK: - Search Result Action
 
 /// Action to perform when a search result is selected.
@@ -48,6 +77,7 @@ enum SearchResultAction {
     case openFile(path: URL)
     case openInFinder(path: URL)
     case copyToClipboard(itemID: Int64)
+    case runSystemCommand(SystemCommand)
 }
 
 // MARK: - Unified Search Response
@@ -57,6 +87,7 @@ struct UnifiedSearchResponse {
     let applications: [UnifiedSearchResult]
     let files: [UnifiedSearchResult]
     let clipboard: [UnifiedSearchResult]
+    let systemCommands: [UnifiedSearchResult]
     let totalCount: Int
     let elapsed: TimeInterval  // Search duration in milliseconds
 }

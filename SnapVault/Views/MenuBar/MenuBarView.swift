@@ -222,6 +222,16 @@ struct MenuBarView: View {
                     )
                 }
 
+                if !searchViewModel.systemCommands.isEmpty || searchViewModel.selectedGroup == .systemCommand {
+                    GroupTabButton(
+                        title: "System",
+                        icon: "gearshape",
+                        count: searchViewModel.systemCommands.count,
+                        isSelected: searchViewModel.selectedGroup == .systemCommand,
+                        action: { searchViewModel.selectedGroup = .systemCommand }
+                    )
+                }
+
                 if !searchViewModel.files.isEmpty || searchViewModel.selectedGroup == .file {
                     GroupTabButton(
                         title: "Files",

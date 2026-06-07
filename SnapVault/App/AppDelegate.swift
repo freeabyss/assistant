@@ -55,6 +55,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// File search source (skeleton, full impl in US-015).
     private let fileSearchSource = FileSearchSource()
 
+    /// System command search source (sleep/restart/shutdown/lock/...).
+    private let systemCommandSource = SystemCommandSource()
+
     /// Unified search view model (created in applicationDidFinishLaunching on main actor).
     private var unifiedSearchViewModel: UnifiedSearchViewModel!
 
@@ -96,7 +99,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         unifiedSearchService.registerSource(clipboardSearchSource)
         unifiedSearchService.registerSource(appSearchSource)
         unifiedSearchService.registerSource(fileSearchSource)
-        logger.info("Unified search service initialized with 3 sources")
+        unifiedSearchService.registerSource(systemCommandSource)
+        logger.info("Unified search service initialized with 4 sources")
 
         // Create unified search view model (must be on main actor)
         unifiedSearchViewModel = UnifiedSearchViewModel(unifiedSearchService: unifiedSearchService)

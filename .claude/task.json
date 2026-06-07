@@ -279,7 +279,7 @@
       "id": "US-018",
       "title": "系统命令搜索源（sleep/restart/shutdown/lock）",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": ["US-013"],
       "steps": [

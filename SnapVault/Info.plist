@@ -30,6 +30,10 @@
     <key>NSScreenCaptureUsageInfo</key>
     <string>SnapVault needs screen recording permission to capture screenshots for OCR text recognition.</string>
 
+    <!-- AppleScript automation: required for system commands (sleep / restart / shutdown / empty trash) -->
+    <key>NSAppleEventsUsageDescription</key>
+    <string>SnapVault uses AppleScript to execute system commands like Sleep, Restart, Shut Down, and Empty Trash from the Command Bar.</string>
+
     <!-- Sparkle auto-update configuration -->
     <key>SUFeedURL</key>
     <string>https://snapvault.app/appcast.xml</string>

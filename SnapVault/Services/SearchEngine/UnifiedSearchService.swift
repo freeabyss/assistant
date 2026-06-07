@@ -63,7 +63,7 @@ final class UnifiedSearchService: UnifiedSearchServiceProtocol {
     func search(query: String, limit: Int) async throws -> UnifiedSearchResponse {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
-            return UnifiedSearchResponse(applications: [], files: [], clipboard: [], totalCount: 0, elapsed: 0)
+            return UnifiedSearchResponse(applications: [], files: [], clipboard: [], systemCommands: [], totalCount: 0, elapsed: 0)
         }
 
         let startTime = CFAbsoluteTimeGetCurrent()
@@ -116,15 +116,17 @@ final class UnifiedSearchService: UnifiedSearchServiceProtocol {
         let applications = sorted.filter { $0.type == .application }
         let files = sorted.filter { $0.type == .file }
         let clipboard = sorted.filter { $0.type == .clipboard }
+        let systemCommands = sorted.filter { $0.type == .systemCommand }
 
         let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000 // Convert to ms
 
-        logger.info("Unified search '\(trimmed, privacy: .public)': \(applications.count) apps, \(files.count) files, \(clipboard.count) clipboard in \(String(format: "%.1f", elapsed))ms")
+        logger.info("Unified search '\(trimmed, privacy: .public)': \(applications.count) apps, \(files.count) files, \(clipboard.count) clipboard, \(systemCommands.count) system in \(String(format: "%.1f", elapsed))ms")
 
         return UnifiedSearchResponse(
             applications: applications,
             files: files,
             clipboard: clipboard,
+            systemCommands: systemCommands,
             totalCount: sorted.count,
             elapsed: elapsed
         )
@@ -151,6 +153,7 @@ final class UnifiedSearchService: UnifiedSearchServiceProtocol {
     private func typePriorityScore(for type: SearchResultType) -> Double {
         switch type {
         case .application: return 1.0
+        case .systemCommand: return 0.8
         case .file: return 0.7
         case .clipboard: return 0.5
         }
