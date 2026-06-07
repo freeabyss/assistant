@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 /// Notification posted when the panel is shown via global shortcut,
 /// requesting the search field to receive keyboard focus.
@@ -7,48 +8,121 @@ extension Notification.Name {
     static let checkForUpdates = Notification.Name("SnapVault.checkForUpdates")
 }
 
+// MARK: - AutoFocusTextField
+
+/// A custom NSTextField wrapper that can programmatically become first responder.
+/// Used instead of SwiftUI's TextField for reliable keyboard focus in borderless windows.
+struct AutoFocusTextField: NSViewRepresentable {
+    @Binding var text: String
+    let placeholder: String
+
+    func makeNSView(context: Context) -> NSTextField {
+        let textField = NSTextField()
+        textField.placeholderString = placeholder
+        textField.isBordered = false
+        textField.isBezeled = false
+        textField.drawsBackground = false
+        textField.font = NSFont.systemFont(ofSize: 16)
+        textField.focusRingType = .none
+        textField.delegate = context.coordinator
+        context.coordinator.setTextField(textField)
+        return textField
+    }
+
+    func updateNSView(_ nsView: NSTextField, context: Context) {
+        nsView.stringValue = text
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    class Coordinator: NSObject, NSTextFieldDelegate {
+        let parent: AutoFocusTextField
+        var focusObserver: NSObjectProtocol?
+
+        init(_ parent: AutoFocusTextField) {
+            self.parent = parent
+        }
+
+        func setTextField(_ textField: NSTextField) {
+            // Listen for focus requests
+            focusObserver = NotificationCenter.default.addObserver(
+                forName: .focusSearchField,
+                object: nil,
+                queue: .main
+            ) { [weak textField] _ in
+                guard let textField = textField,
+                      let window = textField.window else { return }
+                window.makeFirstResponder(textField)
+            }
+        }
+
+        deinit {
+            if let observer = focusObserver {
+                NotificationCenter.default.removeObserver(observer)
+            }
+        }
+
+        func controlTextDidChange(_ obj: Notification) {
+            if let textField = obj.object as? NSTextField {
+                parent.text = textField.stringValue
+            }
+        }
+    }
+
+    static func dismantleNSView(_ nsView: NSTextField, coordinator: Coordinator) {
+        if let observer = coordinator.focusObserver {
+            NotificationCenter.default.removeObserver(observer)
+            coordinator.focusObserver = nil
+        }
+    }
+}
+
 /// Main container view shown in the floating panel.
 ///
-/// Displays a Spotlight-style search bar at the top. When the search field is empty,
-/// shows clipboard history (ClipboardListView). When the user types, switches to
-/// unified search results (UnifiedResultList) with grouped display.
+/// Pure Spotlight-style: centered search box when empty, results expand below when typing.
 struct MenuBarView: View {
     @ObservedObject var searchViewModel: UnifiedSearchViewModel
-    @StateObject private var clipboardViewModel = ClipboardListViewModel()
     @FocusState private var isSearchFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header: App title + settings
-            headerBar
-
-            // Spotlight-style search bar
-            searchBar
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
-                .padding(.bottom, 4)
-
-            // Search timing info (when searching)
-            if searchViewModel.isSearchActive {
-                searchTimingBar
+            // Push search bar to center when inactive
+            if !searchViewModel.isSearchActive {
+                Spacer()
             }
 
-            // Group filter tabs (when searching)
+            // Single persistent search bar (never recreated)
+            searchBar
+                .padding(.horizontal, searchViewModel.isSearchActive ? 16 : 40)
+                .padding(.top, searchViewModel.isSearchActive ? 12 : 0)
+                .padding(.bottom, searchViewModel.isSearchActive ? 8 : 0)
+
+            // Results section (only when searching)
             if searchViewModel.isSearchActive {
+                searchTimingBar
+
                 groupFilterTabs
                     .padding(.horizontal, 12)
                     .padding(.bottom, 6)
+
+                UnifiedResultList(viewModel: searchViewModel)
+
+                Spacer(minLength: 0)
             }
 
-            // Content area: search results or clipboard history
-            if searchViewModel.isSearchActive {
-                UnifiedResultList(viewModel: searchViewModel)
-            } else {
-                ClipboardListView(viewModel: clipboardViewModel)
+            // Push search bar to center when inactive
+            if !searchViewModel.isSearchActive {
+                Spacer()
             }
         }
-        .frame(width: 400, height: 500)
-        .background(Color(NSColor.windowBackgroundColor))
+        .frame(width: 400, height: searchViewModel.isSearchActive ? 500 : 72)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(NSColor.windowBackgroundColor))
+                .shadow(color: Color.black.opacity(0.2), radius: 20, y: 10)
+        )
         .background(
             KeyEventHandler(
                 onUpArrow: { searchViewModel.moveSelectionUp() },
@@ -67,69 +141,37 @@ struct MenuBarView: View {
         }
     }
 
-    // MARK: - Header
-
-    private var headerBar: some View {
-        HStack {
-            Text("SnapVault")
-                .font(.headline)
-                .fontWeight(.semibold)
-
-            Spacer()
-
-            // Check for Updates button
-            Button(action: requestUpdateCheck) {
-                Image(systemName: "arrow.triangle.2.circlepath")
-                    .font(.system(size: 13))
-                    .foregroundColor(.secondary)
-            }
-            .buttonStyle(.plain)
-            .help("Check for Updates")
-
-            // Settings button
-            Button(action: openSettings) {
-                Image(systemName: "gear")
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
-            }
-            .buttonStyle(.plain)
-            .help("Open Settings")
-        }
-        .padding(.horizontal, 12)
-        .padding(.top, 12)
-        .padding(.bottom, 4)
-    }
-
-    // MARK: - Spotlight-Style Search Bar
+    // MARK: - Search Bar
 
     private var searchBar: some View {
         HStack(spacing: 10) {
             Image(systemName: "magnifyingglass")
-                .foregroundColor(.secondary.opacity(0.7))
-                .font(.system(size: 15))
+                .foregroundColor(.secondary.opacity(0.6))
+                .font(.system(size: 16))
 
-            TextField("Search apps, files, clipboard...", text: $searchViewModel.searchText)
-                .textFieldStyle(.plain)
-                .font(.system(size: 15))
-                .focused($isSearchFocused)
+            AutoFocusTextField(
+                text: $searchViewModel.searchText,
+                placeholder: "Search..."
+            )
+            .frame(height: 22)
 
             if !searchViewModel.searchText.isEmpty {
                 Button(action: {
                     searchViewModel.searchText = ""
                 }) {
                     Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(.secondary.opacity(0.6))
+                        .foregroundColor(.secondary.opacity(0.5))
                         .font(.system(size: 14))
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
         .background(
             RoundedRectangle(cornerRadius: 10)
                 .fill(Color(NSColor.controlBackgroundColor))
-                .shadow(color: Color.black.opacity(0.08), radius: 4, y: 2)
+                .shadow(color: Color.black.opacity(0.12), radius: 6, y: 3)
         )
     }
 
@@ -153,7 +195,7 @@ struct MenuBarView: View {
                 .foregroundColor(.secondary.opacity(0.7))
             Spacer()
         }
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 20)
         .padding(.bottom, 2)
     }
 
@@ -162,7 +204,6 @@ struct MenuBarView: View {
     private var groupFilterTabs: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
-                // "All" tab
                 GroupTabButton(
                     title: "All",
                     icon: "tray",
@@ -171,7 +212,6 @@ struct MenuBarView: View {
                     action: { searchViewModel.selectedGroup = nil }
                 )
 
-                // Application tab
                 if !searchViewModel.applications.isEmpty || searchViewModel.selectedGroup == .application {
                     GroupTabButton(
                         title: "Apps",
@@ -182,7 +222,6 @@ struct MenuBarView: View {
                     )
                 }
 
-                // File tab
                 if !searchViewModel.files.isEmpty || searchViewModel.selectedGroup == .file {
                     GroupTabButton(
                         title: "Files",
@@ -193,7 +232,6 @@ struct MenuBarView: View {
                     )
                 }
 
-                // Clipboard tab
                 if !searchViewModel.clipboard.isEmpty || searchViewModel.selectedGroup == .clipboard {
                     GroupTabButton(
                         title: "Clipboard",
@@ -205,21 +243,6 @@ struct MenuBarView: View {
                 }
             }
         }
-    }
-
-    // MARK: - Actions
-
-    private func openSettings() {
-        if #available(macOS 14.0, *) {
-            NSApp.activate()
-        } else {
-            NSApp.activate(ignoringOtherApps: true)
-        }
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-    }
-
-    private func requestUpdateCheck() {
-        NotificationCenter.default.post(name: .checkForUpdates, object: nil)
     }
 }
 

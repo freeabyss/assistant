@@ -76,7 +76,11 @@ final class UnifiedSearchViewModel: ObservableObject {
             clipboard = response.clipboard
             elapsed = response.elapsed
             selectedResult = flatResults.first
-            logger.info("Search completed: \(response.totalCount) results in \(String(format: "%.1f", response.elapsed))ms")
+            logger.info("Search completed: \(response.totalCount) results (apps:\(response.applications.count), files:\(response.files.count), clipboard:\(response.clipboard.count)) in \(String(format: "%.1f", response.elapsed))ms")
+            // Refocus the text field after results appear
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(name: .focusSearchField, object: nil)
+            }
         } catch {
             logger.error("Unified search failed: \(error.localizedDescription, privacy: .public)")
             clearResults()
@@ -231,6 +235,10 @@ final class UnifiedSearchViewModel: ObservableObject {
         clipboard = []
         elapsed = 0
         selectedResult = nil
+        // Refocus when clearing (search text emptied)
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .focusSearchField, object: nil)
+        }
     }
 
     /// Copy a clipboard item to the system clipboard by fetching from the database.

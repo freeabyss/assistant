@@ -1,7 +1,14 @@
 import Cocoa
 import SwiftUI
 import KeyboardShortcuts
+import Combine
 import os.log
+
+/// A borderless floating panel that can become key window (for text input).
+class FloatingSearchPanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+}
 
 /// AppKit lifecycle delegate, bridges AppKit-specific setup that SwiftUI cannot handle.
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -13,8 +20,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Floating panel that hosts the main SwiftUI view.
     private var panel: NSPanel?
 
-    /// Local event monitor to detect clicks outside the panel.
+    /// Cancellable for observing search state changes.
+    private var searchStateCancellable: AnyCancellable?
+
+    /// Local event monitor for detecting clicks outside the panel.
     private var localEventMonitor: Any?
+    /// Flag to prevent double-close
+    private var isClosingPanel = false
 
     /// Clipboard polling monitor.
     private let clipboardMonitor = ClipboardMonitor()
@@ -89,6 +101,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Create unified search view model (must be on main actor)
         unifiedSearchViewModel = UnifiedSearchViewModel(unifiedSearchService: unifiedSearchService)
 
+        // Observe search state to resize panel dynamically
+        searchStateCancellable = unifiedSearchViewModel.$searchText
+            .map { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+            .removeDuplicates()
+            .sink { [weak self] isActive in
+                self?.resizePanelForSearchState(isActive: isActive)
+            }
+
         // Set up Sparkle auto-update (Sparkle handles launch delay + periodic checks internally)
         updateService.setup()
 
@@ -108,9 +128,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         cleanupService.stop()
         clipboardMonitor.stop()
         monitorTask?.cancel()
-        if let monitor = localEventMonitor {
-            NSEvent.removeMonitor(monitor)
-        }
+        stopMonitoringEvents()
     }
 
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool {
@@ -131,12 +149,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func statusItemClicked(_ sender: NSStatusBarButton) {
+        logger.info("Status bar button clicked")
         togglePanel()
     }
 
     // MARK: - Panel Management
 
     func togglePanel() {
+        let panelExists = panel != nil
+        let panelVisible = panel?.isVisible ?? false
+        logger.info("togglePanel called, panel exists: \(panelExists), isVisible: \(panelVisible)")
         if let panel = panel, panel.isVisible {
             closePanel()
         } else {
@@ -145,59 +167,118 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func showPanel() {
-        if panel == nil {
-            createPanel()
+        logger.info("showPanel called")
+        // Always recreate the panel for fresh focus state
+        closePanel(animate: false)
+        panel = nil
+        createPanel()
+
+        guard let panel = panel else {
+            logger.error("Panel is still nil after createPanel()")
+            return
         }
 
-        guard let panel = panel, let statusButton = statusItem.button else { return }
+        // Center panel on screen (Alfred-style)
+        let panelWidth: CGFloat = 400
+        let panelHeight: CGFloat = 72  // Just enough for search bar
 
-        // Position panel below the status bar icon
-        if let buttonWindow = statusButton.window {
-            let buttonRect = buttonWindow.convertToScreen(statusButton.frame)
-            let panelWidth: CGFloat = 400
-            let panelHeight: CGFloat = 500
-
-            let panelX = buttonRect.midX - panelWidth / 2
-            let panelY = buttonRect.minY - panelHeight - 4
+        if let screen = NSScreen.main {
+            let screenFrame = screen.visibleFrame
+            let panelX = screenFrame.midX - panelWidth / 2
+            let panelY = screenFrame.midY + 100  // Slightly above center
 
             panel.setFrame(NSRect(x: panelX, y: panelY, width: panelWidth, height: panelHeight), display: true)
         }
 
+        // Reset search text when showing panel
+        DispatchQueue.main.async { [weak self] in
+            self?.unifiedSearchViewModel.searchText = ""
+        }
+
+        // Activate the app and show the panel
+        if #available(macOS 14.0, *) {
+            NSApp.activate()
+        } else {
+            NSApp.activate(ignoringOtherApps: true)
+        }
+
         panel.makeKeyAndOrderFront(nil)
+        logger.info("Panel made key and front")
         startMonitoringEvents()
 
-        // Request search field focus after a brief delay to ensure the panel is key
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+        // Focus the text field when the panel becomes key
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            NotificationCenter.default.post(name: .focusSearchField, object: nil)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             NotificationCenter.default.post(name: .focusSearchField, object: nil)
         }
 
         logger.info("Panel shown")
     }
 
-    func closePanel() {
+    func closePanel(animate: Bool = true) {
+        guard !isClosingPanel else { return }
+        isClosingPanel = true
         stopMonitoringEvents()
-        panel?.orderOut(nil)
+        if animate {
+            panel?.orderOut(nil)
+        } else {
+            panel?.close()
+        }
+        panel = nil
         logger.info("Panel closed")
     }
 
+    /// Resize the panel when search state changes (empty -> results, results -> empty).
+    private func resizePanelForSearchState(isActive: Bool) {
+        guard let panel = panel, panel.isVisible else { return }
+
+        let targetHeight: CGFloat = isActive ? 500 : 72
+        let panelWidth: CGFloat = 400
+
+        // Keep panel centered on screen
+        var newFrame: NSRect
+        if let screen = NSScreen.main {
+            let screenFrame = screen.visibleFrame
+            let panelX = screenFrame.midX - panelWidth / 2
+            let panelY = screenFrame.midY + 100 - (targetHeight - 72) / 2  // Adjust for growth
+            newFrame = NSRect(x: panelX, y: panelY, width: panelWidth, height: targetHeight)
+        } else {
+            let currentFrame = panel.frame
+            let newY = currentFrame.origin.y + currentFrame.height - targetHeight
+            newFrame = NSRect(x: currentFrame.origin.x, y: newY, width: panelWidth, height: targetHeight)
+        }
+
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.15
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            panel.animator().setFrame(newFrame, display: true)
+        }
+    }
+
     private func createPanel() {
-        let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 400, height: 500),
-            styleMask: [.nonactivatingPanel, .titled, .closable, .fullSizeContentView],
+        let panel = FloatingSearchPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 72),
+            styleMask: [.borderless],
             backing: .buffered,
             defer: false
         )
 
         panel.isFloatingPanel = true
-        panel.titlebarAppearsTransparent = true
-        panel.titleVisibility = .hidden
         panel.isMovableByWindowBackground = false
         panel.level = .floating
-        panel.hidesOnDeactivate = false
+        panel.hidesOnDeactivate = false  // Don't auto-close, we'll handle it manually
         panel.animationBehavior = .utilityWindow
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.isOpaque = false
         panel.backgroundColor = .clear
+        panel.hasShadow = true
+
+        // Round corners on the window
+        panel.contentView?.wantsLayer = true
+        panel.contentView?.layer?.cornerRadius = 12
+        panel.contentView?.layer?.masksToBounds = true
 
         // Set the SwiftUI content
         let menuBarView = MenuBarView(searchViewModel: unifiedSearchViewModel)
@@ -214,41 +295,44 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             ])
         }
 
+        // Observe when the panel loses key status (user clicked outside our app)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(panelDidResignKey),
+            name: NSWindow.didResignKeyNotification,
+            object: panel
+        )
+
         self.panel = panel
+        logger.info("Panel created successfully")
+    }
+
+    @objc private func panelDidResignKey(_ notification: Notification) {
+        logger.info("Panel lost key status, closing")
+        closePanel()
     }
 
     // MARK: - Event Monitoring
 
     private func startMonitoringEvents() {
         guard localEventMonitor == nil else { return }
+        isClosingPanel = false
+
+        // Local monitor for clicks that reach our app but are outside the panel
         localEventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
-            guard let self = self, let panel = self.panel, panel.isVisible else {
+            guard let self = self, let panel = self.panel, panel.isVisible, !self.isClosingPanel else {
                 return event
             }
-
-            // If click is inside the panel, let it through
-            if panel.frame.contains(NSEvent.mouseLocation) {
-                return event
+            if !panel.frame.contains(NSEvent.mouseLocation) {
+                self.closePanel()
             }
-
-            // If click is on the status bar button, let it through (toggle will handle it)
-            if let statusButton = self.statusItem.button,
-               let buttonWindow = statusButton.window {
-                let buttonFrame = buttonWindow.convertToScreen(statusButton.frame)
-                if buttonFrame.contains(NSEvent.mouseLocation) {
-                    return event
-                }
-            }
-
-            // Click is outside panel and not on status bar - close panel
-            self.closePanel()
             return event
         }
     }
 
     private func stopMonitoringEvents() {
-        if let monitor = localEventMonitor {
-            NSEvent.removeMonitor(monitor)
+        if localEventMonitor != nil {
+            NSEvent.removeMonitor(localEventMonitor!)
             localEventMonitor = nil
         }
     }

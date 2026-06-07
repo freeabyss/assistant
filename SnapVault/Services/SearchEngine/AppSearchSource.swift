@@ -76,7 +76,7 @@ final class AppSearchSource: AppSearchSourceProtocol {
         guard !trimmed.isEmpty else { return [] }
 
         guard isReady else {
-            logger.debug("App index not ready yet, returning empty results")
+            logger.warning("App index not ready yet, returning empty results for '\(trimmed, privacy: .public)'")
             return []
         }
 

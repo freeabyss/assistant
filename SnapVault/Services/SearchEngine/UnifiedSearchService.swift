@@ -79,7 +79,9 @@ final class UnifiedSearchService: UnifiedSearchServiceProtocol {
             for source in currentSources {
                 group.addTask {
                     do {
-                        return try await source.search(query: trimmed, limit: limit)
+                        let results = try await source.search(query: trimmed, limit: limit)
+                        Logger.search.info("Source \(String(describing: source.sourceType)) returned \(results.count) results")
+                        return results
                     } catch {
                         // Log but don't fail the entire search if one source fails
                         Logger.search.error("Search source \(String(describing: source.sourceType)) failed: \(error.localizedDescription, privacy: .public)")
