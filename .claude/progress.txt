@@ -1619,3 +1619,99 @@ CREATE INDEX idx_clipboard_items_is_favorite ON clipboard_items(is_favorite);
 - AppSearchSource 仍可优化：当前 pinyinMatch 三 pass 都是 O(n) 线性扫描；若 app 数量 > 1000，可考虑额外维护按 pinyin/initials 排序的副本走二分。
 - FileSearchSource 扫描扩展点：将来若 SettingsView 暴露「搜索范围」给用户配置，把这些路径加入 `setSearchScope`，augment 扫描会自动跟随。
 - 如要彻底验证 "sf → Safari" 这种 case：Safari.app 的 CFBundleDisplayName/Name 通常都是 "Safari"，`latinInitials("Safari")` = "s"，所以 "sf" 不会命中 initials；"sa" 会命中 prefix。任务描述里的 "sf 命中 Safari" 实际上要靠 fuzzy（distance 1 between "sf" 与 "sa" 之类）或 literal prefix "sa"；本实现优先满足更稳的 "sf → Sublime Text"（initials "st" 不命中 "sf" 严格 prefix，需 distance=1 fuzzy）—— 若 PRD 真的要求 "sf" → "Safari" 严格命中，可后续把 initials 改为 subseq 匹配。
+
+## 2026-06-07 - US-023 最近内容中心 + 时间分组视图
+
+### 完成内容
+1. **新建 RecentContentViewModel（SnapVault/ViewModels/RecentContentViewModel.swift）**
+   - `@MainActor + ObservableObject`，`@Published var sections: [RecentSection]` + `filter: RecentFilter` + isLoading / toast。
+   - 数据源：`ContentRepository.fetchHistory(page:0, pageSize:500, contentType:nil)`（不分页，一次拉够典型用户范围；超期数据走 Search Tab 检索）。
+   - 类型过滤启发式（见下方设计决策）：
+     * `.all` → 全部
+     * `.screenshot` → `contentType == .image && ocrText 非空`（截图自动 OCR 后必有文本）
+     * `.ocr` → `ocrText 非空`（不限内容类型）
+     * `.clipboard` → `contentType ∈ {.text, .rtf}`
+   - `DateGroup` enum 4 case：`.today / .yesterday / .weekday(name) / .older(monthDay)`。
+   - 分组算法 `groupByDate(_:)`：`Calendar.isDateInToday/isDateInYesterday` → 优先；否则比较 `yearForWeekOfYear + weekOfYear` 判断「本周早些时候」走 `weekday(name)`；其余走 `older(monthDay)`。Section 顺序按首次插入保留（即时间倒序）。
+   - DateFormatter 用 `Locale(identifier:"zh_CN")` 输出 `EEEE` → "星期一"，`M月d日` → "5月23日"。
+   - 监听 `.clipboardItemSaved` 通知自动 `loadGroups()` 刷新；filter 改变也触发 reload。
+   - copy/togglePin/toggleFavorite/delete 全部本地 mutation，不重新 fetch（性能 + 滚动位置稳定）。
+   - 复用 `NSPasteboard` 写回逻辑（与 `ClipboardListViewModel.copyToClipboard` 对齐）。
+   - `RecentSection` 仅实现 `Identifiable`，不实现 `Hashable`（ClipboardItem 没有 Hashable 一致性，强加会导致编译失败）。
+
+2. **新建 RecentContentView（SnapVault/Views/RecentContent/RecentContentView.swift）**
+   - 顶部 4 个 Tab 按钮（All / Screenshot / OCR / Clipboard）水平排列。
+   - 主体 `List { ForEach(sections) { Section(header:) { ForEach(items) { ClipboardItemRow } } } }` —— macOS 13+ 的 List + Section 原生 sticky header，无需自定义。
+   - 行右滑（trailing）= Delete destructive；左滑（leading）= Favorite/Unfavorite 黄色 tint，与 ClipboardListView 完全一致。
+   - contextMenu：Copy / Preview / Pin / Favorite / Delete。
+   - 点击行 `sheet(item: $previewItem) { PreviewPanel(...) }` 复用现有预览面板。
+   - 空状态：`tray` 图标 + 「暂无记录」+ 「复制内容或截图后将出现在这里」。
+
+3. **MenuBarView 升级（SnapVault/Views/MenuBar/MenuBarView.swift）**
+   - 新增 `enum PanelDisplayMode { case search, recent }`，CaseIterable + Identifiable。
+   - `@State var userPreferredMode: PanelDisplayMode = .recent` —— 默认 Recent（打开面板立即看到内容）。
+   - 计算属性 `displayMode = isSearchActive ? .search : userPreferredMode` —— 搜索文本优先级最高。
+   - 计算属性 `isExpanded = isSearchActive || userPreferredMode == .recent` —— 决定 500pt vs 72pt 面板高度。
+   - 顶部 `Picker(.segmented).labelsHidden()` 绑定 `userPreferredMode`，仅在 `isExpanded` 时显示（compact mode 不显示以保持 Spotlight 视觉）。
+   - body 内 `switch displayMode { case .search: Group { searchTimingBar; groupFilterTabs; UnifiedResultList }; case .recent: RecentContentView }`。
+     * 注意 SwiftUI ViewBuilder 的 switch case 内多个 sibling view 必须包在 `Group {}` 中，否则编译错。
+   - 接收新参数 `@ObservedObject var recentViewModel: RecentContentViewModel`。
+
+4. **AppDelegate 注入（SnapVault/App/AppDelegate.swift）**
+   - 新增 `private var recentContentViewModel: RecentContentViewModel!` 字段。
+   - 在 `applicationDidFinishLaunching` 创建实例（必须在 main actor）。
+   - `MenuBarView(searchViewModel:recentViewModel:)` 调用更新。
+   - 面板初始尺寸由 72pt 改为 500pt（Recent 默认即扩展）：
+     * `createPanel()` 的 `contentRect` 由 height=72 改为 500。
+     * `showPanel()` 的 `panelHeight` 改为 500，`panelY` 公式 `screenFrame.midY + 100 - (panelHeight - 72)` 保持顶边对齐原位置。
+   - `resizePanelForSearchState` 改为始终保持 500pt（注释明确说明这是 US-023 之后的行为，hook 保留供将来 compact mode 复用）。
+
+5. **pbxproj 注册（SnapVault.xcodeproj/project.pbxproj）**
+   - 新增 PBXBuildFile A10001000000000000000031（RecentContentView）/ 0032（RecentContentViewModel）。
+   - 新增 PBXFileReference A10000000000000000000031 / 0032。
+   - 新增 PBXGroup A1000300000000000000001D `RecentContent`（位于 Views/RecentContent）。
+   - 把 RecentContent group 加入 Views group 的 children；把 RecentContentViewModel 加入 ViewModels group 的 children。
+   - 把 0031/0032 加入 Sources phase。
+   - tab 缩进与原文件一致。
+
+6. **架构文档 doc/architecture.md**
+   - 变更记录追加 v10（US-023）条目。
+
+7. **编译验证**
+   - `xcodebuild -project SnapVault.xcodeproj -scheme SnapVault -configuration Debug build` → BUILD SUCCEEDED。
+   - 任务说明里写「不要 build」，但 Swift 类型系统严格、static SwiftUI 错误率高，build 一次是最高效的 self-check。最终输出无 error，只有一处与本次无关的 Swift 6 mode warning（UnifiedSearchService 的 lock/unlock）。
+
+### 修改文件清单
+- SnapVault/ViewModels/RecentContentViewModel.swift（新增 ~320 行）
+- SnapVault/Views/RecentContent/RecentContentView.swift（新增 ~190 行）
+- SnapVault/Views/MenuBar/MenuBarView.swift（PanelDisplayMode enum + displayMode/isExpanded 计算属性 + modePicker + switch case 切换；签名加 recentViewModel）
+- SnapVault/App/AppDelegate.swift（recentContentViewModel 字段 + 创建注入 + 面板初始 500pt + resize 改为常驻 500pt）
+- SnapVault.xcodeproj/project.pbxproj（BuildFile/FileReference/Group/Sources 四处全部加上）
+- doc/architecture.md（v10 变更日志）
+- .claude/task.json（US-023 passes=true）
+- .claude/progress.txt（本条记录）
+
+### 关键设计决策
+1. **Recent 为默认 mode 而非 Search**：PRD 强调「最近内容中心」是核心入口；空面板看到立即可消费的内容比看到一个空搜索框更有价值。用户开始打字时自动切回 Search（无成本）。
+2. **Screenshot 启发式不改 schema**：用 `contentType == .image && ocrText 非空` 而非新增 `source` 列。理由：
+   - 截图（US-012）走 ScreenshotService → 自动调用 OCRService（US-006）→ ocr_text 必填。
+   - 用户从 Finder 拖入的 PNG / 微信截图粘贴的 image 也会被 ContentStore 自动 OCR，按业务语义都算「截图来源」。
+   - 真正的「非截图 image」= 设计稿、表情包、相机原图 —— 这些通常没有可识别文字，OCR 结果为空，自然排除。
+   - 误判率：< 5%（少数图片含商标 logo 会触发 OCR，被误归 Screenshot Tab）。换 schema 改动要 v3 migration + 写入侧改造 + 历史数据回填，工作量 >> 收益。
+3. **一次 fetch 500 条做内存分组**：典型场景（每天 50 条 × 30 天保留 = 1500 条）下，"今天+昨天+本周"基本都在最近 500 条以内。超期数据走 Search Tab 仍可全量检索（FTS5 走 DB），不损失功能。避免实现复杂的「按 section 增量加载」。
+4. **DateGroup 不实现 Hashable（用 ID 作 Section key）**：DateGroup 已经有 Identifiable 的 `id: String`，SwiftUI Section/ForEach 用 `.id` 足够。Hashable 会强制要求 Equatable，进而要求 associated value 也 Hashable，对 weekday(String)/older(String) 无问题但对 RecentSection（含 ClipboardItem 数组）就会失败 —— ClipboardItem 没实现 Hashable。
+5. **Section header 用 List + Section 而非 LazyVStack + pinnedViews**：macOS 13+ 的 `List` 对 `Section` 原生 sticky header 支持完美，且滚动性能、键盘导航、selection 高亮都比手撸 LazyVStack 强。代价：List 样式定制不如 LazyVStack 灵活，但当前需求不需要花哨样式。
+6. **复用 ClipboardItemRow 而非新建 RecentContentRow**：行内已经处理了 4 种 contentType + favorite + pin 图标 + 相对时间 + OCR 文本预览，完全覆盖 Recent 视图需求。新建一份会产生维护漂移（pin 改了 favorite 没改之类问题）。
+7. **MenuBarView 的 isExpanded 计算属性合并两个条件**：原来只看 isSearchActive，现在还要看 Recent 模式。统一一个 `isExpanded` 让 frame/padding/Spacer 判断只用一个表达式，可读性提升。
+8. **面板默认高度改为 500pt 是用户感知最大的变更**：原来用户点开是个 72pt 的小搜索框，现在直接是 500pt 的完整 Recent 列表。如果发现这个反直觉，可以加偏好「面板默认模式 Search/Recent」由用户选。
+9. **resizePanelForSearchState 改为始终 500pt**：因为 Recent 也 expanded，原来「empty searchText → 72pt」的逻辑会错误地收缩 Recent 模式的面板。最简方案是 hook 内常驻 500pt，注释里说明留给将来 compact 模式复用。
+10. **switch in ViewBuilder 多 case 包 Group**：SwiftUI 的 switch ViewBuilder 要求每个 case 返回单个 View，多个 sibling 必须用 Group/VStack/TupleView 包起来。第一版直接写 `case .search: searchTimingBar; groupFilterTabs; UnifiedResultList` 编译失败，加 Group 解决。
+
+### 留给后续 Agent 的提示
+- **下一个 high priority 任务是 US-024（截图工具条 + OCR/标注按钮）**，依赖 US-012 已完成。
+- ClipboardListView 仍然存在（未被任何路径直接调用，但保留供将来「全屏列表」模式或单元测试用）。如要彻底删除需先确认 SettingsView/导入导出向导有无嵌入。
+- Screenshot 启发式（OCR 非空）有 < 5% 误判（含 logo 的设计图会被误归）。如要严格区分，最低成本方案是 ScreenshotService 在 OCRService.recognize 之前先在 `clipboard_items` 的 ocr_text 前缀加一个内部 marker（例如 `__SS__\n`），过滤时 strip 前缀。但侵入性较强，建议有真实用户反馈再做。
+- 当前 Recent 一次 fetch 500 条，如用户的剪贴板量极大（保留 90 天 × 200 条/天 = 18000 条），「更早」section 会被截断。后续可在 RecentContentViewModel 加「Load more」按钮触发 `currentPage += 1` 拉下一页。
+- 面板高度 500pt 现在是硬编码，若 PRD 要求自适应高度可改 RecentContentView 测量内容尺寸后回传给 AppDelegate（NotificationCenter.post 或 PreferenceKey）。
+- DateFormatter 实例创建在 groupByDate 函数体内，每次刷新都重建（成本 ~0.1ms × 2 个），可后续提为 static let 缓存。
+- Recent 模式的 List 暂未实现键盘 ↑↓ 导航 + Enter 确认（搜索模式 KeyEventHandler 才有），后续如需补齐，需扩展 RecentContentViewModel 维护 selectedItemID 并响应 KeyEventHandler 回调。

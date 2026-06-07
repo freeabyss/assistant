@@ -79,45 +79,105 @@ struct AutoFocusTextField: NSViewRepresentable {
     }
 }
 
+/// Display mode for the main panel: Spotlight-style search vs. Recent content browse.
+///
+/// `.search` is forced whenever `searchText` is non-empty (typing always wins over
+/// browsing). `.recent` is the user-chosen browse mode and the default when the
+/// panel opens — see US-023 for the rationale (zero-input panel should show value
+/// immediately rather than a blank search box).
+enum PanelDisplayMode: String, CaseIterable, Identifiable {
+    case search
+    case recent
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .search: return "Search"
+        case .recent: return "Recent"
+        }
+    }
+}
+
 /// Main container view shown in the floating panel.
 ///
-/// Pure Spotlight-style: centered search box when empty, results expand below when typing.
+/// Two display modes:
+/// - `.search` (Spotlight-style): centered search box when empty, results expand below
+/// - `.recent` (browse): segmented filter + date-grouped unified content list
+///
+/// Mode is driven by `userPreferredMode` (last explicit user choice) and
+/// `searchViewModel.searchText` (non-empty forces .search).
 struct MenuBarView: View {
     @ObservedObject var searchViewModel: UnifiedSearchViewModel
+    @ObservedObject var recentViewModel: RecentContentViewModel
     @FocusState private var isSearchFocused: Bool
+
+    /// Last explicit mode the user picked via the segmented Picker.
+    /// Persisted across `searchText` toggles so the panel returns to it when
+    /// the search box is cleared.
+    @State private var userPreferredMode: PanelDisplayMode = .recent
+
+    /// The effective mode actually rendered. `.search` whenever there is query
+    /// text; otherwise mirrors `userPreferredMode`.
+    private var displayMode: PanelDisplayMode {
+        searchViewModel.isSearchActive ? .search : userPreferredMode
+    }
+
+    /// True when the panel needs the expanded 500pt height (results / browse),
+    /// false for the compact 72pt search-only layout.
+    private var isExpanded: Bool {
+        searchViewModel.isSearchActive || userPreferredMode == .recent
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            // Push search bar to center when inactive
-            if !searchViewModel.isSearchActive {
+            // Push search bar to center when fully compact
+            if !isExpanded {
                 Spacer()
+            }
+
+            // Mode picker — only visible in expanded layout (otherwise the
+            // compact 72pt search-only view looks cramped).
+            if isExpanded {
+                modePicker
+                    .padding(.horizontal, 16)
+                    .padding(.top, 10)
+                    .padding(.bottom, 4)
             }
 
             // Single persistent search bar (never recreated)
             searchBar
-                .padding(.horizontal, searchViewModel.isSearchActive ? 16 : 40)
-                .padding(.top, searchViewModel.isSearchActive ? 12 : 0)
-                .padding(.bottom, searchViewModel.isSearchActive ? 8 : 0)
+                .padding(.horizontal, isExpanded ? 16 : 40)
+                .padding(.top, isExpanded ? 4 : 0)
+                .padding(.bottom, isExpanded ? 8 : 0)
 
-            // Results section (only when searching)
-            if searchViewModel.isSearchActive {
-                searchTimingBar
+            // Body switches between Search results and Recent browse
+            if isExpanded {
+                switch displayMode {
+                case .search:
+                    Group {
+                        searchTimingBar
 
-                groupFilterTabs
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 6)
+                        groupFilterTabs
+                            .padding(.horizontal, 12)
+                            .padding(.bottom, 6)
 
-                UnifiedResultList(viewModel: searchViewModel)
+                        UnifiedResultList(viewModel: searchViewModel)
+                    }
+
+                case .recent:
+                    RecentContentView(viewModel: recentViewModel)
+                }
 
                 Spacer(minLength: 0)
             }
 
-            // Push search bar to center when inactive
-            if !searchViewModel.isSearchActive {
+            // Push search bar to center when fully compact
+            if !isExpanded {
                 Spacer()
             }
         }
-        .frame(width: 400, height: searchViewModel.isSearchActive ? 500 : 72)
+        .frame(width: 400, height: isExpanded ? 500 : 72)
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color(NSColor.windowBackgroundColor))
@@ -128,7 +188,7 @@ struct MenuBarView: View {
                 onUpArrow: { searchViewModel.moveSelectionUp() },
                 onDownArrow: { searchViewModel.moveSelectionDown() },
                 onReturn: {
-                    if searchViewModel.isSearchActive {
+                    if displayMode == .search && searchViewModel.isSearchActive {
                         searchViewModel.confirmSelection()
                     }
                 },
@@ -140,6 +200,18 @@ struct MenuBarView: View {
             isSearchFocused = true
         }
         .toast(message: searchViewModel.toastMessage, isShowing: searchViewModel.showToast)
+    }
+
+    // MARK: - Mode Picker
+
+    private var modePicker: some View {
+        Picker("", selection: $userPreferredMode) {
+            ForEach(PanelDisplayMode.allCases) { mode in
+                Text(mode.title).tag(mode)
+            }
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
     }
 
     // MARK: - Search Bar
@@ -308,5 +380,8 @@ struct GroupTabButton: View {
 }
 
 #Preview {
-    MenuBarView(searchViewModel: UnifiedSearchViewModel(unifiedSearchService: UnifiedSearchService()))
+    MenuBarView(
+        searchViewModel: UnifiedSearchViewModel(unifiedSearchService: UnifiedSearchService()),
+        recentViewModel: RecentContentViewModel()
+    )
 }

@@ -52,6 +52,8 @@
 		A1000100000000000000002B /* UnifiedResultList.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002B; };
 		A1000100000000000000002C /* KeyEventHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002C; };
 		A10001000000000000000030 /* PinyinHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000030; };
+		A10001000000000000000031 /* RecentContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000031; };
+		A10001000000000000000032 /* RecentContentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000032; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -103,6 +105,8 @@
 		A1000000000000000000002B /* UnifiedResultList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedResultList.swift; sourceTree = "<group>"; };
 		A1000000000000000000002C /* KeyEventHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyEventHandler.swift; sourceTree = "<group>"; };
 		A10000000000000000000030 /* PinyinHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinyinHelper.swift; sourceTree = "<group>"; };
+		A10000000000000000000031 /* RecentContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentContentView.swift; sourceTree = "<group>"; };
+		A10000000000000000000032 /* RecentContentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentContentViewModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -161,6 +165,7 @@
 				A10003000000000000000010 /* Settings */,
 				A10003000000000000000018 /* Components */,
 				A1000300000000000000001C /* SearchResults */,
+				A1000300000000000000001D /* RecentContent */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -171,6 +176,7 @@
 				A10000000000000000000016 /* ClipboardListViewModel.swift */,
 				A10000000000000000000017 /* SettingsViewModel.swift */,
 				A10000000000000000000028 /* UnifiedSearchViewModel.swift */,
+				A10000000000000000000032 /* RecentContentViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -386,6 +392,14 @@
 			path = SearchResults;
 			sourceTree = "<group>";
 		};
+		A1000300000000000000001D /* RecentContent */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000031 /* RecentContentView.swift */,
+			);
+			path = RecentContent;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -509,6 +523,8 @@
 				A1000100000000000000002B /* UnifiedResultList.swift in Sources */,
 				A1000100000000000000002C /* KeyEventHandler.swift in Sources */,
 				A10001000000000000000030 /* PinyinHelper.swift in Sources */,
+				A10001000000000000000031 /* RecentContentView.swift in Sources */,
+				A10001000000000000000032 /* RecentContentViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

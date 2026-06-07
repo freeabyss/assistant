@@ -67,6 +67,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Unified search view model (created in applicationDidFinishLaunching on main actor).
     private var unifiedSearchViewModel: UnifiedSearchViewModel!
 
+    /// Recent content center view model (US-023). Created on main actor in
+    /// `applicationDidFinishLaunching` so it can observe `clipboardItemSaved`
+    /// notifications and refresh its date-grouped sections.
+    private var recentContentViewModel: RecentContentViewModel!
+
     /// Screenshot service for region and window capture (macOS 14+).
     private lazy var screenshotService: ScreenshotServiceProtocol? = {
         if #available(macOS 14.0, *) {
@@ -112,6 +117,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Create unified search view model (must be on main actor)
         unifiedSearchViewModel = UnifiedSearchViewModel(unifiedSearchService: unifiedSearchService)
+
+        // Create Recent Content Center view model (US-023, must be on main actor).
+        // Built here rather than lazily so the .clipboardItemSaved observer is
+        // wired up from app launch and the Recent panel is warm on first open.
+        recentContentViewModel = RecentContentViewModel()
 
         // Observe search state to resize panel dynamically
         searchStateCancellable = unifiedSearchViewModel.$searchText
@@ -192,12 +202,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Center panel on screen (Alfred-style)
         let panelWidth: CGFloat = 400
-        let panelHeight: CGFloat = 72  // Just enough for search bar
+        // Recent mode is the default display mode in MenuBarView, which renders
+        // at the expanded 500pt height. Open the panel pre-sized so the
+        // browse list is visible immediately without a resize animation.
+        let panelHeight: CGFloat = 500
 
         if let screen = NSScreen.main {
             let screenFrame = screen.visibleFrame
             let panelX = screenFrame.midX - panelWidth / 2
-            let panelY = screenFrame.midY + 100  // Slightly above center
+            let panelY = screenFrame.midY + 100 - (panelHeight - 72)  // Anchor on top edge
 
             panel.setFrame(NSRect(x: panelX, y: panelY, width: panelWidth, height: panelHeight), display: true)
         }
@@ -242,11 +255,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         logger.info("Panel closed")
     }
 
-    /// Resize the panel when search state changes (empty -> results, results -> empty).
+    /// Resize the panel when search state changes.
+    ///
+    /// Historically (US-016) this collapsed to 72pt when the search box was
+    /// empty. After US-023 the default browse mode (Recent) is also rendered
+    /// at the full 500pt height, so the panel stays expanded as long as it's
+    /// visible. We keep this hook in case a future "compact" mode reintroduces
+    /// the 72pt layout, but the current behaviour is a no-op when expanded.
     private func resizePanelForSearchState(isActive: Bool) {
         guard let panel = panel, panel.isVisible else { return }
 
-        let targetHeight: CGFloat = isActive ? 500 : 72
+        // Always 500pt — Recent (default) and Search both use the expanded layout.
+        let targetHeight: CGFloat = 500
         let panelWidth: CGFloat = 400
 
         // Keep panel centered on screen
@@ -271,7 +291,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func createPanel() {
         let panel = FloatingSearchPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 400, height: 72),
+            contentRect: NSRect(x: 0, y: 0, width: 400, height: 500),
             styleMask: [.borderless],
             backing: .buffered,
             defer: false
@@ -293,7 +313,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         panel.contentView?.layer?.masksToBounds = true
 
         // Set the SwiftUI content
-        let menuBarView = MenuBarView(searchViewModel: unifiedSearchViewModel)
+        let menuBarView = MenuBarView(
+            searchViewModel: unifiedSearchViewModel,
+            recentViewModel: recentContentViewModel
+        )
         let hostingView = NSHostingView(rootView: menuBarView)
         hostingView.translatesAutoresizingMaskIntoConstraints = false
 

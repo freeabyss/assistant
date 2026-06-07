@@ -366,7 +366,7 @@
       "id": "US-023",
       "title": "最近内容中心 + 时间分组视图",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": ["US-004", "US-012"],
       "steps": [
