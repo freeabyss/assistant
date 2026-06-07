@@ -1140,3 +1140,45 @@
 - UnifiedSearchViewModel.copyClipboardItem() 内部创建新的 ContentRepository 实例，如果需要共享同一个实例可考虑依赖注入
 - 分组 Tab 的可见性逻辑：只有当该类型有结果或当前选中时才显示 Tab，避免空 Tab 占用空间
 - MenuBarView 的 Preview 需要传入 UnifiedSearchViewModel 实例，实际使用时由 AppDelegate 注入
+
+## 2026-06-07 - US-017 PRD 快捷键对齐（Command Bar / 区域截图）
+
+### 完成内容
+1. **修改 KeyboardShortcuts+Names.swift 默认值**
+   - togglePanel：⌘+Shift+V → ⌘+Space（`.space, modifiers: [.command]`）
+   - captureRegion：⌘+Shift+S → ⌘+Shift+A（`.a, modifiers: [.command, .shift]`）
+   - captureWindow：保持 ⌘+Shift+W（无改动）
+   - 在 togglePanel 的文档注释中说明：与 Spotlight 冲突；KeyboardShortcuts 库的 default 仅在首次启动时生效，已自定义过的用户配置不会被覆盖
+
+2. **更新 ShortcutsSettingsView footer 文案**
+   - 显式列出三组默认快捷键
+   - 用橙色文案警示 ⌘Space 与 Spotlight 冲突，引导用户在系统设置或本应用内修改
+   - Restore Defaults 按钮无需改动：`KeyboardShortcuts.reset(.name)` 按 Name 的 default 重置，已自动对齐新默认值
+
+3. **更新架构文档 doc/architecture.md**
+   - 第 99 行 ⌘+Shift+V → ⌘+Space（统一搜索数据流图）
+   - 第 125 行 ⌘+Shift+S → ⌘+Shift+A（截图 OCR 数据流图）
+   - 第 251 行 截图模块快捷键说明同步
+   - 追加 v4 变更日志条目，记录 US-017 的调整
+
+4. **BUILD_README.md**：grep 后确认无具体快捷键描述需同步（仅出现 Cmd+R 编译热键，与本任务无关）
+
+### 修改文件清单
+- SnapVault/Utilities/KeyboardShortcuts+Names.swift（修改 default 值 + 文档注释）
+- SnapVault/Views/Settings/SettingsView.swift（更新 Shortcuts footer 文案，含 Spotlight 冲突提示）
+- doc/architecture.md（3 处快捷键引用同步 + v4 变更日志）
+
+### 关键 diff 摘要
+- togglePanel: `Self("togglePanel", default: .init(.space, modifiers: [.command]))`
+- captureRegion: `Self("captureRegion", default: .init(.a, modifiers: [.command, .shift]))`
+- 新增 footer 警示行（橙色 .foregroundColor(.orange)）说明 ⌘Space 与 Spotlight 冲突
+
+### 验证方式（静态阅读）
+- KeyboardShortcuts 库 Key.swift（DerivedData/SourcePackages）确认 `.space` 和 `.a` 静态成员存在（kVK_Space / kVK_ANSI_A），编译路径有效
+- KeyboardShortcuts.reset(name) 行为已在库文档确认：重置到 Name 声明的 default
+- grep 全仓库无其它硬编码快捷键字符串需要同步
+
+### 留给后续 Agent 的提示
+- US-018（系统命令搜索源）是下一个 high priority 任务
+- 如果用户反馈 ⌘Space 与 Spotlight 冲突无法触发，可指引到 System Settings → Keyboard → Keyboard Shortcuts → Spotlight 禁用，或在 SettingsView → Shortcuts Tab 自定义
+- 截图快捷键 ⌘+Shift+A 与少数应用（如 macOS 自带"截图与录屏"中的"截取所选部分"）可能冲突，用户层面可自定义

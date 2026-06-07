@@ -96,7 +96,7 @@ enum SearchResultType: String, CaseIterable {
 **核心数据流 —— 统一搜索：**
 
 ```
-用户输入快捷键 ⌘+Shift+V ──> 浮动搜索面板
+用户输入快捷键 ⌘+Space ──> 浮动搜索面板
                               │
                               ├─ 输入关键词 ──> UnifiedSearchService.search()
                               │                      │
@@ -122,7 +122,7 @@ enum SearchResultType: String, CaseIterable {
 **核心数据流 —— 截图 OCR：**
 
 ```
-用户按快捷键 ⌘+Shift+S ──> ScreenshotService
+用户按快捷键 ⌘+Shift+A ──> ScreenshotService
                               │
                               ├─ 区域截图 ──> ScreenCaptureKit.capture()
                               ├─ 窗口截图 ──> ScreenCaptureKit.captureWindow()
@@ -248,7 +248,7 @@ UnifiedSearchService
 - **区域截图**：用户框选屏幕区域，捕获为 PNG 图片
 - **窗口截图**：自动检测鼠标所在窗口，一键捕获
 - **截图后流程**：图片自动存入剪贴板历史 → 触发 OCR → 文本存入 ocr_text
-- **快捷键**：`⌘+Shift+S`（区域截图）、`⌘+Shift+W`（窗口截图）
+- **快捷键**：`⌘+Shift+A`（区域截图）、`⌘+Shift+W`（窗口截图）
 - **截图编辑**：v1 不做标注编辑，后续版本可考虑
 
 理由：ScreenCaptureKit 是 macOS 12.3+ 原生 API，性能优于 CGWindowListCreateImage，支持高质量捕获。
@@ -271,3 +271,4 @@ UnifiedSearchService
 | 2026-06-05 | 初始版本：基于 PRD 创建总体架构设计 |
 | 2026-06-05 | v2：重构为统一效率入口，增加应用搜索、文件搜索、统一搜索管线 |
 | 2026-06-05 | v3：对齐 PRD 产品定位，增加截图模块（ScreenCaptureKit），修正系统概述为"统一效率入口"，修正默认快捷键为 ⌘+Shift+V，内存指标统一为 < 50MB |
+| 2026-06-07 | v4（US-017）：按 PRD 对齐默认快捷键 —— Command Bar 由 ⌘+Shift+V 改为 ⌘+Space（提示与 Spotlight 冲突，可在偏好设置改）；区域截图由 ⌘+Shift+S 改为 ⌘+Shift+A；窗口截图保持 ⌘+Shift+W。仅修改 `KeyboardShortcuts.Name` 的 `default:`，已自定义过的用户配置不受影响。 |

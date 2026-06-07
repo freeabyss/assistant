@@ -253,11 +253,165 @@
       "steps": [
         "重构主界面为 Spotlight 风格搜索框",
         "搜索结果分组展示（应用/文件/剪贴板 Tab 或分段）",
-        "键盘导航（↑↓ 选择，回车执行，Tab 切换分组）",
+        "键盘导航（↑↓ 选择，回车执行,Tab 切换分组）",
         "结果项显示类型图标 + 标题 + 副标题",
         "搜索耗时显示"
       ],
       "done_definition": "一个搜索框同时搜索应用、文件、剪贴板，结果分组展示，键盘可完全操控"
+    },
+    {
+      "id": "US-017",
+      "title": "PRD 快捷键对齐（Command Bar / 区域截图）",
+      "priority": "high",
+      "passes": true,
+      "blocked": false,
+      "depends_on": ["US-008", "US-012"],
+      "steps": [
+        "togglePanel 默认快捷键改为 ⌘+Space（与 Spotlight 冲突时给出提示，可由用户在设置中修改）",
+        "captureRegion 默认快捷键改为 ⌘+Shift+A",
+        "保留用户已自定义的快捷键不被覆盖",
+        "更新 ShortcutsSettingsView 显示的默认值说明",
+        "更新 README/BUILD_README 中相关说明（如有）"
+      ],
+      "done_definition": "首次启动时全局快捷键默认 ⌘+Space 唤起 Command Bar、⌘+Shift+A 区域截图；已设置过的快捷键保持原值"
+    },
+    {
+      "id": "US-018",
+      "title": "系统命令搜索源（sleep/restart/shutdown/lock）",
+      "priority": "high",
+      "passes": false,
+      "blocked": false,
+      "depends_on": ["US-013"],
+      "steps": [
+        "新建 SystemCommandSource 实现 SearchSource 协议",
+        "内置命令清单：sleep、restart、shutdown、lock、empty trash、show desktop 等",
+        "前缀+包含匹配，支持中英文别名（睡眠/重启/关机/锁屏）",
+        "扩展 SearchResultAction 增加 .runSystemCommand(SystemCommand)",
+        "在 UnifiedSearchViewModel.executeAction 中通过 AppleScript / NSWorkspace 执行命令",
+        "AppDelegate 注册 SystemCommandSource"
+      ],
+      "done_definition": "输入 sleep/restart/shutdown/lock 出现对应命令项，回车执行系统操作（关机/重启可弹确认）"
+    },
+    {
+      "id": "US-019",
+      "title": "计算器搜索源",
+      "priority": "high",
+      "passes": false,
+      "blocked": false,
+      "depends_on": ["US-013"],
+      "steps": [
+        "新建 CalculatorSource 实现 SearchSource 协议",
+        "使用 NSExpression 解析数学表达式（支持 + - * / ( ) % 等）",
+        "判断输入是否为数学表达式（含数字+运算符），非表达式不返回结果",
+        "结果以高优先级显示在最上方（typePriority 接近 1.0）",
+        "扩展 SearchResultAction 增加 .copyText(String) 用于复制计算结果",
+        "回车复制结果到剪贴板并提示 Toast",
+        "AppDelegate 注册 CalculatorSource"
+      ],
+      "done_definition": "输入 888*0.8 即时显示 710.4，回车复制到剪贴板"
+    },
+    {
+      "id": "US-020",
+      "title": "单位/货币换算搜索源",
+      "priority": "high",
+      "passes": false,
+      "blocked": false,
+      "depends_on": ["US-019"],
+      "steps": [
+        "新建 UnitConverterSource 实现 SearchSource 协议",
+        "解析 \"100 usd\" / \"100 kg\" / \"100 cm\" 格式（数字+单位）",
+        "使用 Foundation Measurement/UnitConverter 支持长度、质量、温度、体积等",
+        "货币使用静态汇率表（USD/CNY/EUR/JPY/GBP，附注汇率为静态值）或预留接口",
+        "结果展示常见目标单位（如 cm → m/mm/inch/feet）",
+        "回车复制选中的换算结果",
+        "AppDelegate 注册 UnitConverterSource"
+      ],
+      "done_definition": "输入 100 usd / 100 kg / 100 cm 显示对应换算结果，可复制"
+    },
+    {
+      "id": "US-021",
+      "title": "收藏功能（与置顶区分）",
+      "priority": "high",
+      "passes": false,
+      "blocked": false,
+      "depends_on": ["US-007"],
+      "steps": [
+        "数据库 Migration v2：clipboard_items 新增 is_favorite INTEGER NOT NULL DEFAULT 0 + 索引",
+        "ClipboardItem 模型添加 isFavorite 属性",
+        "ContentRepository 新增 toggleFavorite(id:) 和 fetchFavorites() 方法",
+        "ClipboardListViewModel 新增 toggleFavorite",
+        "ClipboardListView 行右键菜单和滑动操作增加 Favorite/Unfavorite",
+        "ClipboardItemRow 用 star.fill 图标展示收藏状态（与置顶 pin.fill 区分）",
+        "收藏记录受清理保护（cleanupExpired/cleanupStorage 同时排除 is_favorite=1）"
+      ],
+      "done_definition": "可以独立收藏/取消收藏，收藏状态与置顶互不影响，收藏记录不会被自动清理"
+    },
+    {
+      "id": "US-022",
+      "title": "拼音 + 模糊搜索（文件 & 剪贴板）",
+      "priority": "medium",
+      "passes": false,
+      "blocked": false,
+      "depends_on": ["US-015"],
+      "steps": [
+        "新建 PinyinHelper：使用 CFStringTransform mandarinLatin + stripDiacritics 将中文转为拼音串",
+        "FileSearchSource 在结果排序时增加拼音首字母匹配评分",
+        "AppSearchSource 索引时存储拼音串和首字母串，搜索时多通道匹配",
+        "ClipboardSearchSource 对 textContent 计算拼音串供前端高亮（可选）",
+        "支持输入小写英文匹配中文（如 cgwj → 采购合同.docx）"
+      ],
+      "done_definition": "中文文件/应用可通过拼音/首字母匹配，例如输入 \"sf\" 能命中 Safari，\"cghd\" 能命中 \"采购合同.docx\"（前提是 Spotlight 已索引）"
+    },
+    {
+      "id": "US-023",
+      "title": "最近内容中心 + 时间分组视图",
+      "priority": "high",
+      "passes": false,
+      "blocked": false,
+      "depends_on": ["US-004", "US-012"],
+      "steps": [
+        "MenuBarView 增加模式切换：Search 模式 / Recent 模式（顶部分段或 Tab）",
+        "Recent 模式按 today / yesterday / earlier 分组（list section header）",
+        "数据来源：clipboard_items 全部（含截图、OCR、文本），按时间倒序",
+        "每条显示：类型图标、缩略图/摘要、时间戳；点击预览，右键支持复制/置顶/收藏/删除",
+        "支持按类型过滤（All / Screenshot / OCR / Clipboard）",
+        "保持搜索能力（搜索框非空时切回搜索结果）"
+      ],
+      "done_definition": "通过 Recent Tab 可看到按今天/昨天/更早分组的统一记录，截图、OCR、剪贴板内容同列展示"
+    },
+    {
+      "id": "US-024",
+      "title": "截图工具条 + OCR/标注按钮",
+      "priority": "high",
+      "passes": false,
+      "blocked": false,
+      "depends_on": ["US-012"],
+      "steps": [
+        "截图完成后弹出半透明工具条（位于截图区域附近）",
+        "工具条按钮：OCR、Copy、Save、Annotate、Pin Window、Discard",
+        "点击 OCR 触发 VNRecognizeTextRequest，并弹窗显示识别结果（可全选复制）",
+        "Copy 写入剪贴板（图片+OCR 文本）；Save 弹 NSSavePanel 保存 PNG",
+        "工具条 5 秒无操作或按 ESC 自动关闭，截图仍保存到历史",
+        "保留现有自动入库行为（关闭工具条后仍走 ContentStore.processScreenshot）"
+      ],
+      "done_definition": "截图完成后出现工具条，可显式触发 OCR 并查看结果，OCR 文本可一键复制"
+    },
+    {
+      "id": "US-025",
+      "title": "截图标注编辑器（箭头/矩形/马赛克/文本）",
+      "priority": "high",
+      "passes": false,
+      "blocked": false,
+      "depends_on": ["US-024"],
+      "steps": [
+        "新建 AnnotationEditorWindow（NSWindowController）承载标注画布",
+        "AnnotationCanvas（NSView）显示截图，叠加矢量图层（Arrow/Rectangle/Mosaic/Text）",
+        "工具栏：箭头、矩形框、马赛克、文本、颜色、线宽、撤销、重做、保存、复制、取消",
+        "马赛克实现：对选中区域做 CIPixellate 滤镜并合成",
+        "保存：将标注合成到 NSImage 后输出 PNG，写入剪贴板并存入历史",
+        "支持键盘快捷键：⌘Z 撤销、⌘⇧Z 重做、⌘C 复制、⌘S 保存"
+      ],
+      "done_definition": "点击截图工具条 Annotate 进入标注编辑器，可完成箭头/矩形/马赛克/文本标注并保存合成图"
     }
   ]
 }

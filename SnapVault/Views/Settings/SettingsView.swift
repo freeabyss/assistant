@@ -163,9 +163,17 @@ struct ShortcutsSettingsView: View {
             } header: {
                 Text("Global Shortcuts")
             } footer: {
-                Text("Use global shortcuts from anywhere. Toggle Panel shows/hides SnapVault. Capture Region lets you select an area to screenshot. Capture Window captures the window under your cursor. Click a recorder field and press your desired key combination.")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Defaults: Toggle Panel ⌘Space · Capture Region ⌘⇧A · Capture Window ⌘⇧W.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text("Heads up: ⌘Space conflicts with macOS Spotlight by default. To use SnapVault's Command Bar, either change Spotlight's shortcut in System Settings → Keyboard → Keyboard Shortcuts → Spotlight, or pick a different shortcut here.")
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                    Text("Click a recorder field and press your desired key combination. Capture Region lets you select an area to screenshot. Capture Window captures the window under your cursor.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
             }
         }
         .padding()
