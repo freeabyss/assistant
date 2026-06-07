@@ -102,6 +102,44 @@ final class ContentStore {
         return id
     }
 
+    // MARK: - Public OCR (on-demand)
+
+    /// Re-run (or run) OCR on a stored item by id and return the full `OCRResult`.
+    ///
+    /// Used by `ScreenshotToolbarController` to power the explicit "OCR" button:
+    /// the panel needs the recognized text + confidence + block count for its
+    /// result window, which the fire-and-forget `performOCR` path does not expose.
+    ///
+    /// Behaviour:
+    /// - Fetches the item from `ContentRepository`. Throws if not found / no image.
+    /// - Runs `OCRService.recognizeText(...)` regardless of the `ocr_enabled` setting
+    ///   (the user explicitly clicked the button — honour the intent).
+    /// - On non-empty result, also writes the text back to `clipboard_items.ocr_text`
+    ///   so the FTS5 index is updated and future searches find the screenshot.
+    ///
+    /// - Parameter itemId: Database id of the screenshot row.
+    /// - Returns: The OCR result (may be empty text if Vision found nothing).
+    /// - Throws: `RepositoryError`, `SnapVaultError.ocrFailed`, or underlying I/O errors.
+    func recognizeOCR(itemId: Int64) async throws -> OCRResult {
+        guard let item = try repository.fetch(id: itemId) else {
+            throw SnapVaultError.ocrFailed(reason: "Item id=\(itemId) not found")
+        }
+        guard let data = item.imageData else {
+            throw SnapVaultError.ocrFailed(reason: "Item id=\(itemId) has no image data")
+        }
+
+        let result = try await ocrService.recognizeText(from: data, languages: ["zh-Hans", "en"])
+        if !result.text.isEmpty {
+            do {
+                try repository.updateOCRText(id: itemId, ocrText: result.text)
+                logger.info("On-demand OCR text saved for item \(itemId), length=\(result.text.count)")
+            } catch {
+                logger.error("On-demand OCR text persistence failed for item \(itemId): \(error.localizedDescription, privacy: .public)")
+            }
+        }
+        return result
+    }
+
     // MARK: - OCR
 
     /// Run OCR on an image and store the result.

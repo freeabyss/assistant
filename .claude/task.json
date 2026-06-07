@@ -25,7 +25,9 @@
       "priority": "high",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-001"],
+      "depends_on": [
+        "US-001"
+      ],
       "steps": [
         "实现 MenuBarExtra 菜单栏图标",
         "创建主窗口 SwiftUI 视图框架",
@@ -41,7 +43,9 @@
       "priority": "high",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-001"],
+      "depends_on": [
+        "US-001"
+      ],
       "steps": [
         "实现 ClipboardMonitor（500ms 轮询 changeCount）",
         "实现内容类型检测（纯文本/RTF/图片/文件）",
@@ -57,7 +61,10 @@
       "priority": "high",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-002", "US-003"],
+      "depends_on": [
+        "US-002",
+        "US-003"
+      ],
       "steps": [
         "实现 ClipboardItemRow 视图（纯文本/RTF/图片/文件四种样式）",
         "实现 PreviewPanel 预览视图",
@@ -73,7 +80,9 @@
       "priority": "high",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-003"],
+      "depends_on": [
+        "US-003"
+      ],
       "steps": [
         "实现 FTS5 全文搜索查询",
         "实现 SearchService 聚合搜索",
@@ -89,7 +98,9 @@
       "priority": "high",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-003"],
+      "depends_on": [
+        "US-003"
+      ],
       "steps": [
         "实现 OCRService（VNRecognizeTextRequest）",
         "集成 OCR 流程到剪贴板捕获管线",
@@ -105,7 +116,9 @@
       "priority": "medium",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-004"],
+      "depends_on": [
+        "US-004"
+      ],
       "steps": [
         "实现置顶/取消置顶功能",
         "实现滑动删除",
@@ -121,7 +134,9 @@
       "priority": "medium",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-002"],
+      "depends_on": [
+        "US-002"
+      ],
       "steps": [
         "集成 KeyboardShortcuts 库",
         "注册全局快捷键（默认 ⌘+Shift+V）",
@@ -137,7 +152,10 @@
       "priority": "medium",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-001", "US-008"],
+      "depends_on": [
+        "US-001",
+        "US-008"
+      ],
       "steps": [
         "创建 SettingsView SwiftUI 视图",
         "实现通用设置（保留天数、存储上限、开机启动）",
@@ -153,7 +171,9 @@
       "priority": "low",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-001"],
+      "depends_on": [
+        "US-001"
+      ],
       "steps": [
         "集成 Sparkle 框架",
         "配置 appcast.xml 签名",
@@ -169,7 +189,9 @@
       "priority": "low",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-007"],
+      "depends_on": [
+        "US-007"
+      ],
       "steps": [
         "实现 JSON 导出",
         "实现 CSV 导出",
@@ -185,7 +207,9 @@
       "priority": "high",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-006"],
+      "depends_on": [
+        "US-006"
+      ],
       "steps": [
         "实现 ScreenshotService（区域截图 + 窗口截图）",
         "集成 ScreenCaptureKit 捕获 API",
@@ -217,7 +241,9 @@
       "priority": "high",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-013"],
+      "depends_on": [
+        "US-013"
+      ],
       "steps": [
         "实现 /Applications 和 ~/Applications 目录递归扫描",
         "构建内存索引：name/bundleID/path/icon",
@@ -233,7 +259,9 @@
       "priority": "high",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-013"],
+      "depends_on": [
+        "US-013"
+      ],
       "steps": [
         "实现 NSMetadataQuery 封装（FileSearchSource）",
         "配置搜索范围（默认用户主目录）",
@@ -249,7 +277,11 @@
       "priority": "high",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-013", "US-014", "US-015"],
+      "depends_on": [
+        "US-013",
+        "US-014",
+        "US-015"
+      ],
       "steps": [
         "重构主界面为 Spotlight 风格搜索框",
         "搜索结果分组展示（应用/文件/剪贴板 Tab 或分段）",
@@ -265,7 +297,10 @@
       "priority": "high",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-008", "US-012"],
+      "depends_on": [
+        "US-008",
+        "US-012"
+      ],
       "steps": [
         "togglePanel 默认快捷键改为 ⌘+Space（与 Spotlight 冲突时给出提示，可由用户在设置中修改）",
         "captureRegion 默认快捷键改为 ⌘+Shift+A",
@@ -281,7 +316,9 @@
       "priority": "high",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-013"],
+      "depends_on": [
+        "US-013"
+      ],
       "steps": [
         "新建 SystemCommandSource 实现 SearchSource 协议",
         "内置命令清单：sleep、restart、shutdown、lock、empty trash、show desktop 等",
@@ -298,7 +335,9 @@
       "priority": "high",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-013"],
+      "depends_on": [
+        "US-013"
+      ],
       "steps": [
         "新建 CalculatorSource 实现 SearchSource 协议",
         "使用 NSExpression 解析数学表达式（支持 + - * / ( ) % 等）",
@@ -316,7 +355,9 @@
       "priority": "high",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-019"],
+      "depends_on": [
+        "US-019"
+      ],
       "steps": [
         "新建 UnitConverterSource 实现 SearchSource 协议",
         "解析 \"100 usd\" / \"100 kg\" / \"100 cm\" 格式（数字+单位）",
@@ -334,7 +375,9 @@
       "priority": "high",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-007"],
+      "depends_on": [
+        "US-007"
+      ],
       "steps": [
         "数据库 Migration v2：clipboard_items 新增 is_favorite INTEGER NOT NULL DEFAULT 0 + 索引",
         "ClipboardItem 模型添加 isFavorite 属性",
@@ -352,7 +395,9 @@
       "priority": "medium",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-015"],
+      "depends_on": [
+        "US-015"
+      ],
       "steps": [
         "新建 PinyinHelper：使用 CFStringTransform mandarinLatin + stripDiacritics 将中文转为拼音串",
         "FileSearchSource 在结果排序时增加拼音首字母匹配评分",
@@ -368,7 +413,10 @@
       "priority": "high",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-004", "US-012"],
+      "depends_on": [
+        "US-004",
+        "US-012"
+      ],
       "steps": [
         "MenuBarView 增加模式切换：Search 模式 / Recent 模式（顶部分段或 Tab）",
         "Recent 模式按 today / yesterday / earlier 分组（list section header）",
@@ -383,9 +431,11 @@
       "id": "US-024",
       "title": "截图工具条 + OCR/标注按钮",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
-      "depends_on": ["US-012"],
+      "depends_on": [
+        "US-012"
+      ],
       "steps": [
         "截图完成后弹出半透明工具条（位于截图区域附近）",
         "工具条按钮：OCR、Copy、Save、Annotate、Pin Window、Discard",
@@ -402,7 +452,9 @@
       "priority": "high",
       "passes": false,
       "blocked": false,
-      "depends_on": ["US-024"],
+      "depends_on": [
+        "US-024"
+      ],
       "steps": [
         "新建 AnnotationEditorWindow（NSWindowController）承载标注画布",
         "AnnotationCanvas（NSView）显示截图，叠加矢量图层（Arrow/Rectangle/Mosaic/Text）",

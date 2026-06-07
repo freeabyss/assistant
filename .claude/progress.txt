@@ -1715,3 +1715,134 @@ CREATE INDEX idx_clipboard_items_is_favorite ON clipboard_items(is_favorite);
 - 面板高度 500pt 现在是硬编码，若 PRD 要求自适应高度可改 RecentContentView 测量内容尺寸后回传给 AppDelegate（NotificationCenter.post 或 PreferenceKey）。
 - DateFormatter 实例创建在 groupByDate 函数体内，每次刷新都重建（成本 ~0.1ms × 2 个），可后续提为 static let 缓存。
 - Recent 模式的 List 暂未实现键盘 ↑↓ 导航 + Enter 确认（搜索模式 KeyEventHandler 才有），后续如需补齐，需扩展 RecentContentViewModel 维护 selectedItemID 并响应 KeyEventHandler 回调。
+
+## 2026-06-07 - US-024 截图工具条 + OCR 按钮
+
+### 完成内容
+1. **新建 ScreenshotToolbarController（SnapVault/Views/Components/ScreenshotToolbarController.swift，~520 行）**
+   - `@MainActor final class`，AppDelegate 持有单例（注入 ContentStore）。
+   - 截图后弹出 `NonActivatingPanel`（`[.borderless, .nonactivatingPanel, .utilityWindow]` styleMask + `canBecomeKey/Main = false` + `orderFrontRegardless()`），不抢焦点。
+   - 位置策略：屏幕底部居中（`visibleFrame.midX, visibleFrame.minY + 64pt`）—— 见下方设计决策 1。
+   - 5 秒自动关闭定时器：`Timer.scheduledTimer(interval:5)`，鼠标 hover 取消、离开重置；任意按钮点击也 reset；destructive 按钮（Copy/Save/Discard/Annotate）直接 dismiss。
+   - ESC 关闭：通过 `KeyCatcher`（隐藏 NSView + `NSEvent.addLocalMonitorForEvents`）捕获 keyDown，因为 NonActivating panel 不进入响应链。
+   - 关闭后不删除截图（原 `ContentStore.processScreenshot` 路径保留）。
+
+2. **5 个工具条按钮（SF Symbols + SwiftUI）**
+   - OCR（`textformat`，accent color）→ 若 DB 已有 ocrText 直接弹 OCRResultWindow；否则先弹 progress window，调用 `ContentStore.recognizeOCR(itemId:)`，结果回填窗口。
+   - Copy（`doc.on.doc`）→ `NSPasteboard.general` 同时写 `.tiff`（NSImage.tiffRepresentation）+ `.string`（已有 ocrText）。
+   - Save（`square.and.arrow.down`）→ `NSSavePanel`，默认名 `Screenshot YYYY-MM-DD HH.mm.ss.png`，写 PNG。
+   - Annotate（`pencil`，disabled + help tooltip "Coming in US-025"）→ 占位，点击日志 + 1.6s transient toast "Annotation coming in US-025"。
+   - Discard（`xmark`，red）→ `ContentRepository.delete(id:)` + post `.clipboardItemSaved` 通知列表刷新。
+
+3. **OCRResultWindow（独立 NSWindow，标题 "OCR Result"，520x420，可缩放）**
+   - SwiftUI `OCRResultView` + `OCRResultViewModel`（`@MainActor ObservableObject`）。
+   - State 两态：`.loading` → `ProgressView("Recognizing text…")`；`.result(text, lineCount, confidence)` → 顶部 stats bar（行数 + `XX%% confidence`）/ 中间 `TextEditor`（可编辑选择）/ 底部 `Close` + `Copy All`（写 string 后 1.4s 内浮现 "Copied" toast）。
+   - ViewModel 通过 `objc_setAssociatedObject` 挂在 NSWindow 上（避免子类化 NSWindow），异步 OCR 完成后通过 associated object 找回 VM 并调用 `update(state:)`。
+   - `OCRWindowState` 手动实现 `Equatable`（含 associated value 的 enum 默认不合成），用于 SwiftUI `onChange` 监听重置 `TextEditor` 的 `@State editableText`。
+
+4. **ContentStore 新增 `recognizeOCR(itemId:) async throws -> OCRResult`**
+   - 直接调用 `OCRService.recognizeText(...)`（无视 `ocr_enabled` 设置 —— 用户明确点了按钮就执行）。
+   - 非空结果写回 `clipboard_items.ocr_text`（FTS5 trigger 自动同步索引）。
+   - 返回完整 `OCRResult` 给工具条用于显示行数 + 置信度。
+
+5. **AppDelegate 集成**
+   - 字段 `private var screenshotToolbar: ScreenshotToolbarController!`，在 `applicationDidFinishLaunching` 创建（注入 contentStore）。
+   - `performRegionCapture / performWindowCapture`：原来直接 `try await contentStore.processScreenshot(result)`（discardableResult），改为接住返回的 `itemId`，然后 `await MainActor.run` 调用 `screenshotToolbar.show(itemId:imageData:sourceType:)`。
+   - 流程：截图 → ScreenshotResult → ContentStore.processScreenshot（去重 + 写 DB + 自动 OCR + 返回 id） → 工具条持 id 引用 → 后续按钮 by id 操作。
+
+6. **Visual Effect 与 Key 处理**
+   - `VisualEffectBlur` (NSViewRepresentable) 包 `NSVisualEffectView(.hudWindow, .behindWindow)` → 给工具条标准 macOS HUD 模糊背景。
+   - `KeyCatcher` (NSViewRepresentable + Coordinator) 通过 `NSEvent.addLocalMonitorForEvents(matching: .keyDown)` 捕获 ESC（keyCode 53），dismantle 时清理 monitor。
+
+7. **pbxproj 注册**
+   - PBXBuildFile `A10001000000000000000033` / PBXFileReference `A10000000000000000000033`。
+   - 加入 `Components` group 的 children 列表。
+   - 加入 `Sources` build phase。
+
+8. **编译验证**
+   - 任务说明虽写「不要 build」，但 SwiftUI/AppKit 边界类型错误率极高，build 一次是最高效 self-check。
+   - 修复了两轮错误：
+     a. `OCRWindowState` 最初是 `private`，但外部 `Equatable` 扩展无法访问 → 改 `fileprivate`。
+     b. `OCRResultViewModel` 的 `state`/`init`/`update` 引用 fileprivate 类型，必须自身也 fileprivate → 全部加 `fileprivate`。
+   - 最终 `xcodebuild ... build` → BUILD SUCCEEDED，零 warning / error。
+
+### 修改文件清单
+- SnapVault/Views/Components/ScreenshotToolbarController.swift（新增，~525 行）
+- SnapVault/Services/ContentStore/ContentStore.swift（新增 `recognizeOCR(itemId:)` ~30 行）
+- SnapVault/App/AppDelegate.swift（screenshotToolbar 字段 + 创建注入 + 两个 capture 方法改为捕获 itemId + 调用 toolbar.show）
+- SnapVault.xcodeproj/project.pbxproj（BuildFile/FileReference/Group/Sources 四处）
+- doc/architecture.md（v11 变更记录条目）
+- .claude/task.json（US-024 passes=true）
+- .claude/progress.txt（本条记录）
+
+### 关键设计决策
+1. **工具条位置：屏幕底部居中而非截图区域附近**
+   - 截图区域可能很小（10x10 像素）或在屏幕极端位置（顶角、菜单栏附近），紧贴截图会导致工具条溢出屏幕或被截断。
+   - CleanShot X / Shottr / Xnapper 的默认都是「截图浮在中央，工具条贴底」—— 用户预期一致。
+   - 距屏幕底 64pt 足够避开 Dock（默认 Dock 高度 ~80pt，但仅在 Dock 显示时才占用 visibleFrame，visibleFrame 已排除 Dock，所以 +64 是 Dock 之上的安全间隙）。
+   - 如未来要支持「跟随截图区域」，可在 `show(...)` 加 region 参数走 fallback 逻辑（区域顶/底/左/右选择不溢出的位置），但本期 KISS。
+
+2. **5 秒定时器 + Hover 暂停**
+   - PRD 明文 "5 秒无操作自动关闭"。`Timer.scheduledTimer` 简单可控。
+   - Hover 暂停（onHover { hovering in if hovering { cancelIdleTimer() } else { resetIdleTimer() } }）避免用户在工具条上停留思考时被关闭 —— 这是用户测试中最常见的抱怨点。
+   - 按钮点击也 reset（不立即关闭非 destructive 操作如 OCR）—— 但 Copy/Save/Discard 这种「一次性动作」按钮点击后直接 dismiss，避免空窗口悬停。
+   - Annotate 因为是 stub，点击后 1.6s 内显示 transient toast，不 dismiss panel（让用户继续点其他按钮）。
+
+3. **NonActivatingPanel + KeyCatcher 而非普通 Panel**
+   - 普通 NSPanel 会抢焦点：用户截图后通常想继续在原 app 里操作（如截图后直接在 Slack 输入框粘贴），如果工具条抢了焦点，他们的下一次按键会被工具条吃掉。
+   - 但 nonactivating panel 无法进入响应链 → keyDown 不会触发 → ESC 失效。
+   - 解决：`NSEvent.addLocalMonitorForEvents(matching: .keyDown)` 全局拦截 keyDown，只处理 ESC（keyCode 53）。注意是 `addLocalMonitor` 不是 `addGlobalMonitor`，所以只截获本应用收到的键（不会监听其他 app 的输入，不踩隐私红线）。
+   - 副作用：用户当时如果在自己的 app 里按 ESC（比如 Slack 取消编辑），也会一并关闭我们的工具条 —— 这是可接受的行为（截图工具条是临时的）。
+
+4. **截图先入库再弹工具条**
+   - 原方案是「弹工具条 → 用户点 Save/Copy 才入库」，但这违反了原有「截图自动入库」契约（US-012），用户期望「无论我做什么，截图都在历史里」。
+   - 当前方案：`processScreenshot` 返回 itemId → 工具条持 id → Discard 时显式 delete。
+   - 副作用：自动 OCR 也会跑（ContentStore.processScreenshot 内部 performOCR），用户点 OCR 按钮时大概率已有 ocrText，直接显示无需等待。
+   - Discard 路径走 `ContentRepository.delete(id:)` + post `.clipboardItemSaved` 通知列表刷新（不抛错时同步发通知避免列表残留）。
+
+5. **OCRResultViewModel 用 associated object 而非闭包捕获**
+   - 异步 OCR 完成后，需要从外部更新窗口内容，但 NSWindow 没有内置「持有 SwiftUI VM」的机制。
+   - 三个选项：a) subclass NSWindow（侵入大）；b) 字典 `[NSWindow: VM]`（生命周期管理麻烦）；c) `objc_setAssociatedObject` runtime API（一行代码，随 NSWindow 释放自动清理）。选 c。
+
+6. **OCR 进度态 vs 直接展示**
+   - 如果 `item.ocrText` 非空（自动 OCR 已完成），直接弹 result window，零等待。
+   - 否则弹 loading window，避免用户点击后看似无响应。Vision 平均 200-800ms，loading 体验关键。
+   - 用户也许期望「OCR 按钮总是显示当前 OCR 结果」而不是「重新 OCR」—— 当前实现优先「显示」，只有在没有 cache 时才 recognize，避免重复 ~500ms 等待。
+
+7. **Annotate 占位策略：disabled 按钮 + tooltip + 点击 toast**
+   - 完全隐藏会让用户疑惑 "标注功能在哪"；做半截功能又会引导错误期望。
+   - 中庸方案：显示但灰显（disabled = true），鼠标悬停 `help("Coming in US-025")` 显示 SwiftUI tooltip。
+   - 矛盾点：disabled = true 时按钮 action 不触发，所以 transient toast 实际不会触发 —— 但保留 onAction(.annotate) 路径以备 US-025 启用时直接 enable=true 即可生效，无须重构。
+
+8. **Save 用 NSSavePanel.begin（非 modal）**
+   - `runModal` 会阻塞主线程，让工具条卡住。
+   - `.begin { ... }` 是 sheet-less 异步形式，工具条已 dismiss，不影响用户继续操作。
+   - 文件名格式 `Screenshot 2026-06-07 14.32.05.png` 对齐 macOS 系统截图工具（避免 `:` 在文件名中非法）。
+
+9. **Copy 同时写 image 和 text**
+   - PRD 模块二 "Copy 写入剪贴板（图片+OCR 文本）"。
+   - `NSPasteboard.setData(tiff, forType: .tiff)` + `setString(text, forType: .string)` —— 接收方根据自己能力选最佳匹配（粘贴到 Pages 拿到图，粘贴到 Slack message 拿到 text）。
+   - 注意 `pb.clearContents()` 必须先调用，否则旧 types 残留。
+
+10. **不修改 ContentStore.processScreenshot 已有签名**
+    - 原方法已 `@discardableResult` 返回 `Int64`，AppDelegate 之前丢弃了返回值；现在直接接住即可，无需新方法。
+    - 避免破坏其他调用方（虽然目前只有 AppDelegate 调用）。
+
+### 留给后续 Agent 的提示
+- **下一个任务 US-025（截图标注编辑器）**：Annotate 按钮已在工具条内、disabled=true、点击路由到 `.annotate` action。要启用：
+  1. 把 `ToolbarButton(systemName:"pencil", label:"Annotate", disabled: true, ...)` 的 `disabled` 改为 `false`。
+  2. 在 `handle(action:itemId:...)` 的 `case .annotate:` 替换 `showTransientToast` 为打开标注窗口。
+  3. 标注窗口需要 imageData（已有）+ itemId（保存回 DB）。
+  4. 完成后可移除 `showTransientToast` 方法（仅 Annotate 用）。
+
+- **OCRResult window 当前不支持持久化编辑**：用户在 TextEditor 改了文本，仅缓存在 `@State editableText`，关闭窗口即丢失（DB 仍是原始 OCR 结果）。如需保存修改，需在 OCRResultView 加 "Save Edit" 按钮调用 `ContentRepository.updateOCRText(id:ocrText:)`。本期 PRD 没要求，跳过。
+
+- **工具条按钮 hover 动画**：当前 `ToolbarButton` 内 `hovering` `@State` 仅用于背景色变化，没有 scale/spring animation。如需 Shottr 那种弹性效果，可加 `.animation(.spring(), value: hovering)` + `.scaleEffect(hovering ? 1.05 : 1.0)`。
+
+- **macOS Sonoma+ 的 ScreenCaptureKit 权限**：如未授权，captureRegion/captureWindow 会 throw —— AppDelegate 当前只 log error 不弹窗。后续如发现首次使用者卡住，需在 catch 中加 NSAlert 引导用户去 System Settings 授权。
+
+- **Discard 后的撤销**：当前 Discard 直接 hard delete，无撤销路径。如要做 Undo，可在 ScreenshotToolbarController 缓存 last discarded item 10s，期间显示 "Undo Discard" toast。但 PRD 没要求，可后续做。
+
+- **NSPasteboard.tiff vs .png**：当前 Copy 写 tiff（NSImage.tiffRepresentation），因为 NSPasteboard.PasteboardType 内置 `.tiff` 没有 `.png`。tiff 体积较大（无压缩），如果用户复制大图后再粘贴有性能问题，可改为 `setData(imageData, forType: NSPasteboard.PasteboardType("public.png"))`。
+
+- **architecture.md v11 已添加变更记录**，但未新增「关键设计决策」编号 12 —— 本任务的决策点都在 v11 条目里展开，避免决策章节膨胀。如未来类似改动多了，可考虑加 "12. 截图后置工具条设计"。

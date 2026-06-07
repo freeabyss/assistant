@@ -80,6 +80,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return nil
     }()
 
+    /// Post-capture floating toolbar (OCR / Copy / Save / Annotate / Discard).
+    /// Created lazily on main actor in `applicationDidFinishLaunching`.
+    private var screenshotToolbar: ScreenshotToolbarController!
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         logger.info("SnapVault launching")
 
@@ -122,6 +126,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Built here rather than lazily so the .clipboardItemSaved observer is
         // wired up from app launch and the Recent panel is warm on first open.
         recentContentViewModel = RecentContentViewModel()
+
+        // Screenshot post-capture toolbar (US-024). Constructed on main actor
+        // so the @MainActor-annotated controller is happy; needs the shared
+        // ContentStore so OCR re-recognition writes back to the same DB.
+        screenshotToolbar = ScreenshotToolbarController(contentStore: contentStore)
 
         // Observe search state to resize panel dynamically
         searchStateCancellable = unifiedSearchViewModel.$searchText
@@ -410,8 +419,18 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     return
                 }
                 let result = try await screenshotService.captureRegion()
-                try await contentStore.processScreenshot(result)
-                logger.info("Region capture completed and saved")
+                // Persist first so the toolbar has a stable itemId for Discard/OCR;
+                // ContentStore.processScreenshot is idempotent on duplicate hashes
+                // and returns the existing/new row id (US-024).
+                let itemId = try await contentStore.processScreenshot(result)
+                await MainActor.run { [weak self] in
+                    self?.screenshotToolbar.show(
+                        itemId: itemId,
+                        imageData: result.imageData,
+                        sourceType: result.sourceType
+                    )
+                }
+                logger.info("Region capture completed and saved, toolbar shown")
             } catch {
                 // Don't log user cancellation as an error
                 if case SnapVaultError.screenshotFailed(let reason) = error, reason == "User cancelled" {
@@ -448,8 +467,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     return
                 }
                 let result = try await screenshotService.captureWindow()
-                try await contentStore.processScreenshot(result)
-                logger.info("Window capture completed and saved")
+                let itemId = try await contentStore.processScreenshot(result)
+                await MainActor.run { [weak self] in
+                    self?.screenshotToolbar.show(
+                        itemId: itemId,
+                        imageData: result.imageData,
+                        sourceType: result.sourceType
+                    )
+                }
+                logger.info("Window capture completed and saved, toolbar shown")
             } catch {
                 logger.error("Window capture failed: \(error.localizedDescription, privacy: .public)")
             }
