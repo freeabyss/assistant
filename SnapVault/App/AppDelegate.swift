@@ -433,7 +433,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 logger.info("Region capture completed and saved, toolbar shown")
             } catch {
                 // Don't log user cancellation as an error
-                if case SnapVaultError.screenshotFailed(let reason) = error, reason == "User cancelled" {
+                if case SnapVaultError.screenshotFailed(let reason) = error, reason == SnapVaultError.userCancelledReason {
                     logger.debug("Region capture cancelled")
                 } else {
                     logger.error("Region capture failed: \(error.localizedDescription, privacy: .public)")
@@ -477,7 +477,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 }
                 logger.info("Window capture completed and saved, toolbar shown")
             } catch {
-                logger.error("Window capture failed: \(error.localizedDescription, privacy: .public)")
+                // Don't log user cancellation as an error
+                if case SnapVaultError.screenshotFailed(let reason) = error, reason == SnapVaultError.userCancelledReason {
+                    logger.debug("Window capture cancelled")
+                } else {
+                    logger.error("Window capture failed: \(error.localizedDescription, privacy: .public)")
+                }
             }
 
             // Restore panel if it was visible before

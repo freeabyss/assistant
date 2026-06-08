@@ -239,3 +239,154 @@ extension ScreenshotOverlayController: ScreenshotOverlayViewDelegate {
         completion(nil)
     }
 }
+
+// MARK: - WindowCaptureOverlayController
+
+/// Manages a full-screen transparent overlay that highlights the window under the cursor
+/// for window capture confirmation. Press ESC to cancel, click to confirm.
+final class WindowCaptureOverlayController {
+    private let logger = Logger.screenshot
+    private var window: NSWindow?
+    private var overlayView: WindowCaptureOverlayView?
+    private let completion: (Bool) -> Void  // true = confirm, false = cancel
+
+    /// - Parameters:
+    ///   - targetFrame: The frame of the window being captured (AppKit coordinates, bottom-left origin).
+    ///   - completion: Called with `true` if the user confirms, `false` if cancelled.
+    init(targetFrame: NSRect, completion: @escaping (Bool) -> Void) {
+        self.completion = completion
+        self.targetFrame = targetFrame
+    }
+
+    private let targetFrame: NSRect
+
+    func show() {
+        guard let screen = NSScreen.main else {
+            completion(false)
+            return
+        }
+
+        let window = NSWindow(
+            contentRect: screen.frame,
+            styleMask: .borderless,
+            backing: .buffered,
+            defer: false
+        )
+        window.level = .screenSaver
+        window.isOpaque = false
+        window.backgroundColor = .clear
+        window.ignoresMouseEvents = false
+        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        window.isReleasedWhenClosed = false
+
+        let view = WindowCaptureOverlayView(frame: screen.frame, targetFrame: targetFrame)
+        view.onConfirm = { [weak self] in
+            self?.dismiss()
+            self?.completion(true)
+        }
+        view.onCancel = { [weak self] in
+            self?.dismiss()
+            self?.completion(false)
+        }
+        window.contentView = view
+
+        window.makeKeyAndOrderFront(nil)
+        window.makeFirstResponder(view)
+        self.window = window
+        self.overlayView = view
+        logger.debug("Window capture overlay shown")
+    }
+
+    private func dismiss() {
+        window?.orderOut(nil)
+        window = nil
+        overlayView = nil
+    }
+}
+
+// MARK: - WindowCaptureOverlayView
+
+/// Custom NSView that highlights the target window and handles confirm/cancel.
+final class WindowCaptureOverlayView: NSView {
+    var onConfirm: (() -> Void)?
+    var onCancel: (() -> Void)?
+
+    /// The frame of the target window in AppKit coordinates (bottom-left origin).
+    private let targetFrame: NSRect
+
+    init(frame: NSRect, targetFrame: NSRect) {
+        self.targetFrame = targetFrame
+        super.init(frame: frame)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override var acceptsFirstResponder: Bool { true }
+
+    override func keyDown(with event: NSEvent) {
+        if event.keyCode == 53 {  // ESC
+            onCancel?()
+        } else {
+            super.keyDown(with: event)
+        }
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        onConfirm?()
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        super.draw(dirtyRect)
+
+        // Draw semi-transparent dark overlay over the entire screen
+        NSColor.black.withAlphaComponent(0.35).set()
+        dirtyRect.fill()
+
+        // Clear the target window area (make it visible through the overlay)
+        NSColor.clear.set()
+        targetFrame.fill(using: .copy)
+
+        // Draw a colored border around the target window
+        NSColor.systemBlue.withAlphaComponent(0.9).set()
+        let borderPath = NSBezierPath(rect: targetFrame)
+        borderPath.lineWidth = 3
+        borderPath.stroke()
+
+        // Draw hint text below the window
+        let hintText = L10n.localized("screenshot.windowOverlay.hint")
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 14, weight: .medium),
+            .foregroundColor: NSColor.white,
+        ]
+        let textSize = hintText.size(withAttributes: attributes)
+
+        let labelX = targetFrame.midX - textSize.width / 2
+        let labelY = targetFrame.minY - textSize.height - 24
+
+        // Only draw if there's room below the window
+        if labelY > 60 {
+            // Background pill
+            let padding: CGFloat = 12
+            let pillRect = NSRect(
+                x: labelX - padding,
+                y: labelY - padding / 2,
+                width: textSize.width + padding * 2,
+                height: textSize.height + padding
+            )
+            let pillPath = NSBezierPath(roundedRect: pillRect, xRadius: 8, yRadius: 8)
+            NSColor.black.withAlphaComponent(0.7).set()
+            pillPath.fill()
+
+            // Text
+            let textRect = NSRect(
+                x: labelX,
+                y: labelY,
+                width: textSize.width,
+                height: textSize.height
+            )
+            hintText.draw(in: textRect, withAttributes: attributes)
+        }
+    }
+}

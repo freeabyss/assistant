@@ -2,6 +2,8 @@ import Foundation
 
 /// Application-wide error type.
 enum SnapVaultError: LocalizedError {
+    static let userCancelledReason = "__USER_CANCELLED__"
+
     case databaseError(underlying: Error)
     case ocrFailed(reason: String)
     case clipboardAccessDenied
@@ -28,6 +30,9 @@ enum SnapVaultError: LocalizedError {
         case .importFailed(let reason):
             return L10n.localized("error.importFailed", reason)
         case .screenshotFailed(let reason):
+            if reason == Self.userCancelledReason {
+                return L10n.localized("error.userCancelled")
+            }
             return L10n.localized("error.screenshotFailed", reason)
         }
     }

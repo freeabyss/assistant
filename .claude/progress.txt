@@ -2082,3 +2082,52 @@ US-025 从零构建了完整的截图标注编辑器，替换 US-024 的 Annotat
 - 如果需要运行时即时语言切换（不重启），需要额外实现 ObservableObject 语言管理器 + 所有视图注入 .environment(\.locale)
 - xcstrings 文件可用 Xcode 的 String Catalog 编辑器可视化编辑和翻译
 - 当前 244 个 key 覆盖所有用户可见字符串，后续新增功能应同步添加 xcstrings 条目
+
+## 2026-06-08 - US-028 窗口截图支持 ESC 取消
+
+### 问题
+用户反馈：窗口截图无法取消。原因是 `ScreenshotService.captureWindow()` 原实现按快捷键后直接捕获鼠标下窗口，没有确认/取消阶段；只有区域截图 overlay 支持 ESC。
+
+### 完成内容
+1. **新增窗口捕获确认 Overlay**
+   - 在 `ScreenshotOverlay.swift` 追加 `WindowCaptureOverlayController` 与 `WindowCaptureOverlayView`
+   - 高亮鼠标下目标窗口：半透明黑色遮罩 + 目标窗口透明区域 + 蓝色边框
+   - 用户交互：点击确认捕获，按 ESC 取消
+   - 提示文案使用 `L10n.localized("screenshot.windowOverlay.hint")`
+
+2. **改造 `captureWindow()` 流程**
+   - 原流程：快捷键 → 直接捕获窗口
+   - 新流程：快捷键 → 找到鼠标下窗口 → 显示高亮 overlay → 点击确认/ESC 取消 → 仅确认后捕获
+   - 新增 `activeWindowCaptureOverlay` 强引用，保证 overlay 在用户交互前不会被释放
+
+3. **多语言环境下稳定处理取消**
+   - `SnapVaultError` 新增 `static let userCancelledReason = "__USER_CANCELLED__"`
+   - `ScreenshotService` 抛出 sentinel，而不是本地化后的字符串
+   - `AppDelegate` 用 sentinel 判断取消，避免中文环境下因字符串变为“用户取消”导致误判为错误
+   - `errorDescription` 中 sentinel 会转换为 `L10n.localized("error.userCancelled")`
+
+4. **AppDelegate 静默处理窗口截图取消**
+   - 区域截图和窗口截图均对用户取消使用 debug log，不记录 error，不弹错误提示
+
+5. **String Catalog**
+   - `Localizable.xcstrings` 新增 `screenshot.windowOverlay.hint`
+   - en: `Click to capture · ESC to cancel`
+   - zh-Hans: `点击捕获 · ESC 取消`
+
+### 验证
+- 执行 `xcodebuild -project SnapVault.xcodeproj -scheme SnapVault -configuration Debug build`
+- 结果：`BUILD SUCCEEDED`
+
+### 修改文件
+- `SnapVault/Views/Components/ScreenshotOverlay.swift`
+- `SnapVault/Services/ScreenshotService/ScreenshotService.swift`
+- `SnapVault/App/AppDelegate.swift`
+- `SnapVault/Models/SnapVaultError.swift`
+- `SnapVault/Resources/Localizable.xcstrings`
+- `.claude/task.json`
+- `.claude/progress.txt`
+
+### 用户操作说明
+触发窗口截图（⌘⇧W）后，会先出现目标窗口高亮：
+- 点击任意位置：确认捕获
+- 按 ESC：取消截图，overlay 关闭，不保存截图，不显示截图工具条

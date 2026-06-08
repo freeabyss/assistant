@@ -59,6 +59,7 @@ extension CGImage {
 /// - Screen: Captures the entire screen
 final class ScreenshotService: ScreenshotServiceProtocol {
     private let logger = Logger.screenshot
+    private var activeWindowCaptureOverlay: WindowCaptureOverlayController?
 
     /// Capture a region selected by the user.
     ///
@@ -92,7 +93,7 @@ final class ScreenshotService: ScreenshotServiceProtocol {
                         }
                     } else {
                         self.logger.info("Region capture cancelled by user")
-                        continuation.resume(throwing: SnapVaultError.screenshotFailed(reason: L10n.localized("error.userCancelled")))
+                        continuation.resume(throwing: SnapVaultError.screenshotFailed(reason: SnapVaultError.userCancelledReason))
                     }
                 }
 
@@ -104,11 +105,11 @@ final class ScreenshotService: ScreenshotServiceProtocol {
 
     /// Capture the window under the mouse cursor.
     ///
-    /// Uses ScreenCaptureKit to enumerate windows and find the one under the cursor,
-    /// then uses CGWindowListCreateImage for the actual capture.
+    /// Shows a confirmation overlay highlighting the target window.
+    /// Click to confirm, press ESC to cancel.
     ///
     /// - Returns: The captured window screenshot as PNG data
-    /// - Throws: `SnapVaultError.screenshotFailed` if no window is found or capture fails
+    /// - Throws: `SnapVaultError.screenshotFailed` if no window is found, user cancels, or capture fails
     func captureWindow() async throws -> ScreenshotResult {
         logger.info("Starting window capture")
 
@@ -123,18 +124,13 @@ final class ScreenshotService: ScreenshotServiceProtocol {
         }
 
         // Find the window under the mouse cursor.
-        // SCWindow.frame uses top-left origin (Core Graphics coordinates).
-        // NSEvent.mouseLocation uses bottom-left origin (AppKit coordinates).
         guard let screen = NSScreen.main else {
             throw SnapVaultError.screenshotFailed(reason: L10n.localized("error.noMainScreen"))
         }
         let screenHeight = screen.frame.height
 
-        // Find the topmost window containing the mouse point.
-        // Windows are ordered front-to-back in the array.
         guard let targetWindow = content.windows.first(where: { window in
             let frame = window.frame
-            // Convert SCWindow frame (top-left origin) to AppKit coordinates (bottom-left origin)
             let appKitFrame = CGRect(
                 x: frame.origin.x,
                 y: screenHeight - frame.origin.y - frame.height,
@@ -146,8 +142,37 @@ final class ScreenshotService: ScreenshotServiceProtocol {
             throw SnapVaultError.screenshotFailed(reason: L10n.localized("error.noWindowAtMouse"))
         }
 
+        // Convert SCWindow frame to AppKit coordinates for the overlay
+        let scFrame = targetWindow.frame
+        let appKitFrame = CGRect(
+            x: scFrame.origin.x,
+            y: screenHeight - scFrame.origin.y - scFrame.height,
+            width: scFrame.width,
+            height: scFrame.height
+        )
+
         let windowID = targetWindow.windowID
         logger.info("Found window: \(targetWindow.title ?? "untitled") (ID: \(windowID))")
+
+        // Show confirmation overlay — user can click to confirm or ESC to cancel
+        let confirmed = try await withCheckedThrowingContinuation { continuation in
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+
+                let overlay = WindowCaptureOverlayController(targetFrame: appKitFrame) { [weak self] confirmed in
+                    self?.activeWindowCaptureOverlay = nil
+                    continuation.resume(returning: confirmed)
+                }
+                self.activeWindowCaptureOverlay = overlay
+                overlay.show()
+                self.logger.debug("Window capture overlay shown")
+            }
+        }
+
+        guard confirmed else {
+            logger.info("Window capture cancelled by user")
+            throw SnapVaultError.screenshotFailed(reason: SnapVaultError.userCancelledReason)
+        }
 
         // Capture the window using CGWindowListCreateImage
         guard let cgImage = CGWindowListCreateImage(

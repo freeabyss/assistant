@@ -507,6 +507,25 @@
         "验证：grep 确认全部 283 个原始字符串已从源码移除"
       ],
       "done_definition": "应用完整支持中英文，语言切换可用，所有 UI 文案、错误、日期格式正确显示"
+    },
+    {
+      "id": "US-028",
+      "title": "窗口截图支持 ESC 取消",
+      "priority": "high",
+      "passes": true,
+      "blocked": false,
+      "depends_on": [
+        "US-012",
+        "US-024"
+      ],
+      "steps": [
+        "窗口截图前显示目标窗口高亮确认 overlay",
+        "点击 overlay 确认捕获，按 ESC 取消捕获",
+        "取消时不记录错误日志、不保存截图、不显示工具条",
+        "多语言环境下使用稳定的用户取消 sentinel，避免字符串匹配失败",
+        "构建验证通过"
+      ],
+      "done_definition": "触发窗口截图后可按 ESC 取消，取消时 overlay 关闭、截图流程终止且无错误提示"
     }
   ]
 }
