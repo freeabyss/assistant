@@ -176,6 +176,8 @@ final class ScreenshotOverlayView: NSView {
 final class ScreenshotOverlayController {
     private let logger = Logger.screenshot
     private var window: NSWindow?
+    private var escMonitor: Any?
+    private var didComplete = false
     private let completion: (NSRect?) -> Void
 
     /// Create a new overlay controller.
@@ -186,11 +188,15 @@ final class ScreenshotOverlayController {
         self.completion = completion
     }
 
+    deinit {
+        removeESCMonitor()
+    }
+
     /// Show the overlay window covering the entire screen.
     func show() {
         guard let screen = NSScreen.main else {
             logger.error("No main screen available for overlay")
-            completion(nil)
+            finish(nil)
             return
         }
 
@@ -216,13 +222,43 @@ final class ScreenshotOverlayController {
         window.makeFirstResponder(overlayView)
 
         self.window = window
+
+        // NSEvent local monitor ensures ESC works even if the view loses first responder.
+        setupESCMonitor()
+
         logger.debug("Overlay window shown on screen: \(screen.localizedName)")
     }
 
     /// Dismiss the overlay window.
     private func dismiss() {
+        removeESCMonitor()
         window?.orderOut(nil)
         window = nil
+    }
+
+    /// Guarded completion — ensures completion is called exactly once.
+    private func finish(_ rect: NSRect?) {
+        guard !didComplete else { return }
+        didComplete = true
+        dismiss()
+        completion(rect)
+    }
+
+    private func setupESCMonitor() {
+        escMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            if event.keyCode == 53 {
+                self?.finish(nil)
+                return nil  // swallow the event
+            }
+            return event
+        }
+    }
+
+    private func removeESCMonitor() {
+        if let monitor = escMonitor {
+            NSEvent.removeMonitor(monitor)
+            escMonitor = nil
+        }
     }
 }
 
@@ -230,13 +266,11 @@ final class ScreenshotOverlayController {
 
 extension ScreenshotOverlayController: ScreenshotOverlayViewDelegate {
     func overlayView(_ view: ScreenshotOverlayView, didSelectRect rect: NSRect) {
-        dismiss()
-        completion(rect)
+        finish(rect)
     }
 
     func overlayViewDidCancel(_ view: ScreenshotOverlayView) {
-        dismiss()
-        completion(nil)
+        finish(nil)
     }
 }
 
@@ -248,6 +282,8 @@ final class WindowCaptureOverlayController {
     private let logger = Logger.screenshot
     private var window: NSWindow?
     private var overlayView: WindowCaptureOverlayView?
+    private var escMonitor: Any?
+    private var didComplete = false
     private let completion: (Bool) -> Void  // true = confirm, false = cancel
 
     /// - Parameters:
@@ -260,9 +296,13 @@ final class WindowCaptureOverlayController {
 
     private let targetFrame: NSRect
 
+    deinit {
+        removeESCMonitor()
+    }
+
     func show() {
         guard let screen = NSScreen.main else {
-            completion(false)
+            finish(false)
             return
         }
 
@@ -281,12 +321,10 @@ final class WindowCaptureOverlayController {
 
         let view = WindowCaptureOverlayView(frame: screen.frame, targetFrame: targetFrame)
         view.onConfirm = { [weak self] in
-            self?.dismiss()
-            self?.completion(true)
+            self?.finish(true)
         }
         view.onCancel = { [weak self] in
-            self?.dismiss()
-            self?.completion(false)
+            self?.finish(false)
         }
         window.contentView = view
 
@@ -294,13 +332,39 @@ final class WindowCaptureOverlayController {
         window.makeFirstResponder(view)
         self.window = window
         self.overlayView = view
+        setupESCMonitor()
         logger.debug("Window capture overlay shown")
     }
 
     private func dismiss() {
+        removeESCMonitor()
         window?.orderOut(nil)
         window = nil
         overlayView = nil
+    }
+
+    private func finish(_ confirmed: Bool) {
+        guard !didComplete else { return }
+        didComplete = true
+        dismiss()
+        completion(confirmed)
+    }
+
+    private func setupESCMonitor() {
+        escMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            if event.keyCode == 53 {
+                self?.finish(false)
+                return nil
+            }
+            return event
+        }
+    }
+
+    private func removeESCMonitor() {
+        if let monitor = escMonitor {
+            NSEvent.removeMonitor(monitor)
+            escMonitor = nil
+        }
     }
 }
 

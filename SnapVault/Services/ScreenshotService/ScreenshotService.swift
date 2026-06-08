@@ -59,6 +59,7 @@ extension CGImage {
 /// - Screen: Captures the entire screen
 final class ScreenshotService: ScreenshotServiceProtocol {
     private let logger = Logger.screenshot
+    private var activeRegionCaptureOverlay: ScreenshotOverlayController?
     private var activeWindowCaptureOverlay: WindowCaptureOverlayController?
 
     /// Capture a region selected by the user.
@@ -81,6 +82,7 @@ final class ScreenshotService: ScreenshotServiceProtocol {
 
                 let overlay = ScreenshotOverlayController { [weak self] rect in
                     guard let self else { return }
+                    self.activeRegionCaptureOverlay = nil
 
                     if let rect = rect {
                         Task {
@@ -97,6 +99,7 @@ final class ScreenshotService: ScreenshotServiceProtocol {
                     }
                 }
 
+                self.activeRegionCaptureOverlay = overlay
                 overlay.show()
                 self.logger.debug("Screenshot overlay shown")
             }

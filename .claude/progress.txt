@@ -2131,3 +2131,41 @@ US-025 从零构建了完整的截图标注编辑器，替换 US-024 的 Annotat
 触发窗口截图（⌘⇧W）后，会先出现目标窗口高亮：
 - 点击任意位置：确认捕获
 - 按 ESC：取消截图，overlay 关闭，不保存截图，不显示截图工具条
+
+## 2026-06-08 - US-029 截图模式可可靠退出（ESC monitor + overlay 强引用）
+
+### 问题
+用户反馈“进入截图模式后，无法退出”。复查后发现之前仅依赖 `NSView.keyDown` 处理 ESC，但截图 overlay 是 borderless + `.screenSaver` 级别窗口，实际环境中可能无法稳定成为 first responder；另外区域截图的 `ScreenshotOverlayController` 原先是局部变量，没有被 `ScreenshotService` 强引用，存在 controller 生命周期过早结束导致回调/取消不可靠的风险。
+
+### 修复内容
+1. **区域截图 overlay 强引用**
+   - `ScreenshotService` 新增 `activeRegionCaptureOverlay`
+   - `captureRegion()` show overlay 前保存强引用
+   - overlay completion 回调时置 nil，确保生命周期覆盖完整交互过程
+
+2. **区域截图 ESC local monitor**
+   - `ScreenshotOverlayController` 新增 `escMonitor` 和 `didComplete`
+   - `show()` 时注册 `NSEvent.addLocalMonitorForEvents(matching: .keyDown)`
+   - ESC (`keyCode == 53`) 时调用 `finish(nil)` 并吞掉事件
+   - `dismiss()` / `deinit` 中移除 monitor
+   - `finish(_:)` 确保 completion 只调用一次
+
+3. **窗口截图 ESC local monitor**
+   - `WindowCaptureOverlayController` 同样新增 `escMonitor` + `didComplete`
+   - 点击确认与 ESC 取消均通过 `finish(_:)` 统一收口
+   - 防止鼠标点击和 ESC 竞争导致重复 resume continuation
+
+4. **构建验证**
+   - `xcodebuild -project SnapVault.xcodeproj -scheme SnapVault -configuration Debug build`
+   - 结果：`BUILD SUCCEEDED`
+
+### 修改文件
+- `SnapVault/Services/ScreenshotService/ScreenshotService.swift`
+- `SnapVault/Views/Components/ScreenshotOverlay.swift`
+- `.claude/task.json`
+- `.claude/progress.txt`
+
+### 预期行为
+- 区域截图模式：按 ESC 必定关闭选择遮罩并取消截图
+- 窗口截图模式：按 ESC 必定关闭窗口高亮遮罩并取消截图
+- 取消后不保存截图、不显示截图工具条、不记录 error

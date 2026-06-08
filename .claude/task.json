@@ -526,6 +526,24 @@
         "构建验证通过"
       ],
       "done_definition": "触发窗口截图后可按 ESC 取消，取消时 overlay 关闭、截图流程终止且无错误提示"
+    },
+    {
+      "id": "US-029",
+      "title": "截图模式可可靠退出（ESC monitor + overlay 强引用）",
+      "priority": "high",
+      "passes": true,
+      "blocked": false,
+      "depends_on": [
+        "US-028"
+      ],
+      "steps": [
+        "区域截图 overlay controller 由 ScreenshotService 强引用保留直到完成",
+        "区域截图 overlay 增加 NSEvent local ESC monitor，避免 first responder 丢失导致无法退出",
+        "窗口截图 overlay 增加 NSEvent local ESC monitor 和 didComplete 防重复回调",
+        "overlay 完成/取消时清理 monitor 与 window",
+        "构建验证通过"
+      ],
+      "done_definition": "进入任意截图模式后，ESC 均可可靠关闭 overlay 并终止截图流程"
     }
   ]
 }
