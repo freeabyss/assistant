@@ -413,6 +413,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         Task {
+            var shouldRestorePanel = wasPanelVisible
             do {
                 guard let screenshotService else {
                     logger.warning("Screenshot service not available (requires macOS 14+)")
@@ -427,9 +428,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     self?.screenshotToolbar.show(
                         itemId: itemId,
                         imageData: result.imageData,
-                        sourceType: result.sourceType
+                        sourceType: result.sourceType,
+                        anchorRect: result.selectionRect
                     )
                 }
+                // Keep the app panel hidden because the screenshot overlay remains active.
+                shouldRestorePanel = false
                 logger.info("Region capture completed and saved, toolbar shown")
             } catch {
                 // Don't log user cancellation as an error
@@ -440,8 +444,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
 
-            // Restore panel if it was visible before
-            if wasPanelVisible {
+            // Restore panel only when capture mode did not remain active.
+            if shouldRestorePanel {
                 DispatchQueue.main.async { [weak self] in
                     self?.showPanel()
                 }
@@ -472,7 +476,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     self?.screenshotToolbar.show(
                         itemId: itemId,
                         imageData: result.imageData,
-                        sourceType: result.sourceType
+                        sourceType: result.sourceType,
+                        anchorRect: result.selectionRect
                     )
                 }
                 logger.info("Window capture completed and saved, toolbar shown")

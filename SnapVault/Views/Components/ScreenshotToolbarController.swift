@@ -54,6 +54,7 @@ final class ScreenshotToolbarController {
 
     private var panel: NonActivatingPanel?
     private var idleTimer: Timer?
+    private var overlayCancelObserver: NSObjectProtocol?
     private weak var ocrWindow: NSWindow?
 
     /// Dependencies injected by AppDelegate.
@@ -62,10 +63,20 @@ final class ScreenshotToolbarController {
 
     init(contentStore: ContentStore) {
         self.contentStore = contentStore
+        overlayCancelObserver = NotificationCenter.default.addObserver(
+            forName: .screenshotOverlayDidCancel,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.dismiss(reason: .userEscape)
+        }
     }
 
     deinit {
         idleTimer?.invalidate()
+        if let overlayCancelObserver {
+            NotificationCenter.default.removeObserver(overlayCancelObserver)
+        }
     }
 
     // MARK: - Show / Dismiss
@@ -76,7 +87,7 @@ final class ScreenshotToolbarController {
     ///   - itemId: Database id of the saved screenshot row (already persisted).
     ///   - imageData: The PNG bytes (used for Copy / Save / re-OCR fallback).
     ///   - sourceType: Capture source, for naming the saved PNG file.
-    func show(itemId: Int64, imageData: Data, sourceType: CaptureSource) {
+    func show(itemId: Int64, imageData: Data, sourceType: CaptureSource, anchorRect: NSRect? = nil) {
         dismiss(reason: .superseded)
 
         let view = ScreenshotToolbarView(
@@ -105,10 +116,20 @@ final class ScreenshotToolbarController {
         }
 
         let visible = screen.visibleFrame
-        let origin = NSPoint(
-            x: visible.midX - panelSize.width / 2,
-            y: visible.minY + 64                          // 64pt above the Dock / screen bottom
-        )
+        let origin: NSPoint
+        if let anchorRect {
+            let x = min(max(anchorRect.midX - panelSize.width / 2, visible.minX + 8), visible.maxX - panelSize.width - 8)
+            let preferredY = anchorRect.minY - panelSize.height - 8
+            let y = preferredY >= visible.minY + 8
+                ? preferredY
+                : min(anchorRect.maxY + 8, visible.maxY - panelSize.height - 8)
+            origin = NSPoint(x: x, y: y)
+        } else {
+            origin = NSPoint(
+                x: visible.midX - panelSize.width / 2,
+                y: visible.minY + 64                          // 64pt above the Dock / screen bottom
+            )
+        }
 
         let panel = NonActivatingPanel(
             contentRect: NSRect(origin: origin, size: panelSize),
@@ -117,7 +138,7 @@ final class ScreenshotToolbarController {
             defer: false
         )
         panel.isFloatingPanel = true
-        panel.level = .floating
+        panel.level = anchorRect == nil ? .floating : NSWindow.Level(rawValue: NSWindow.Level.screenSaver.rawValue + 1)
         panel.hidesOnDeactivate = false
         panel.becomesKeyOnlyIfNeeded = true
         panel.isOpaque = false

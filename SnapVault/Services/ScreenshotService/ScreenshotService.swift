@@ -27,6 +27,7 @@ struct ScreenshotResult {
     let height: Int
     let captureDate: Date
     let sourceType: CaptureSource
+    let selectionRect: NSRect?
 }
 
 /// The source type of a screenshot capture.
@@ -82,18 +83,29 @@ final class ScreenshotService: ScreenshotServiceProtocol {
 
                 let overlay = ScreenshotOverlayController { [weak self] rect in
                     guard let self else { return }
-                    self.activeRegionCaptureOverlay = nil
 
                     if let rect = rect {
                         Task {
                             do {
+                                await MainActor.run {
+                                    self.activeRegionCaptureOverlay?.hideForCapture()
+                                }
+                                // Give WindowServer one tick to remove the overlay from the capture stack.
+                                try? await Task.sleep(nanoseconds: 50_000_000)
                                 let result = try await self.captureRect(rect)
+                                await MainActor.run {
+                                    self.activeRegionCaptureOverlay?.showAfterCapture()
+                                }
                                 continuation.resume(returning: result)
                             } catch {
+                                await MainActor.run {
+                                    self.activeRegionCaptureOverlay?.showAfterCapture()
+                                }
                                 continuation.resume(throwing: error)
                             }
                         }
                     } else {
+                        self.activeRegionCaptureOverlay = nil
                         self.logger.info("Region capture cancelled by user")
                         continuation.resume(throwing: SnapVaultError.screenshotFailed(reason: SnapVaultError.userCancelledReason))
                     }
@@ -198,7 +210,8 @@ final class ScreenshotService: ScreenshotServiceProtocol {
             width: cgImage.width,
             height: cgImage.height,
             captureDate: Date(),
-            sourceType: .window
+            sourceType: .window,
+            selectionRect: nil
         )
     }
 
@@ -224,7 +237,8 @@ final class ScreenshotService: ScreenshotServiceProtocol {
             width: cgImage.width,
             height: cgImage.height,
             captureDate: Date(),
-            sourceType: .screen
+            sourceType: .screen,
+            selectionRect: nil
         )
     }
 
@@ -274,7 +288,8 @@ final class ScreenshotService: ScreenshotServiceProtocol {
             width: croppedImage.width,
             height: croppedImage.height,
             captureDate: Date(),
-            sourceType: .region
+            sourceType: .region,
+            selectionRect: rect
         )
     }
 }

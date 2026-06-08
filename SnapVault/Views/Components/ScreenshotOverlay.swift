@@ -1,6 +1,10 @@
 import Cocoa
 import os.log
 
+extension Notification.Name {
+    static let screenshotOverlayDidCancel = Notification.Name("com.snapvault.screenshotOverlayDidCancel")
+}
+
 // MARK: - ScreenshotOverlayViewDelegate
 
 /// Delegate protocol for the screenshot overlay view.
@@ -177,7 +181,7 @@ final class ScreenshotOverlayController {
     private let logger = Logger.screenshot
     private var window: NSWindow?
     private var escMonitor: Any?
-    private var didComplete = false
+    private var didCallCompletion = false
     private let completion: (NSRect?) -> Void
 
     /// Create a new overlay controller.
@@ -196,7 +200,7 @@ final class ScreenshotOverlayController {
     func show() {
         guard let screen = NSScreen.main else {
             logger.error("No main screen available for overlay")
-            finish(nil)
+            cancelScreenshotMode()
             return
         }
 
@@ -236,18 +240,39 @@ final class ScreenshotOverlayController {
         window = nil
     }
 
-    /// Guarded completion — ensures completion is called exactly once.
-    private func finish(_ rect: NSRect?) {
-        guard !didComplete else { return }
-        didComplete = true
-        dismiss()
+    /// Deliver the selected rect once, but keep the overlay visible so the user remains in screenshot mode.
+    private func completeSelection(_ rect: NSRect) {
+        guard !didCallCompletion else { return }
+        didCallCompletion = true
         completion(rect)
+    }
+
+    /// Cancel screenshot mode. Before a selection this resumes the capture continuation with nil;
+    /// after a selection it only dismisses the overlay and broadcasts cancellation.
+    private func cancelScreenshotMode() {
+        let shouldNotifyCompletion = !didCallCompletion
+        didCallCompletion = true
+        dismiss()
+        NotificationCenter.default.post(name: .screenshotOverlayDidCancel, object: nil)
+        if shouldNotifyCompletion {
+            completion(nil)
+        }
+    }
+
+    /// Temporarily hide the overlay so it does not appear in the captured bitmap.
+    func hideForCapture() {
+        window?.orderOut(nil)
+    }
+
+    /// Show the overlay again after the capture is complete, preserving the selection frame.
+    func showAfterCapture() {
+        window?.orderFrontRegardless()
     }
 
     private func setupESCMonitor() {
         escMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             if event.keyCode == 53 {
-                self?.finish(nil)
+                self?.cancelScreenshotMode()
                 return nil  // swallow the event
             }
             return event
@@ -266,11 +291,11 @@ final class ScreenshotOverlayController {
 
 extension ScreenshotOverlayController: ScreenshotOverlayViewDelegate {
     func overlayView(_ view: ScreenshotOverlayView, didSelectRect rect: NSRect) {
-        finish(rect)
+        completeSelection(rect)
     }
 
     func overlayViewDidCancel(_ view: ScreenshotOverlayView) {
-        finish(nil)
+        cancelScreenshotMode()
     }
 }
 
@@ -347,6 +372,9 @@ final class WindowCaptureOverlayController {
         guard !didComplete else { return }
         didComplete = true
         dismiss()
+        if !confirmed {
+            NotificationCenter.default.post(name: .screenshotOverlayDidCancel, object: nil)
+        }
         completion(confirmed)
     }
 

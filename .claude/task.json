@@ -544,6 +544,26 @@
         "构建验证通过"
       ],
       "done_definition": "进入任意截图模式后，ESC 均可可靠关闭 overlay 并终止截图流程"
+    },
+    {
+      "id": "US-030",
+      "title": "区域截图后保持截图模式并在选区下方显示工具栏",
+      "priority": "high",
+      "passes": true,
+      "blocked": false,
+      "depends_on": [
+        "US-029"
+      ],
+      "steps": [
+        "区域截图选区完成后不关闭截图 overlay，保持选区框与遮罩可见",
+        "截图时临时隐藏 overlay，避免遮罩进入截图位图，截图后恢复 overlay",
+        "ScreenshotResult 增加 selectionRect，用于工具栏定位",
+        "截图工具栏支持 anchorRect 参数，并优先显示在选区下方，空间不足时显示在选区上方",
+        "截图模式下工具栏提升到 screenSaver+1 层级，确保显示在 overlay 之上",
+        "ESC 退出截图模式时通知工具栏一并关闭",
+        "构建验证通过"
+      ],
+      "done_definition": "按快捷键进入截图模式后 ESC 可退出；鼠标选定区域截图后 overlay 不退出，工具栏显示在选区下方"
     }
   ]
 }

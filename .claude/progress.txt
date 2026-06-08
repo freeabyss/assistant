@@ -2169,3 +2169,58 @@ US-025 从零构建了完整的截图标注编辑器，替换 US-024 的 Annotat
 - 区域截图模式：按 ESC 必定关闭选择遮罩并取消截图
 - 窗口截图模式：按 ESC 必定关闭窗口高亮遮罩并取消截图
 - 取消后不保存截图、不显示截图工具条、不记录 error
+
+## 2026-06-08 - US-030 区域截图后保持截图模式并在选区下方显示工具栏
+
+### 需求
+1. 按快捷键进入截图模式后，可以通过 ESC 退出截图模式。
+2. 截图模式下通过鼠标选定区域进行截图后，不要退出截图模式，并且在区域下方显示工具栏。
+
+### 完成内容
+1. **区域截图选区后不退出 overlay**
+   - `ScreenshotOverlayController` 的 `didSelectRect` 不再 dismiss overlay
+   - 新增 `completeSelection(_:)`，只把选区 rect 交给 ScreenshotService，不关闭 overlay
+   - ESC 通过 `cancelScreenshotMode()` 统一退出 overlay
+
+2. **截图时临时隐藏 overlay，截图后恢复**
+   - `ScreenshotOverlayController` 新增 `hideForCapture()` / `showAfterCapture()`
+   - `ScreenshotService.captureRegion()` 在截图前 `orderOut` overlay，等待 50ms 给 WindowServer 一帧时间移除 overlay
+   - 截图完成后恢复 overlay，保持截图模式视觉状态
+
+3. **工具栏定位到选区下方**
+   - `ScreenshotResult` 新增 `selectionRect: NSRect?`
+   - 区域截图的 `captureRect(_:)` 返回 `selectionRect = rect`
+   - `ScreenshotToolbarController.show(..., anchorRect:)` 支持选区锚点
+   - 优先把工具栏显示在选区下方，若下方空间不足则显示在选区上方；横向自动 clamp 到可见屏幕范围
+
+4. **工具栏显示在 overlay 上方**
+   - 当传入 `anchorRect` 时，工具栏 `panel.level = screenSaver + 1`
+   - 避免被 `.screenSaver` 级别的截图 overlay 遮挡
+
+5. **ESC 退出时工具栏一并关闭**
+   - 新增 `Notification.Name.screenshotOverlayDidCancel`
+   - overlay ESC 退出时 post 通知
+   - `ScreenshotToolbarController` 监听该通知并 dismiss 工具栏
+
+6. **AppDelegate 行为调整**
+   - 区域截图成功后不恢复主面板，因为截图模式仍处于 active 状态
+   - 区域截图取消/失败时才恢复之前显示的主面板
+
+### 验证
+- `xcodebuild -project SnapVault.xcodeproj -scheme SnapVault -configuration Debug build`
+- 结果：`BUILD SUCCEEDED`
+
+### 修改文件
+- `SnapVault/Services/ScreenshotService/ScreenshotService.swift`
+- `SnapVault/Views/Components/ScreenshotOverlay.swift`
+- `SnapVault/Views/Components/ScreenshotToolbarController.swift`
+- `SnapVault/App/AppDelegate.swift`
+- `.claude/task.json`
+- `.claude/progress.txt`
+
+### 预期交互
+- `⌘⇧A` 进入截图模式
+- ESC：退出截图模式
+- 鼠标拖拽选区并松开：截图保存，同时截图遮罩和选区框仍保留
+- 工具栏显示在选区下方（空间不足时选区上方）
+- 再按 ESC：关闭截图模式并关闭工具栏
