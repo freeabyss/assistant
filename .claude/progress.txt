@@ -3129,3 +3129,52 @@ US-025 从零构建了完整的截图标注编辑器，替换 US-024 的 Annotat
 - US-010 只提供设置服务、SettingsSource 入口和测试级设置读写能力；未实现 US-015 管理中心 UI。
 - 旧 `SettingsViewModel` 仍使用 GRDB legacy 设置键，后续迁移 UI 时应改为注入 `SettingsServiceProtocol`，但不要把旧 `LegacySettingKey` 当作 Assistant MVP 新设置键。
 - `SettingsSource` 搜索结果必须继续只打开页面/区块；搜索结果直接切换设置开关属于后续扩展，不在 MVP 当前范围。
+
+
+## 2026-06-12 - Assistant MVP US-011 统一搜索面板 UI
+
+### 任务状态
+- US-011 已完成，`.claude/task.json` 中 `US-011.passes=true`、`blocked=false`。
+- 本次只处理统一搜索面板 UI；未实现 US-013+ 剪贴板历史页面、US-015+ 管理中心 UI，也未删除旧 GRDB/FTS5/UnifiedSearch 兼容路径。
+
+### 完成内容
+1. **Spotlight / Alfred 式搜索面板**
+   - 新增 `SearchPanelView`，采用居中 640pt 宽浮动面板、圆角、阴影、单一搜索框和 Alfred 式空状态。
+   - 空输入只显示输入提示和 ESC 提示，不展示推荐、最近内容或剪贴板内容。
+   - 输入后展示统一列表，最多 12 条，不显示分组标题。
+   - 每条结果展示图标、标题、副标题、类型标签，并在右侧预留 Enter/后续快捷键空间；未实现右键菜单、Action Panel、快捷数字键。
+
+2. **当前 Assistant MVP SearchService 接入**
+   - 新增 `SearchPanelViewModel`，绑定 US-005 `SearchServiceProtocol`，负责 debounce 搜索、上下键选择、回车执行、执行后按 `shouldCloseSearchPanel` 关闭。
+   - AppDelegate 面板从旧 `UnifiedSearchViewModel/MenuBarView` 切换到新 `SearchPanelViewModel/SearchPanelView`。旧 `UnifiedSearchService` / 旧 UI 文件保留为兼容层，不删除。
+   - 注册当前 MVP 搜索源：`AppSearchSource`、`SystemCommandSource`、`CalculatorSource`、`SettingsSource`、新增 `AssistantClipboardSource`。
+
+3. **剪贴板来源与动作执行**
+   - 新增 `AssistantClipboardSource`，基于 US-004/US-012 的 `ClipboardIndexQueryService` / `InMemorySearchIndex` 查询剪贴板轻量索引；剪贴板仍按 2 字符触发，空输入和 1 字符不返回。
+   - 新增 `SearchPanelActionExecutor`，处理应用启动、命令执行、复制文本、复制剪贴板历史项、打开设置、截图命令等主动作。
+   - 剪贴板复制按 snapshot/resource 尽量恢复文本、富文本、图片和文件引用；执行主动作后由 `SearchService.execute` 返回关闭事件。
+
+4. **关闭条件**
+   - ESC 通过 `KeyEventHandler` 新增 `onEscape` 回调关闭面板。
+   - AppDelegate 保持失焦关闭、点击外部关闭、切换 App 后 resign key 关闭、再次快捷键关闭。
+   - 执行主动作后自动关闭面板。
+
+5. **本地化与测试**
+   - `Localizable.xcstrings` 新增搜索面板 placeholder、空状态、无结果、类型标签、确认提示和错误文案的中英文翻译。
+   - 新增 `SearchPanelViewModelTests`，覆盖空输入不调用搜索/不显示结果、结果上限 12 与上下键循环、回车执行并关闭。
+
+### 技术方案核对
+- 已按要求阅读 `.claude/progress.txt`、`.claude/task.json`、`doc/prd.md`、`doc/architecture.md`、`doc/architecture_db.md`、`doc/architecture_api.md`、`doc/test.md`。
+- 现有文档已覆盖 US-011 所需方案：PRD FR-SEARCH-14~29、architecture.md 7.3/7.5/7.6、architecture_api.md 16.1 SearchViewModel、doc/test.md SEARCH-001~SEARCH-010。
+- 未发现必须补充架构文档的缺口，因此未修改 `doc/architecture*.md`、`doc/prd.md` 或 `doc/test.md`；也未覆盖用户/其他 Agent 的既有脏文档改动。
+
+### 验证结果
+- `swift test --skip-update`：通过，执行 104 个 XCTest，104 通过、0 失败。
+- `xcodebuild -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug build`：通过，`** BUILD SUCCEEDED **`。
+- `xcodebuild test -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug`：通过，执行 99 个 XCTest，99 通过、0 失败，`** TEST SUCCEEDED **`。
+- Xcode test 期间仍有既有 Swift 6 warning、XCTest 链接目标版本 warning 和 `com.apple.linkd.autoShortcut` 日志，但测试最终通过，不影响 US-011 验收。
+
+### 留给后续 Agent 的提示
+- US-013 剪贴板历史页面 UI 应继续使用新 Core Data/内存索引链路，不要回到旧 GRDB `ClipboardListViewModel`。
+- 当前 `MenuBarView` / `UnifiedSearchViewModel` / `UnifiedResultList` 等旧统一搜索 UI 仍保留但 AppDelegate 不再用于主搜索面板；后续可在完成管理中心迁移后再清理。
+- `SearchPanelActionExecutor.openSettings(_:)` 目前打开系统 Settings scene，尚未按 route 深链到具体管理中心页面；US-015 管理中心 UI 可在此处接入 route 导航。

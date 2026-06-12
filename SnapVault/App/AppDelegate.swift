@@ -60,34 +60,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Auto-update service (Sparkle).
     private let updateService = UpdateService()
 
-    /// Unified search service aggregating multiple search sources.
+    /// Legacy unified search service retained for compatibility with older views.
     private let unifiedSearchService = UnifiedSearchService()
 
-    /// Clipboard search source (wraps FTS5 + Spotlight search).
-    private let clipboardSearchSource = ClipboardSearchSource()
-
-    /// Application search source (skeleton, full impl in US-014).
+    /// Application search source.
     private let appSearchSource = AppSearchSource()
 
-    /// File search source (skeleton, full impl in US-015).
-    private let fileSearchSource = FileSearchSource()
-
-    /// System command search source (sleep/restart/shutdown/lock/...).
+    /// System command search source.
     private let systemCommandSource = SystemCommandSource()
 
-    /// Calculator search source (math expression evaluator).
+    /// Calculator and unit conversion search source.
     private let calculatorSource = CalculatorSource()
 
-    /// Unit / currency converter search source (Foundation Measurement + static FX table).
-    private let unitConverterSource = UnitConverterSource()
-
-    /// Unified search view model (created in applicationDidFinishLaunching on main actor).
-    private var unifiedSearchViewModel: UnifiedSearchViewModel!
-
-    /// Recent content center view model (US-023). Created on main actor in
-    /// `applicationDidFinishLaunching` so it can observe `clipboardItemSaved`
-    /// notifications and refresh its date-grouped sections.
-    private var recentContentViewModel: RecentContentViewModel!
+    /// Assistant MVP search panel view model.
+    private var searchPanelViewModel: SearchPanelViewModel!
 
     /// Screenshot service for region and window capture (macOS 14+).
     private lazy var screenshotService: ScreenshotServiceProtocol? = {
@@ -139,30 +125,23 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Register global keyboard shortcut for panel toggle
         registerGlobalShortcuts()
 
-        // Register unified search sources
-        unifiedSearchService.registerSource(clipboardSearchSource)
+        // Keep the legacy unified service registered for compatibility, but the
+        // visible US-011 panel below uses the current Assistant MVP SearchService.
         unifiedSearchService.registerSource(appSearchSource)
-        unifiedSearchService.registerSource(fileSearchSource)
         unifiedSearchService.registerSource(systemCommandSource)
         unifiedSearchService.registerSource(calculatorSource)
-        unifiedSearchService.registerSource(unitConverterSource)
-        logger.info("Unified search service initialized with 6 sources")
+        logger.info("Legacy unified search service initialized for compatibility")
 
-        // Create unified search view model (must be on main actor)
-        unifiedSearchViewModel = UnifiedSearchViewModel(unifiedSearchService: unifiedSearchService)
-
-        // Create Recent Content Center view model (US-023, must be on main actor).
-        // Built here rather than lazily so the .clipboardItemSaved observer is
-        // wired up from app launch and the Recent panel is warm on first open.
-        recentContentViewModel = RecentContentViewModel()
+        // Create the Assistant MVP search panel view model (must be on main actor).
+        searchPanelViewModel = makeSearchPanelViewModel()
 
         // Screenshot post-capture toolbar (US-024). Constructed on main actor
         // so the @MainActor-annotated controller is happy; needs the shared
         // ContentStore so OCR re-recognition writes back to the same DB.
         screenshotToolbar = ScreenshotToolbarController(contentStore: contentStore)
 
-        // Observe search state to resize panel dynamically
-        searchStateCancellable = unifiedSearchViewModel.$searchText
+        // Observe search state to resize panel dynamically.
+        searchStateCancellable = searchPanelViewModel.$query
             .map { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
             .removeDuplicates()
             .sink { [weak self] isActive in
@@ -179,6 +158,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             name: .checkForUpdates,
             object: nil
         )
+
+        NotificationCenter.default.addObserver(self, selector: #selector(handleCommandCaptureRegion), name: .commandCaptureRegion, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleCommandCaptureWindow), name: .commandCaptureWindow, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleCommandCaptureFullScreen), name: .commandCaptureFullScreen, object: nil)
 
         logger.info("Assistant launched successfully")
     }
@@ -327,23 +310,20 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         // Center panel on screen (Alfred-style)
-        let panelWidth: CGFloat = 400
-        // Recent mode is the default display mode in MenuBarView, which renders
-        // at the expanded 500pt height. Open the panel pre-sized so the
-        // browse list is visible immediately without a resize animation.
-        let panelHeight: CGFloat = 500
+        let panelWidth: CGFloat = 640
+        let panelHeight: CGFloat = 156
 
         if let screen = NSScreen.main {
             let screenFrame = screen.visibleFrame
             let panelX = screenFrame.midX - panelWidth / 2
-            let panelY = screenFrame.midY + 100 - (panelHeight - 72)  // Anchor on top edge
+            let panelY = screenFrame.midY + 120
 
             panel.setFrame(NSRect(x: panelX, y: panelY, width: panelWidth, height: panelHeight), display: true)
         }
 
-        // Reset search text when showing panel
+        // Reset search panel state when showing panel.
         DispatchQueue.main.async { [weak self] in
-            self?.unifiedSearchViewModel.searchText = ""
+            self?.searchPanelViewModel.open()
         }
 
         // Activate the app and show the panel
@@ -382,25 +362,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     /// Resize the panel when search state changes.
-    ///
-    /// Historically (US-016) this collapsed to 72pt when the search box was
-    /// empty. After US-023 the default browse mode (Recent) is also rendered
-    /// at the full 500pt height, so the panel stays expanded as long as it's
-    /// visible. We keep this hook in case a future "compact" mode reintroduces
-    /// the 72pt layout, but the current behaviour is a no-op when expanded.
     private func resizePanelForSearchState(isActive: Bool) {
         guard let panel = panel, panel.isVisible else { return }
 
-        // Always 500pt — Recent (default) and Search both use the expanded layout.
-        let targetHeight: CGFloat = 500
-        let panelWidth: CGFloat = 400
+        let targetHeight: CGFloat = isActive ? 560 : 156
+        let panelWidth: CGFloat = 640
 
-        // Keep panel centered on screen
         var newFrame: NSRect
         if let screen = NSScreen.main {
             let screenFrame = screen.visibleFrame
             let panelX = screenFrame.midX - panelWidth / 2
-            let panelY = screenFrame.midY + 100 - (targetHeight - 72) / 2  // Adjust for growth
+            let panelY = screenFrame.midY + 120 - (isActive ? 180 : 0)
             newFrame = NSRect(x: panelX, y: panelY, width: panelWidth, height: targetHeight)
         } else {
             let currentFrame = panel.frame
@@ -409,7 +381,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.15
+            context.duration = 0.12
             context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
             panel.animator().setFrame(newFrame, display: true)
         }
@@ -417,7 +389,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func createPanel() {
         let panel = FloatingSearchPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 400, height: 500),
+            contentRect: NSRect(x: 0, y: 0, width: 640, height: 156),
             styleMask: [.borderless],
             backing: .buffered,
             defer: false
@@ -439,11 +411,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         panel.contentView?.layer?.masksToBounds = true
 
         // Set the SwiftUI content
-        let menuBarView = MenuBarView(
-            searchViewModel: unifiedSearchViewModel,
-            recentViewModel: recentContentViewModel
-        )
-        let hostingView = NSHostingView(rootView: menuBarView)
+        let searchPanelView = SearchPanelView(viewModel: searchPanelViewModel)
+        let hostingView = NSHostingView(rootView: searchPanelView)
         hostingView.translatesAutoresizingMaskIntoConstraints = false
 
         panel.contentView?.addSubview(hostingView)
@@ -616,6 +585,47 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    @objc private func handleCommandCaptureRegion() {
+        closePanel()
+        performRegionCapture()
+    }
+
+    @objc private func handleCommandCaptureWindow() {
+        closePanel()
+        performWindowCapture()
+    }
+
+    @objc private func handleCommandCaptureFullScreen() {
+        closePanel()
+        performScreenCapture()
+    }
+
+    private func performScreenCapture() {
+        logger.info("Full screen capture triggered by command")
+        let wasPanelVisible = panel?.isVisible ?? false
+        if wasPanelVisible { closePanel() }
+        Task {
+            do {
+                guard let screenshotService else {
+                    logger.warning("Screenshot service not available (requires macOS 14+)")
+                    return
+                }
+                let result = try await screenshotService.captureScreen()
+                let itemId = try await contentStore.processScreenshot(result)
+                await MainActor.run { [weak self] in
+                    self?.screenshotToolbar.show(
+                        itemId: itemId,
+                        imageData: result.imageData,
+                        sourceType: result.sourceType,
+                        anchorRect: result.selectionRect
+                    )
+                }
+            } catch {
+                logger.error("Full screen capture failed: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+    }
+
     // MARK: - Clipboard Monitoring
 
     private func startClipboardMonitoring() {
@@ -637,6 +647,37 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         logger.info("Clipboard monitoring started")
+    }
+
+    @MainActor
+    private func makeSearchPanelViewModel() -> SearchPanelViewModel {
+        let clipboardQueryService = ClipboardIndexQueryService(index: assistantClipboardIndex, repository: assistantClipboardRepository)
+        let clipboardSource = AssistantClipboardSource(queryService: clipboardQueryService)
+        let settingsService = SettingsService(persistence: .shared)
+        let settingsSource = SettingsSource(settingsService: settingsService)
+        let usageStore = UsageStatRepository()
+        let blacklistChecker = SearchBlacklistRepository(persistence: .shared)
+        let commandExecutor = SystemCommandExecutor(
+            clipboardHistoryService: ClipboardHistoryService(repository: assistantClipboardRepository)
+        )
+        let actionExecutor = SearchPanelActionExecutor(
+            appExecutor: AppSearchActionExecutor(appSource: appSearchSource),
+            commandExecutor: CommandSearchActionExecutor(
+                commandExecutor: commandExecutor,
+                confirmationProvider: SearchPanelCommandConfirmationProvider()
+            ),
+            clipboardRepository: assistantClipboardRepository,
+            resourceStore: assistantResourceStore
+        )
+        let service = SearchService(
+            sources: [appSearchSource, systemCommandSource, calculatorSource, settingsSource, clipboardSource],
+            usageStore: usageStore,
+            blacklistChecker: blacklistChecker,
+            actionExecutor: actionExecutor
+        )
+        return SearchPanelViewModel(searchService: service) { [weak self] in
+            self?.closePanel()
+        }
     }
 
     // MARK: - Update

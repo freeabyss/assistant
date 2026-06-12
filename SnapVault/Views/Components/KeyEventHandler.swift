@@ -9,6 +9,7 @@ struct KeyEventHandler: NSViewRepresentable {
     var onUpArrow: () -> Void
     var onDownArrow: () -> Void
     var onReturn: () -> Void
+    var onEscape: () -> Void = {}
     var onTab: () -> Void
 
     func makeNSView(context: Context) -> KeyEventNSView {
@@ -16,6 +17,7 @@ struct KeyEventHandler: NSViewRepresentable {
         view.onUpArrow = onUpArrow
         view.onDownArrow = onDownArrow
         view.onReturn = onReturn
+        view.onEscape = onEscape
         view.onTab = onTab
         return view
     }
@@ -24,6 +26,7 @@ struct KeyEventHandler: NSViewRepresentable {
         nsView.onUpArrow = onUpArrow
         nsView.onDownArrow = onDownArrow
         nsView.onReturn = onReturn
+        nsView.onEscape = onEscape
         nsView.onTab = onTab
     }
 }
@@ -33,6 +36,7 @@ class KeyEventNSView: NSView {
     var onUpArrow: (() -> Void)?
     var onDownArrow: (() -> Void)?
     var onReturn: (() -> Void)?
+    var onEscape: (() -> Void)?
     var onTab: (() -> Void)?
 
     override var acceptsFirstResponder: Bool { true }
@@ -45,6 +49,8 @@ class KeyEventNSView: NSView {
             onDownArrow?()
         case 36: // Return/Enter
             onReturn?()
+        case 53: // Escape
+            onEscape?()
         case 48: // Tab
             onTab?()
         default:

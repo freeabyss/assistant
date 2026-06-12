@@ -84,7 +84,11 @@
 		B00600000000000000000009 /* SearchTextMatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0060000000000000000000A; };
 		B01000000000000000000001 /* SettingsServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01000000000000000000002; };
 		B00700000000000000000001 /* AppSearchSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00700000000000000000002; };
-		/* End PBXBuildFile section */
+					B01100000000000000000001 /* SearchPanelViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01100000000000000000002; };
+			B01100000000000000000003 /* SearchPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01100000000000000000004; };
+			B01100000000000000000005 /* AssistantClipboardSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01100000000000000000006; };
+			B01100000000000000000009 /* SearchPanelViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01100000000000000000008; };
+/* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 			B01200000000000000000002 /* ClipboardMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardMonitorTests.swift; sourceTree = "<group>"; };
@@ -168,7 +172,11 @@
 		B0060000000000000000000A /* SearchTextMatcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchTextMatcherTests.swift; sourceTree = "<group>"; };
 		B01000000000000000000002 /* SettingsServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsServiceTests.swift; sourceTree = "<group>"; };
 		B00700000000000000000002 /* AppSearchSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSearchSourceTests.swift; sourceTree = "<group>"; };
-		/* End PBXFileReference section */
+					B01100000000000000000002 /* SearchPanelViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanelViewModel.swift; sourceTree = "<group>"; };
+			B01100000000000000000004 /* SearchPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanelView.swift; sourceTree = "<group>"; };
+			B01100000000000000000006 /* AssistantClipboardSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantClipboardSource.swift; sourceTree = "<group>"; };
+			B01100000000000000000008 /* SearchPanelViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanelViewModelTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A10002000000000000000001 /* Frameworks */ = {
@@ -235,6 +243,7 @@
 				A1000300000000000000001C /* SearchResults */,
 				A1000300000000000000001D /* RecentContent */,
 				A1000300000000000000001E /* Annotation */,
+				B01100000000000000000007 /* SearchPanel */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -246,6 +255,7 @@
 				A10000000000000000000017 /* SettingsViewModel.swift */,
 				A10000000000000000000028 /* UnifiedSearchViewModel.swift */,
 				A10000000000000000000032 /* RecentContentViewModel.swift */,
+				B01100000000000000000002 /* SearchPanelViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -328,6 +338,7 @@
 				B0060000000000000000000A /* SearchTextMatcherTests.swift */,
 				B01000000000000000000002 /* SettingsServiceTests.swift */,
 				B00700000000000000000002 /* AppSearchSourceTests.swift */,
+				B01100000000000000000008 /* SearchPanelViewModelTests.swift */,
 			);
 			path = SnapVaultTests;
 			sourceTree = "<group>";
@@ -416,6 +427,7 @@
 				A10000000000000000000044 /* InMemorySearchIndex.swift */,
 				B00500000000000000000002 /* SearchCore.swift */,
 				B00600000000000000000006 /* SettingsSource.swift */,
+				B01100000000000000000006 /* AssistantClipboardSource.swift */,
 			);
 			path = SearchEngine;
 			sourceTree = "<group>";
@@ -504,6 +516,14 @@
 				A10000000000000000000037 /* AnnotationEditorWindow.swift */,
 			);
 			path = Annotation;
+			sourceTree = "<group>";
+		};
+		B01100000000000000000007 /* SearchPanel */ = {
+			isa = PBXGroup;
+			children = (
+				B01100000000000000000004 /* SearchPanelView.swift */,
+			);
+			path = SearchPanel;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -644,6 +664,7 @@
 				B00600000000000000000009 /* SearchTextMatcherTests.swift in Sources */,
 				B01000000000000000000001 /* SettingsServiceTests.swift in Sources */,
 				B00700000000000000000001 /* AppSearchSourceTests.swift in Sources */,
+					B01100000000000000000009 /* SearchPanelViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -709,6 +730,9 @@
 				A10001000000000000000035 /* AnnotationCanvas.swift in Sources */,
 				A10001000000000000000036 /* AnnotationToolbar.swift in Sources */,
 				A10001000000000000000037 /* AnnotationEditorWindow.swift in Sources */,
+					B01100000000000000000001 /* SearchPanelViewModel.swift in Sources */,
+					B01100000000000000000003 /* SearchPanelView.swift in Sources */,
+					B01100000000000000000005 /* AssistantClipboardSource.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

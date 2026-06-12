@@ -213,7 +213,7 @@
       "id": "US-011",
       "title": "统一搜索面板 UI",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": [
         "US-005",
