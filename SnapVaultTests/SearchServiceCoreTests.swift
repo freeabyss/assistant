@@ -107,6 +107,31 @@ final class SearchServiceCoreTests: XCTestCase {
 
         XCTAssertGreaterThan(after.results.first?.usageScore ?? 0, before.results.first?.usageScore ?? 0)
     }
+
+    func testSettingsBackedSearchSourceImmediatelyHidesAndRestoresResults() async throws {
+        let tempDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("SettingsBackedSearchSourceTests")
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+        let persistence = PersistenceController(storeConfiguration: .temporary, fileSystem: AssistantFileSystem(rootDirectory: tempDirectory))
+        try persistence.load()
+        let settings = SettingsService(persistence: persistence)
+        let result = SearchResult.mock(id: "app:notes", sourceID: .app, title: "Notes", baseScore: 100, matchScore: 20)
+        let source = MockSearchSource(sourceID: .app, minimumLength: 1, results: [result])
+        let wrapped = SettingsBackedSearchSource(source: source, settingsService: settings, settingKey: .appSourceEnabled)
+        let service = SearchService(sources: [wrapped])
+
+        let visible = await service.search(query: "n")
+        XCTAssertEqual(visible.results.map(\.id.rawValue), ["app:notes"])
+
+        try await settings.set(false, for: .appSourceEnabled)
+        let hidden = await service.search(query: "n")
+        XCTAssertTrue(hidden.results.isEmpty)
+
+        try await settings.set(true, for: .appSourceEnabled)
+        let restored = await service.search(query: "n")
+        XCTAssertEqual(restored.results.map(\.id.rawValue), ["app:notes"])
+    }
 }
 
 private final class MockSearchSource: SearchSource {

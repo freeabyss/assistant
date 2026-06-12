@@ -24,8 +24,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Floating panel that hosts the main SwiftUI view.
     private var panel: NSPanel?
 
-    /// Dedicated window that hosts the Assistant MVP clipboard history page.
-    private var clipboardWindow: NSWindow?
+    /// Dedicated window that hosts the Assistant MVP management center.
+    private var managementCenterWindow: NSWindow?
 
     /// First-run onboarding window. While visible, full product entry points remain gated.
     private var onboardingWindow: NSWindow?
@@ -145,6 +145,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil
         )
 
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleOpenManagementCenter),
+            name: .openManagementCenter,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(self, selector: #selector(handleSettingsDidChange), name: .settingsDidChange, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleCommandToggleClipboardRecording), name: .commandToggleClipboardRecording, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleCommandCheckPermissions), name: .commandCheckPermissions, object: nil)
+
         NotificationCenter.default.addObserver(self, selector: #selector(handleCommandCaptureRegion), name: .commandCaptureRegion, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleCommandCaptureWindow), name: .commandCaptureWindow, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleCommandCaptureFullScreen), name: .commandCaptureFullScreen, object: nil)
@@ -157,6 +167,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Start clipboard monitoring only after the user explicitly acknowledges
         // clipboard history and completes required permissions in Onboarding.
         startClipboardMonitoring()
+
+        Task { await syncAssistantRuntimeSettings() }
 
         // Start data cleanup service (immediate + hourly).
         cleanupService.start()
@@ -337,28 +349,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         performRegionCapture()
     }
 
+    @MainActor
     @objc private func openSettingsFromMenu() {
         logger.info("Settings selected from status menu")
-        NSApp.sendAction(Selector("showSettingsWindow:"), to: nil, from: nil)
-        if #available(macOS 14.0, *) {
-            NSApp.activate()
-        } else {
-            NSApp.activate(ignoringOtherApps: true)
-        }
+        showManagementCenter(route: .settings)
     }
 
+    @MainActor
     @objc private func openAboutFromMenu() {
         logger.info("About selected from status menu")
-        NSApp.orderFrontStandardAboutPanel(options: [
-            .applicationName: "Mac Super Assistant",
-            .applicationVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.0",
-            .version: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
-        ])
-        if #available(macOS 14.0, *) {
-            NSApp.activate()
-        } else {
-            NSApp.activate(ignoringOtherApps: true)
-        }
+        showManagementCenter(route: .about)
     }
 
     @objc private func quitFromMenu() {
@@ -475,11 +475,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @MainActor
     private func showClipboardHistoryWindow() {
+        showManagementCenter(route: .clipboardHistory)
+    }
+
+    @MainActor
+    private func showManagementCenter(route: SettingsRoute? = nil) {
         guard ensureOnboardingGate() else { return }
         closePanel(animate: false)
 
-        if let clipboardWindow {
-            clipboardWindow.makeKeyAndOrderFront(nil)
+        if let managementCenterWindow {
+            managementCenterWindow.makeKeyAndOrderFront(nil)
+            if let route {
+                NotificationCenter.default.post(name: .openManagementCenter, object: route)
+            }
             activateApp()
             return
         }
@@ -491,21 +499,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             clipboardRepository: assistantClipboardRepository,
             resourceStore: assistantResourceStore
         )
-        let viewModel = ClipboardListViewModel(
+        let clipboardViewModel = ClipboardListViewModel(
             queryService: queryService,
             repository: assistantClipboardRepository,
             historyService: ClipboardHistoryService(repository: assistantClipboardRepository),
             actionExecutor: actionExecutor,
             resourceStore: assistantResourceStore
         )
-        let view = ClipboardListView(viewModel: viewModel)
+        let settingsViewModel = SettingsViewModel()
+        if let route {
+            settingsViewModel.select(route: route)
+        }
+        let view = ManagementCenterView(viewModel: settingsViewModel, clipboardViewModel: clipboardViewModel)
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 820, height: 620),
+            contentRect: NSRect(x: 0, y: 0, width: 940, height: 680),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )
-        window.title = "Clipboard History"
+        window.title = L10n.localized("management.title")
         window.center()
         window.contentView = NSHostingView(rootView: view)
         window.isReleasedWhenClosed = false
@@ -514,9 +526,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             object: window,
             queue: .main
         ) { [weak self] _ in
-            self?.clipboardWindow = nil
+            self?.managementCenterWindow = nil
         }
-        clipboardWindow = window
+        managementCenterWindow = window
         window.makeKeyAndOrderFront(nil)
         activateApp()
     }
@@ -803,8 +815,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @MainActor
     private func makeSearchPanelViewModel() -> SearchPanelViewModel {
         let clipboardQueryService = ClipboardIndexQueryService(index: assistantClipboardIndex, repository: assistantClipboardRepository)
-        let clipboardSource = AssistantClipboardSource(queryService: clipboardQueryService)
         let settingsService = SettingsService(persistence: .shared)
+        let appSource = SettingsBackedSearchSource(source: appSearchSource, settingsService: settingsService, settingKey: .appSourceEnabled)
+        let commandSource = SettingsBackedSearchSource(source: systemCommandSource, settingsService: settingsService, settingKey: .commandSourceEnabled)
+        let calculatorSource = SettingsBackedSearchSource(source: calculatorSource, settingsService: settingsService, settingKey: .calculatorSourceEnabled)
+        let clipboardSource = AssistantClipboardSource(queryService: clipboardQueryService, settingsService: settingsService)
         let settingsSource = SettingsSource(settingsService: settingsService)
         let usageStore = UsageStatRepository()
         let blacklistChecker = SearchBlacklistRepository(persistence: .shared)
@@ -821,7 +836,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             resourceStore: assistantResourceStore
         )
         let service = SearchService(
-            sources: [appSearchSource, systemCommandSource, calculatorSource, settingsSource, clipboardSource],
+            sources: [appSource, commandSource, calculatorSource, settingsSource, clipboardSource],
             usageStore: usageStore,
             blacklistChecker: blacklistChecker,
             actionExecutor: actionExecutor
@@ -829,6 +844,59 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return SearchPanelViewModel(searchService: service) { [weak self] in
             self?.closePanel()
         }
+    }
+
+    // MARK: - Management Center / Settings Runtime Sync
+
+    @MainActor
+    @objc private func handleOpenManagementCenter(_ notification: Notification) {
+        if let route = notification.object as? SettingsRoute {
+            showManagementCenter(route: route)
+        } else if let page = notification.object as? ManagementCenterPage {
+            let route: SettingsRoute?
+            switch page {
+            case .overview:
+                route = .settings
+            case .clipboard:
+                route = .clipboardHistory
+            case .settings:
+                route = .settings
+            case .permissions:
+                route = .permissions
+            }
+            showManagementCenter(route: route)
+        } else {
+            showManagementCenter()
+        }
+    }
+
+    @objc private func handleSettingsDidChange() {
+        Task { await syncAssistantRuntimeSettings() }
+    }
+
+    @objc private func handleCommandToggleClipboardRecording() {
+        Task {
+            let service = SettingsService(persistence: .shared)
+            let current = (try? await service.value(for: .clipboardEnabled, as: Bool.self)) ?? true
+            try? await service.set(!current, for: .clipboardEnabled)
+            NotificationCenter.default.post(name: .settingsDidChange, object: nil)
+        }
+    }
+
+    @MainActor
+    @objc private func handleCommandCheckPermissions() {
+        showManagementCenter(route: .permissions)
+    }
+
+    private func syncAssistantRuntimeSettings() async {
+        let settingsService = SettingsService(persistence: .shared)
+        let enabled = (try? await settingsService.value(for: .clipboardEnabled, as: Bool.self)) ?? true
+        if enabled {
+            assistantClipboardService.resumeRecording()
+        } else {
+            assistantClipboardService.pauseRecording()
+        }
+        logger.info("Assistant runtime settings synced: clipboardEnabled=\(enabled)")
     }
 
     // MARK: - Update

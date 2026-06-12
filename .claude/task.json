@@ -301,7 +301,7 @@
       "id": "US-015",
       "title": "管理中心、设置、权限与黑名单 UI",
       "priority": "medium",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": [
         "US-010",

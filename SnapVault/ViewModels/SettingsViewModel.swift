@@ -1,281 +1,321 @@
+import AppKit
 import Foundation
-import GRDB
-import os.log
+import KeyboardShortcuts
 import ServiceManagement
+import os.log
 
-/// Notification posted when settings change, so services can react.
+/// Notification posted when Assistant MVP settings change so long-running services
+/// can reload their runtime state without waiting for app restart.
 extension Notification.Name {
     static let settingsDidChange = Notification.Name("com.assistant.settingsDidChange")
+    static let openManagementCenter = Notification.Name("com.assistant.openManagementCenter")
 }
 
-/// ViewModel for the preferences settings view.
+enum ManagementCenterPage: String, CaseIterable, Identifiable, Hashable {
+    case overview
+    case clipboard
+    case settings
+    case permissions
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .overview: return L10n.localized("management.page.overview")
+        case .clipboard: return L10n.localized("management.page.clipboard")
+        case .settings: return L10n.localized("management.page.settings")
+        case .permissions: return L10n.localized("management.page.permissions")
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .overview: return "sparkles"
+        case .clipboard: return "clipboard"
+        case .settings: return "slider.horizontal.3"
+        case .permissions: return "lock.shield"
+        }
+    }
+}
+
+@MainActor
+struct SearchSourceToggle: Identifiable, Hashable {
+    let id: SearchSourceID
+    let settingKey: SettingKey
+    let title: String
+    let subtitle: String
+    let iconName: String
+    var isEnabled: Bool
+}
+
+/// ViewModel for US-015 Management Center.
 ///
-/// Loads settings from the `app_settings` table on init and provides
-/// methods to save changes back. Uses `@Published` properties for SwiftUI binding.
+/// Uses the Assistant MVP Core Data `SettingsService`, `PermissionService`, and
+/// `SearchBlacklistRepository`; legacy GRDB settings are intentionally not used
+/// for new management-center settings.
 @MainActor
 final class SettingsViewModel: ObservableObject {
-    let logger = Logger.app
-    private let repository = ContentRepository()
-    private let exportService = ExportService()
+    private let settingsService: SettingsServiceProtocol
+    private let blacklistRepository: SearchBlacklistRepositoryProtocol
+    private let permissionService: PermissionServiceProtocol
+    private let launchAtLoginService: LaunchAtLoginServiceProtocol
+    private let notificationCenter: NotificationCenter
+    private let logger = Logger.app
 
-    // MARK: - General Settings
+    @Published var selectedPage: ManagementCenterPage = .overview
+    @Published var sourceToggles: [SearchSourceToggle] = SettingsViewModel.defaultSearchSourceToggles
+    @Published var clipboardEnabled = true
+    @Published var clipboardRetention: ClipboardRetention = .thirtyDays
+    @Published var screenshotSaveDirectory: URL = URL(fileURLWithPath: ("~/Pictures/Screenshots" as NSString).expandingTildeInPath)
+    @Published var launchAtLoginEnabled = true
+    @Published var languageMode: LanguageMode = .followSystem
+    @Published var blacklistItems: [SearchBlacklistItemSnapshot] = []
+    @Published var permissionStatuses: [PermissionKind: PermissionStatus] = Dictionary(uniqueKeysWithValues: PermissionKind.allCases.map { ($0, .unknown) })
 
-    @Published var retentionDays: Int = 30
-    @Published var maxStorageMB: Int = 500
-    @Published var ocrEnabled: Bool = true
-    @Published var pollInterval: Int = 500
-    @Published var launchAtLogin: Bool = true
+    @Published var newBlacklistSourceID = SearchSourceID.app.rawValue
+    @Published var newBlacklistResultID = ""
+    @Published var newBlacklistTitle = ""
+    @Published var newBlacklistType = "application"
 
-    /// Current language preference (persisted to UserDefaults AppleLanguages).
-    @Published var selectedLanguage: String = {
-        if let langs = UserDefaults.standard.stringArray(forKey: "AppleLanguages"),
-           let first = langs.first, first.hasPrefix("zh") {
-            return "zh-Hans"
-        }
-        return "en"
-    }()
+    @Published var statusMessage: String?
+    @Published var errorMessage: String?
+    @Published var showDirectoryImporter = false
+    @Published var showLanguageRestartAlert = false
 
-    // MARK: - Data Management
+    var enabledSourceNames: String {
+        let names = sourceToggles.filter(\.isEnabled).map(\.title)
+        return names.isEmpty ? L10n.localized("management.overview.noSources") : names.joined(separator: ", ")
+    }
 
-    @Published var databaseSizeMB: Double = 0
-    @Published var totalItemCount: Int = 0
+    var searchHotkeyDescription: String {
+        KeyboardShortcuts.Shortcut(name: .togglePanel)?.description ?? "⌥ Space"
+    }
 
-    /// Whether an export/import operation is in progress.
-    @Published var isExporting: Bool = false
-    @Published var isImporting: Bool = false
-    @Published var isClearingHistory: Bool = false
+    var permissionSummary: String {
+        let authorized = PermissionKind.allCases.filter { permissionStatuses[$0]?.isAuthorized == true }.count
+        return L10n.localized("management.overview.permissionsCount", authorized, PermissionKind.allCases.count)
+    }
 
-    /// Import progress (current item / total items).
-    @Published var importProgress: Double = 0
+    static let retentionOptions: [ClipboardRetention] = [.sevenDays, .thirtyDays, .ninetyDays, .forever]
+    static let languageOptions: [LanguageMode] = [.followSystem, .simplifiedChinese, .english]
 
-    /// Alert state for confirmations and messages.
-    @Published var showAlert: Bool = false
-    @Published var alertTitle: String = ""
-    @Published var alertMessage: String = ""
-
-    /// Whether to show the clear history confirmation dialog.
-    @Published var showClearHistoryConfirm: Bool = false
-
-    /// Status message for data operations.
-    @Published var dataOperationStatus: String?
-
-    // MARK: - Poll Interval Options
-
-    static let pollIntervalOptions: [(label: String, value: Int)] = [
-        (L10n.localized("settings.polling.500ms"), 500),
-        (L10n.localized("settings.polling.1000ms"), 1000),
-        (L10n.localized("settings.polling.2000ms"), 2000)
+    static let sourceOptions: [(id: SearchSourceID, label: String)] = [
+        (.app, "AppSource"),
+        (.command, "CommandSource"),
+        (.calculator, "CalculatorSource"),
+        (.settings, "SettingsSource"),
+        (.clipboard, "ClipboardSource")
     ]
 
-    // MARK: - Initialization
+    private static let defaultSearchSourceToggles: [SearchSourceToggle] = [
+        SearchSourceToggle(id: .app, settingKey: .appSourceEnabled, title: L10n.localized("management.source.app"), subtitle: L10n.localized("management.source.app.subtitle"), iconName: "app", isEnabled: true),
+        SearchSourceToggle(id: .command, settingKey: .commandSourceEnabled, title: L10n.localized("management.source.command"), subtitle: L10n.localized("management.source.command.subtitle"), iconName: "terminal", isEnabled: true),
+        SearchSourceToggle(id: .calculator, settingKey: .calculatorSourceEnabled, title: L10n.localized("management.source.calculator"), subtitle: L10n.localized("management.source.calculator.subtitle"), iconName: "function", isEnabled: true),
+        SearchSourceToggle(id: .settings, settingKey: .settingsSourceEnabled, title: L10n.localized("management.source.settings"), subtitle: L10n.localized("management.source.settings.subtitle"), iconName: "gearshape", isEnabled: true),
+        SearchSourceToggle(id: .clipboard, settingKey: .clipboardShowInSearch, title: L10n.localized("management.source.clipboard"), subtitle: L10n.localized("management.source.clipboard.subtitle"), iconName: "clipboard", isEnabled: true)
+    ]
 
-    init() {
-        loadSettings()
-        loadDatabaseStats()
+    init(
+        settingsService: SettingsServiceProtocol = SettingsService(persistence: .shared),
+        blacklistRepository: SearchBlacklistRepositoryProtocol = SearchBlacklistRepository(persistence: .shared),
+        permissionService: PermissionServiceProtocol = PermissionService(),
+        launchAtLoginService: LaunchAtLoginServiceProtocol = LaunchAtLoginService(),
+        notificationCenter: NotificationCenter = .default
+    ) {
+        self.settingsService = settingsService
+        self.blacklistRepository = blacklistRepository
+        self.permissionService = permissionService
+        self.launchAtLoginService = launchAtLoginService
+        self.notificationCenter = notificationCenter
     }
 
-    // MARK: - Load Settings
+    func load() async {
+        await loadSettings()
+        await reloadBlacklist()
+        await refreshPermissions()
+    }
 
-    /// Load all settings from the database into @Published properties.
-    func loadSettings() {
+    func select(route: SettingsRoute) {
+        switch route {
+        case .settings, .searchSources, .hotkey, .screenshot, .about:
+            selectedPage = .settings
+        case .permissions:
+            selectedPage = .permissions
+        case .clipboardHistory:
+            selectedPage = .clipboard
+        }
+    }
+
+    func select(page: ManagementCenterPage) {
+        selectedPage = page
+    }
+
+    func saveSettings() async {
         do {
-            let settings = try repository.readAllSettings()
-
-            if let val = settings[LegacySettingKey.retentionDays], let intVal = Int(val) {
-                retentionDays = intVal
+            for toggle in sourceToggles {
+                try await settingsService.set(toggle.isEnabled, for: toggle.settingKey)
             }
-            if let val = settings[LegacySettingKey.maxStorageMB], let intVal = Int(val) {
-                maxStorageMB = intVal
+            try await settingsService.set(clipboardEnabled, for: .clipboardEnabled)
+            try await settingsService.set(clipboardRetention, for: .clipboardRetention)
+            try await settingsService.set(screenshotSaveDirectory, for: .screenshotSaveDirectory)
+            try await settingsService.set(launchAtLoginEnabled, for: .launchAtLoginEnabled)
+            try await settingsService.set(languageMode, for: .languageMode)
+            try launchAtLoginService.setEnabled(launchAtLoginEnabled)
+            applyLanguagePreference()
+            notificationCenter.post(name: .settingsDidChange, object: nil)
+            statusMessage = L10n.localized("management.settings.saved")
+        } catch {
+            logger.error("Failed to save management center settings: \(error.localizedDescription, privacy: .public)")
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func resetSettingsToDefaults() async {
+        do {
+            for key in [
+                SettingKey.appSourceEnabled,
+                .commandSourceEnabled,
+                .calculatorSourceEnabled,
+                .settingsSourceEnabled,
+                .clipboardShowInSearch,
+                .clipboardEnabled,
+                .clipboardRetention,
+                .screenshotSaveDirectory,
+                .launchAtLoginEnabled,
+                .languageMode
+            ] {
+                try await settingsService.reset(key: key)
             }
-            if let val = settings[LegacySettingKey.ocrEnabled] {
-                ocrEnabled = val == "1"
+            await loadSettings()
+            notificationCenter.post(name: .settingsDidChange, object: nil)
+            statusMessage = L10n.localized("management.settings.reset")
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func updateScreenshotDirectory(_ directory: URL) {
+        screenshotSaveDirectory = directory
+    }
+
+    func refreshPermissions() async {
+        permissionStatuses = await permissionService.refreshStatuses()
+    }
+
+    func openSystemSettings(for permission: PermissionKind) {
+        permissionService.openSystemSettings(for: permission)
+    }
+
+    func reloadBlacklist() async {
+        do {
+            blacklistItems = try await blacklistRepository.list()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func addBlacklistItem() async {
+        let sourceID = newBlacklistSourceID.trimmingCharacters(in: .whitespacesAndNewlines)
+        let resultID = newBlacklistResultID.trimmingCharacters(in: .whitespacesAndNewlines)
+        let title = newBlacklistTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        let type = newBlacklistType.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !sourceID.isEmpty, !resultID.isEmpty, !title.isEmpty else {
+            errorMessage = L10n.localized("management.blacklist.validation")
+            return
+        }
+
+        do {
+            _ = try await blacklistRepository.add(SearchBlacklistDraft(
+                resultID: SearchResultID(rawValue: resultID),
+                sourceID: SearchSourceID(rawValue: sourceID),
+                title: title,
+                resultType: type.isEmpty ? sourceID : type
+            ))
+            newBlacklistResultID = ""
+            newBlacklistTitle = ""
+            await reloadBlacklist()
+            statusMessage = L10n.localized("management.blacklist.added")
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func removeBlacklistItem(_ item: SearchBlacklistItemSnapshot) async {
+        do {
+            try await blacklistRepository.remove(id: item.id)
+            await reloadBlacklist()
+            statusMessage = L10n.localized("management.blacklist.removed")
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func retentionTitle(_ retention: ClipboardRetention) -> String {
+        switch retention {
+        case .sevenDays: return L10n.localized("management.retention.7d")
+        case .thirtyDays: return L10n.localized("management.retention.30d")
+        case .ninetyDays: return L10n.localized("management.retention.90d")
+        case .forever: return L10n.localized("management.retention.forever")
+        }
+    }
+
+    func languageTitle(_ language: LanguageMode) -> String {
+        switch language {
+        case .followSystem: return L10n.localized("management.language.system")
+        case .simplifiedChinese: return L10n.localized("management.language.zh")
+        case .english: return L10n.localized("management.language.en")
+        }
+    }
+
+    func permissionTitle(_ kind: PermissionKind) -> String {
+        switch kind {
+        case .screenRecording: return L10n.localized("management.permission.screenRecording")
+        case .accessibility: return L10n.localized("management.permission.accessibility")
+        }
+    }
+
+    func permissionDescription(_ kind: PermissionKind) -> String {
+        switch kind {
+        case .screenRecording: return L10n.localized("management.permission.screenRecording.description")
+        case .accessibility: return L10n.localized("management.permission.accessibility.description")
+        }
+    }
+
+    func statusTitle(_ status: PermissionStatus) -> String {
+        switch status {
+        case .authorized: return L10n.localized("management.permission.authorized")
+        case .denied: return L10n.localized("management.permission.denied")
+        case .notDetermined: return L10n.localized("management.permission.notDetermined")
+        case .unknown: return L10n.localized("management.permission.unknown")
+        }
+    }
+
+    private func loadSettings() async {
+        do {
+            for index in sourceToggles.indices {
+                let enabled = try await settingsService.value(for: sourceToggles[index].settingKey, as: Bool.self)
+                sourceToggles[index].isEnabled = enabled
             }
-            if let val = settings[LegacySettingKey.pollIntervalMs], let intVal = Int(val) {
-                pollInterval = intVal
-            }
-
-            // Launch-at-login is default-on for Assistant; the persisted setting
-            // is the user preference and SMAppService is the current system state.
-            if let val = settings[LegacySettingKey.launchAtLoginEnabled] {
-                launchAtLogin = val == "1"
-            } else {
-                launchAtLogin = true
-            }
-
-            logger.info("Settings loaded from database")
+            clipboardEnabled = try await settingsService.value(for: .clipboardEnabled, as: Bool.self)
+            clipboardRetention = try await settingsService.value(for: .clipboardRetention, as: ClipboardRetention.self)
+            screenshotSaveDirectory = try await settingsService.value(for: .screenshotSaveDirectory, as: URL.self)
+            launchAtLoginEnabled = try await settingsService.value(for: .launchAtLoginEnabled, as: Bool.self)
+            languageMode = try await settingsService.value(for: .languageMode, as: LanguageMode.self)
         } catch {
-            logger.error("Failed to load settings: \(error.localizedDescription, privacy: .public)")
+            errorMessage = error.localizedDescription
         }
     }
 
-    // MARK: - Save Settings
-
-    /// Save all current settings to the database and notify services.
-    func save() async {
-        do {
-            try repository.updateSetting(key: LegacySettingKey.retentionDays, value: String(retentionDays))
-            try repository.updateSetting(key: LegacySettingKey.maxStorageMB, value: String(maxStorageMB))
-            try repository.updateSetting(key: LegacySettingKey.ocrEnabled, value: ocrEnabled ? "1" : "0")
-            try repository.updateSetting(key: LegacySettingKey.pollIntervalMs, value: String(pollInterval))
-            try repository.updateSetting(key: LegacySettingKey.launchAtLoginEnabled, value: launchAtLogin ? "1" : "0")
-
-            // Launch at login
-            try setLaunchAtLogin(launchAtLogin)
-
-            // Notify services that settings changed
-            NotificationCenter.default.post(name: .settingsDidChange, object: nil)
-
-            logger.info("Settings saved to database")
-        } catch {
-            logger.error("Failed to save settings: \(error.localizedDescription, privacy: .public)")
-            alertTitle = L10n.localized("settings.saveError.title")
-            alertMessage = L10n.localized("settings.saveError.message", error.localizedDescription)
-            showAlert = true
+    private func applyLanguagePreference() {
+        switch languageMode {
+        case .followSystem:
+            UserDefaults.standard.removeObject(forKey: "AppleLanguages")
+        case .simplifiedChinese:
+            UserDefaults.standard.set(["zh-Hans"], forKey: "AppleLanguages")
+        case .english:
+            UserDefaults.standard.set(["en"], forKey: "AppleLanguages")
         }
-    }
-
-    // MARK: - Reset to Defaults
-
-    func resetToDefaults() {
-        retentionDays = 30
-        maxStorageMB = 500
-        ocrEnabled = true
-        pollInterval = 500
-        launchAtLogin = true
-    }
-
-    // MARK: - Launch at Login
-
-    private func setLaunchAtLogin(_ enabled: Bool) throws {
-        if enabled {
-            try SMAppService.mainApp.register()
-            logger.info("Launch at login enabled")
-        } else {
-            try SMAppService.mainApp.unregister()
-            logger.info("Launch at login disabled")
-        }
-    }
-
-    // MARK: - Database Statistics
-
-    /// Load database file size and item count.
-    func loadDatabaseStats() {
-        do {
-            let stats = try repository.getStats()
-            databaseSizeMB = stats.totalSizeMB
-            totalItemCount = stats.totalItems
-        } catch {
-            logger.error("Failed to load database stats: \(error.localizedDescription, privacy: .public)")
-        }
-    }
-
-    // MARK: - JSON Export
-
-    /// Export clipboard history to a JSON file.
-    func exportJSON(to url: URL) async {
-        isExporting = true
-        defer { isExporting = false }
-
-        do {
-            try exportService.exportToJSON(to: url)
-            let count = totalItemCount
-            dataOperationStatus = L10n.localized("settings.export.json.success", count)
-            logger.info("Exported \(count) items to JSON: \(url.path, privacy: .public)")
-        } catch {
-            logger.error("JSON export failed: \(error.localizedDescription, privacy: .public)")
-            alertTitle = L10n.localized("settings.exportError.title")
-            alertMessage = L10n.localized("settings.exportError.message", error.localizedDescription)
-            showAlert = true
-        }
-    }
-
-    // MARK: - CSV Export
-
-    /// Export clipboard history to a CSV file.
-    func exportCSV(to url: URL) async {
-        isExporting = true
-        defer { isExporting = false }
-
-        do {
-            try exportService.exportToCSV(to: url)
-            let count = totalItemCount
-            dataOperationStatus = L10n.localized("settings.export.csv.success", count)
-            logger.info("Exported \(count) items to CSV: \(url.path, privacy: .public)")
-        } catch {
-            logger.error("CSV export failed: \(error.localizedDescription, privacy: .public)")
-            alertTitle = L10n.localized("settings.exportError.title")
-            alertMessage = L10n.localized("settings.exportError.message", error.localizedDescription)
-            showAlert = true
-        }
-    }
-
-    // MARK: - Database Export
-
-    /// Export the raw database file.
-    func exportDatabase(to url: URL) async {
-        isExporting = true
-        defer { isExporting = false }
-
-        do {
-            try exportService.exportDatabase(to: url)
-            dataOperationStatus = L10n.localized("settings.export.db.success")
-            logger.info("Database exported to \(url.path, privacy: .public)")
-        } catch {
-            logger.error("Database export failed: \(error.localizedDescription, privacy: .public)")
-            alertTitle = L10n.localized("settings.exportError.title")
-            alertMessage = L10n.localized("settings.exportError.message", error.localizedDescription)
-            showAlert = true
-        }
-    }
-
-    // MARK: - JSON Import
-
-    /// Import clipboard history from a JSON file with progress tracking.
-    func importJSON(from url: URL) async {
-        isImporting = true
-        importProgress = 0
-        defer {
-            isImporting = false
-            importProgress = 0
-        }
-
-        do {
-            let result = try exportService.importFromJSON(from: url) { [weak self] current, total in
-                Task { @MainActor in
-                    self?.importProgress = Double(current) / Double(total)
-                }
-            }
-
-            dataOperationStatus = result.summary
-            loadDatabaseStats()
-            NotificationCenter.default.post(name: .clipboardItemSaved, object: nil)
-            logger.info("JSON import complete: \(result.summary, privacy: .public)")
-        } catch {
-            logger.error("JSON import failed: \(error.localizedDescription, privacy: .public)")
-            alertTitle = L10n.localized("settings.importError.title")
-            alertMessage = L10n.localized("settings.importError.message", error.localizedDescription)
-            showAlert = true
-        }
-    }
-
-    // MARK: - Clear History
-
-    /// Clear all non-pinned clipboard history (with confirmation).
-    func clearHistory() async {
-        isClearingHistory = true
-        defer { isClearingHistory = false }
-
-        do {
-            let deleted = try repository.clearAllHistory()
-            dataOperationStatus = L10n.localized("settings.clear.success", deleted)
-            loadDatabaseStats()
-            NotificationCenter.default.post(name: .clipboardItemSaved, object: nil)
-            logger.info("Cleared \(deleted) items from history")
-        } catch {
-            logger.error("Clear history failed: \(error.localizedDescription, privacy: .public)")
-            alertTitle = L10n.localized("settings.clearError.title")
-            alertMessage = L10n.localized("settings.clearError.message", error.localizedDescription)
-            showAlert = true
-        }
+        showLanguageRestartAlert = true
     }
 }

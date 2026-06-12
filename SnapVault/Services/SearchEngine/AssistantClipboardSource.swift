@@ -11,10 +11,16 @@ final class AssistantClipboardSource: SearchSource {
     let isEnabledInSearch = true
 
     private let queryService: ClipboardIndexQueryServiceProtocol
+    private let settingsService: SettingsServiceProtocol?
     private let limit: Int
 
-    init(queryService: ClipboardIndexQueryServiceProtocol, limit: Int = SearchService.defaultResultLimit) {
+    init(
+        queryService: ClipboardIndexQueryServiceProtocol,
+        settingsService: SettingsServiceProtocol? = nil,
+        limit: Int = SearchService.defaultResultLimit
+    ) {
         self.queryService = queryService
+        self.settingsService = settingsService
         self.limit = limit
     }
 
@@ -25,6 +31,11 @@ final class AssistantClipboardSource: SearchSource {
     func search(query: String) async -> [SearchResult] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard canSearch(query: trimmed) else { return [] }
+        if let settingsService {
+            let showInSearch = (try? await settingsService.value(for: .clipboardShowInSearch, as: Bool.self)) ?? true
+            let clipboardEnabled = (try? await settingsService.value(for: .clipboardEnabled, as: Bool.self)) ?? true
+            guard showInSearch && clipboardEnabled else { return [] }
+        }
 
         return queryService.searchIndex(query: trimmed, filter: nil, limit: limit).map { item in
             SearchResult(

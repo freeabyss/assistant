@@ -5389,6 +5389,1315 @@
           }
         }
       }
+    },
+    "management.title": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Management Center"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "管理中心"
+          }
+        }
+      }
+    },
+    "management.page.overview": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Overview"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "概览"
+          }
+        }
+      }
+    },
+    "management.page.clipboard": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clipboard History"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剪贴板历史"
+          }
+        }
+      }
+    },
+    "management.page.settings": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置"
+          }
+        }
+      }
+    },
+    "management.page.permissions": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permissions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "权限"
+          }
+        }
+      }
+    },
+    "management.overview.title": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac Super Assistant"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac Super Assistant"
+          }
+        }
+      }
+    },
+    "management.overview.subtitle": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Status, shortcuts, enabled sources, and quick entries."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查看状态、快捷键、已启用搜索源与快捷入口。"
+          }
+        }
+      }
+    },
+    "management.overview.quickEntries": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick entries"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快捷入口"
+          }
+        }
+      }
+    },
+    "management.overview.quickEntries.value": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search · Clipboard · Screenshots · Settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索 · 剪贴板 · 截图 · 设置"
+          }
+        }
+      }
+    },
+    "management.overview.quickEntries.subtitle": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open common Assistant areas from the sidebar or menu bar."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "可从侧边栏或菜单栏打开常用功能。"
+          }
+        }
+      }
+    },
+    "management.overview.permissions": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permissions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "权限"
+          }
+        }
+      }
+    },
+    "management.overview.permissions.subtitle": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen Recording and Accessibility are required for the full MVP experience."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "屏幕录制和辅助功能是完整 MVP 体验所需权限。"
+          }
+        }
+      }
+    },
+    "management.overview.permissionsCount": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d of %d authorized"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已授权 %d / %d"
+          }
+        }
+      }
+    },
+    "management.overview.sources": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enabled search sources"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开启的搜索源"
+          }
+        }
+      }
+    },
+    "management.overview.sources.subtitle": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disabled sources are hidden from unified search results."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭的来源不会出现在统一搜索结果中。"
+          }
+        }
+      }
+    },
+    "management.overview.noSources": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No source enabled"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有开启的来源"
+          }
+        }
+      }
+    },
+    "management.overview.hotkey": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search hotkey"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索快捷键"
+          }
+        }
+      }
+    },
+    "management.overview.hotkey.subtitle": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use this shortcut to open or close the search panel."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用该快捷键打开或关闭搜索面板。"
+          }
+        }
+      }
+    },
+    "management.overview.actions": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick actions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快捷操作"
+          }
+        }
+      }
+    },
+    "management.settings.title": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置"
+          }
+        }
+      }
+    },
+    "management.settings.subtitle": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configure shortcuts, search sources, clipboard, screenshots, login, language, and blacklist."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "配置快捷键、搜索源、剪贴板、截图、开机启动、语言和黑名单。"
+          }
+        }
+      }
+    },
+    "management.settings.shortcuts": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shortcuts"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快捷键"
+          }
+        }
+      }
+    },
+    "management.shortcuts.search": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Search"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开搜索"
+          }
+        }
+      }
+    },
+    "management.shortcuts.captureRegion": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture Region"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "区域截图"
+          }
+        }
+      }
+    },
+    "management.shortcuts.captureWindow": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture Window"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "窗口截图"
+          }
+        }
+      }
+    },
+    "management.settings.sources": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search sources"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索源"
+          }
+        }
+      }
+    },
+    "management.source.app": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Applications"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用"
+          }
+        }
+      }
+    },
+    "management.source.app.subtitle": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show installed apps in unified search."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在统一搜索中展示已安装应用。"
+          }
+        }
+      }
+    },
+    "management.source.command": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Commands"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "命令"
+          }
+        }
+      }
+    },
+    "management.source.command.subtitle": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show built-in safe commands."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "展示内置安全命令。"
+          }
+        }
+      }
+    },
+    "management.source.calculator": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calculator"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "计算器"
+          }
+        }
+      }
+    },
+    "management.source.calculator.subtitle": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show calculation and unit conversion results."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "展示计算和单位换算结果。"
+          }
+        }
+      }
+    },
+    "management.source.settings": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置"
+          }
+        }
+      }
+    },
+    "management.source.settings.subtitle": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show settings and permission routes."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "展示设置与权限入口。"
+          }
+        }
+      }
+    },
+    "management.source.clipboard": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clipboard"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剪贴板"
+          }
+        }
+      }
+    },
+    "management.source.clipboard.subtitle": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show clipboard history matches in search."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在搜索中展示剪贴板历史匹配结果。"
+          }
+        }
+      }
+    },
+    "management.settings.clipboard": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clipboard"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剪贴板"
+          }
+        }
+      }
+    },
+    "management.clipboard.enabled": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable clipboard history recording"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用剪贴板历史记录"
+          }
+        }
+      }
+    },
+    "management.clipboard.retention": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retention"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保留时间"
+          }
+        }
+      }
+    },
+    "management.retention.7d": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7 days"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7 天"
+          }
+        }
+      }
+    },
+    "management.retention.30d": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 days"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 天"
+          }
+        }
+      }
+    },
+    "management.retention.90d": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "90 days"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "90 天"
+          }
+        }
+      }
+    },
+    "management.retention.forever": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forever"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "永久"
+          }
+        }
+      }
+    },
+    "management.settings.screenshot": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screenshots"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "截图"
+          }
+        }
+      }
+    },
+    "management.screenshot.saveDirectory": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save directory"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存目录"
+          }
+        }
+      }
+    },
+    "management.screenshot.choose": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose..."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择..."
+          }
+        }
+      }
+    },
+    "management.settings.system": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统"
+          }
+        }
+      }
+    },
+    "management.language.system": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Follow System"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "跟随系统"
+          }
+        }
+      }
+    },
+    "management.language.zh": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simplified Chinese"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "简体中文"
+          }
+        }
+      }
+    },
+    "management.language.en": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "English"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "English"
+          }
+        }
+      }
+    },
+    "management.language.restart.title": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restart required"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要重启"
+          }
+        }
+      }
+    },
+    "management.language.restart.message": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Language changes are saved and take effect after restarting the app."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "语言设置已保存，重启应用后生效。"
+          }
+        }
+      }
+    },
+    "management.settings.saved": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings saved."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置已保存。"
+          }
+        }
+      }
+    },
+    "management.settings.reset": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Defaults restored."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已恢复默认设置。"
+          }
+        }
+      }
+    },
+    "management.blacklist.title": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search blacklist"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索黑名单"
+          }
+        }
+      }
+    },
+    "management.blacklist.source": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "来源"
+          }
+        }
+      }
+    },
+    "management.blacklist.resultID": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stable result ID"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "稳定结果 ID"
+          }
+        }
+      }
+    },
+    "management.blacklist.titleField": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Title"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "标题"
+          }
+        }
+      }
+    },
+    "management.blacklist.type": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "类型"
+          }
+        }
+      }
+    },
+    "management.blacklist.add": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加"
+          }
+        }
+      }
+    },
+    "management.blacklist.empty": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hidden search results. Add a concrete result ID to hide it from search."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂无隐藏的搜索结果。添加具体结果 ID 后可将其从搜索中隐藏。"
+          }
+        }
+      }
+    },
+    "management.blacklist.remove": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移除"
+          }
+        }
+      }
+    },
+    "management.blacklist.validation": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source, result ID, and title are required."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "来源、结果 ID 和标题不能为空。"
+          }
+        }
+      }
+    },
+    "management.blacklist.added": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blacklist item added."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已添加黑名单项。"
+          }
+        }
+      }
+    },
+    "management.blacklist.removed": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blacklist item removed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已移除黑名单项。"
+          }
+        }
+      }
+    },
+    "management.permissions.title": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permissions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "权限"
+          }
+        }
+      }
+    },
+    "management.permissions.subtitle": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check required macOS permissions, open System Settings, and re-detect status."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查看所需 macOS 权限，打开系统设置并重新检测状态。"
+          }
+        }
+      }
+    },
+    "management.permission.screenRecording": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen Recording"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "屏幕录制"
+          }
+        }
+      }
+    },
+    "management.permission.screenRecording.description": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Required for region, full-screen, and window screenshots."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用于区域、全屏和窗口截图。"
+          }
+        }
+      }
+    },
+    "management.permission.accessibility": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accessibility"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "辅助功能"
+          }
+        }
+      }
+    },
+    "management.permission.accessibility.description": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Required for future system control, simulated shortcuts, and automation boundaries explained during Onboarding."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用于后续系统控制、模拟快捷键和自动化能力；首次引导中已说明用途边界。"
+          }
+        }
+      }
+    },
+    "management.permission.authorized": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Authorized"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已授权"
+          }
+        }
+      }
+    },
+    "management.permission.denied": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not authorized"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未授权"
+          }
+        }
+      }
+    },
+    "management.permission.notDetermined": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not determined"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未决定"
+          }
+        }
+      }
+    },
+    "management.permission.unknown": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unknown"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未知"
+          }
+        }
+      }
+    },
+    "management.permissions.refresh": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Re-detect"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新检测"
+          }
+        }
+      }
+    },
+    "management.error.title": {
+      "comment": "US-015 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Management Center Error"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "管理中心错误"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

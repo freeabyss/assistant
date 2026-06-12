@@ -224,8 +224,7 @@ final class SearchPanelActionExecutor: SearchActionExecutorProtocol {
 
     @MainActor
     private func openSettings(_ route: SettingsRoute) {
-        _ = route
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        NotificationCenter.default.post(name: .openManagementCenter, object: route)
         if #available(macOS 14.0, *) {
             NSApp.activate()
         } else {

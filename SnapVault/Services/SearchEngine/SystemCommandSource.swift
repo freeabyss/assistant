@@ -363,9 +363,7 @@ final class SystemCommandExecutor: CommandExecutorProtocol {
         case .openSystemSettings:
             try openURL(URL(string: "x-apple.systempreferences:")!, commandID: commandID)
         case .openAppSettings:
-            await MainActor.run {
-                _ = NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-            }
+            notificationCenter.post(name: .openManagementCenter, object: SettingsRoute.settings)
         case .openDownloads:
             workspace.open(FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Downloads"))
         case .openApplications:
@@ -382,12 +380,9 @@ final class SystemCommandExecutor: CommandExecutorProtocol {
             guard let clipboardHistoryService else { return }
             try await clipboardHistoryService.clearAll(confirmed: true)
         case .toggleClipboardRecording:
-            let key = "clipboard.enabled"
-            let current = userDefaults.object(forKey: key) as? Bool ?? true
-            userDefaults.set(!current, forKey: key)
             notificationCenter.post(name: .commandToggleClipboardRecording, object: nil)
         case .checkPermissions:
-            notificationCenter.post(name: .commandCheckPermissions, object: nil)
+            notificationCenter.post(name: .openManagementCenter, object: SettingsRoute.permissions)
         case .restartFinder:
             restartRunningApplication(bundleIdentifier: "com.apple.finder")
             if let finderURL = workspace.urlForApplication(withBundleIdentifier: "com.apple.finder") {

@@ -1,483 +1,422 @@
-import SwiftUI
-import KeyboardShortcuts
 import AppKit
+import KeyboardShortcuts
+import SwiftUI
 import UniformTypeIdentifiers
 
-/// Application preferences window with tabbed sections.
-///
-/// Opened via the gear icon in the menu bar view or via the app menu.
-/// Uses macOS-native Form + Section styling for a standard preferences look.
+/// US-015 Management Center: overview, clipboard history, settings, permissions.
 struct SettingsView: View {
     @StateObject private var viewModel = SettingsViewModel()
+    @StateObject private var clipboardViewModel = ClipboardListViewModel()
 
     var body: some View {
-        TabView {
-            GeneralSettingsView(viewModel: viewModel)
-                .tabItem {
-                    Label(L10n.localized("settings.general"), systemImage: "gear")
-                }
-
-            ShortcutsSettingsView()
-                .tabItem {
-                    Label(L10n.localized("settings.shortcuts"), systemImage: "keyboard")
-                }
-
-            DataSettingsView(viewModel: viewModel)
-                .tabItem {
-                    Label(L10n.localized("settings.data"), systemImage: "externaldrive")
-                }
-
-            AboutSettingsView()
-                .tabItem {
-                    Label(L10n.localized("settings.about"), systemImage: "info.circle")
-                }
-        }
-        .frame(width: 480, height: 420)
+        ManagementCenterView(viewModel: viewModel, clipboardViewModel: clipboardViewModel)
+            .frame(minWidth: 920, minHeight: 640)
     }
 }
 
-// MARK: - General Settings
-
-struct GeneralSettingsView: View {
+struct ManagementCenterView: View {
     @ObservedObject var viewModel: SettingsViewModel
-    @State private var showRestartAlert = false
+    @ObservedObject var clipboardViewModel: ClipboardListViewModel
 
     var body: some View {
-        Form {
-            // -- Retention & Storage --
-            Section {
-                HStack {
-                    Text(L10n.localized("settings.retention.label"))
-                        .frame(width: 140, alignment: .trailing)
-                    Stepper(
-                        L10n.localized("settings.retention.format", viewModel.retentionDays),
-                        value: $viewModel.retentionDays,
-                        in: 1...365,
-                        step: 1
-                    )
-                }
-
-                HStack {
-                    Text(L10n.localized("settings.storage.label"))
-                        .frame(width: 140, alignment: .trailing)
-                    Stepper(
-                        L10n.localized("settings.storage.format", viewModel.maxStorageMB),
-                        value: $viewModel.maxStorageMB,
-                        in: 100...2000,
-                        step: 50
-                    )
-                }
-            } header: {
-                Text(L10n.localized("settings.retention.header"))
-            } footer: {
-                Text(L10n.localized("settings.retention.footer"))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+        NavigationSplitView {
+            sidebar
+        } detail: {
+            detail
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(NSColor.windowBackgroundColor))
+        }
+        .task { await viewModel.load() }
+        .onReceive(NotificationCenter.default.publisher(for: .openManagementCenter)) { notification in
+            if let route = notification.object as? SettingsRoute {
+                viewModel.select(route: route)
+            } else if let page = notification.object as? ManagementCenterPage {
+                viewModel.select(page: page)
+            } else {
+                viewModel.select(page: .overview)
             }
+        }
+        .alert(L10n.localized("management.error.title"), isPresented: Binding(
+            get: { viewModel.errorMessage != nil },
+            set: { if !$0 { viewModel.errorMessage = nil } }
+        )) {
+            Button(L10n.localized("settings.alert.ok")) { viewModel.errorMessage = nil }
+        } message: {
+            Text(viewModel.errorMessage ?? "")
+        }
+        .alert(L10n.localized("management.language.restart.title"), isPresented: $viewModel.showLanguageRestartAlert) {
+            Button(L10n.localized("settings.alert.ok"), role: .cancel) {}
+        } message: {
+            Text(L10n.localized("management.language.restart.message"))
+        }
+    }
 
-            // -- Behavior --
-            Section {
-                Toggle(isOn: $viewModel.launchAtLogin) {
-                    Text(L10n.localized("settings.launchAtLogin"))
+    private var sidebar: some View {
+        List(selection: $viewModel.selectedPage) {
+            Section(L10n.localized("management.title")) {
+                ForEach(ManagementCenterPage.allCases) { page in
+                    Label(page.title, systemImage: page.iconName)
+                        .tag(page)
+                }
+            }
+        }
+        .navigationSplitViewColumnWidth(min: 180, ideal: 210, max: 240)
+    }
+
+    @ViewBuilder
+    private var detail: some View {
+        switch viewModel.selectedPage {
+        case .overview:
+            ManagementOverviewView(viewModel: viewModel)
+        case .clipboard:
+            ClipboardListView(viewModel: clipboardViewModel)
+        case .settings:
+            ManagementSettingsPage(viewModel: viewModel)
+        case .permissions:
+            PermissionsManagementPage(viewModel: viewModel)
+        }
+    }
+}
+
+struct ManagementOverviewView: View {
+    @ObservedObject var viewModel: SettingsViewModel
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                pageHeader(
+                    title: L10n.localized("management.overview.title"),
+                    subtitle: L10n.localized("management.overview.subtitle"),
+                    icon: "sparkles"
+                )
+
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 230), spacing: 14)], spacing: 14) {
+                    OverviewCard(
+                        title: L10n.localized("management.overview.quickEntries"),
+                        value: L10n.localized("management.overview.quickEntries.value"),
+                        subtitle: L10n.localized("management.overview.quickEntries.subtitle"),
+                        icon: "square.grid.2x2"
+                    )
+                    OverviewCard(
+                        title: L10n.localized("management.overview.permissions"),
+                        value: viewModel.permissionSummary,
+                        subtitle: L10n.localized("management.overview.permissions.subtitle"),
+                        icon: "lock.shield"
+                    )
+                    OverviewCard(
+                        title: L10n.localized("management.overview.sources"),
+                        value: viewModel.enabledSourceNames,
+                        subtitle: L10n.localized("management.overview.sources.subtitle"),
+                        icon: "magnifyingglass"
+                    )
+                    OverviewCard(
+                        title: L10n.localized("management.overview.hotkey"),
+                        value: viewModel.searchHotkeyDescription,
+                        subtitle: L10n.localized("management.overview.hotkey.subtitle"),
+                        icon: "keyboard"
+                    )
                 }
 
-                Toggle(isOn: $viewModel.ocrEnabled) {
-                    Text(L10n.localized("settings.ocrEnabled"))
-                }
-
-                HStack {
-                    Text(L10n.localized("settings.polling.label"))
-                        .frame(width: 140, alignment: .trailing)
-                    Picker("", selection: $viewModel.pollInterval) {
-                        ForEach(SettingsViewModel.pollIntervalOptions, id: \.value) { option in
-                            Text(option.label).tag(option.value)
-                        }
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(L10n.localized("management.overview.actions"))
+                        .font(.headline)
+                    HStack(spacing: 10) {
+                        quickButton(.clipboard)
+                        quickButton(.settings)
+                        quickButton(.permissions)
                     }
-                    .labelsHidden()
-                    .frame(width: 140)
                 }
-            } header: {
-                Text(L10n.localized("settings.behavior.header"))
-            } footer: {
-                Text(L10n.localized("settings.behavior.footer"))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
             }
+            .padding(24)
+        }
+    }
 
-            // -- Language --
-            Section {
-                Picker(L10n.localized("settings.language"), selection: $viewModel.selectedLanguage) {
-                    Text("English").tag("en")
-                    Text("中文").tag("zh-Hans")
-                }
-                .onChange(of: viewModel.selectedLanguage) { newValue in
-                    UserDefaults.standard.set([newValue], forKey: "AppleLanguages")
-                    showRestartAlert = true
-                }
-            } header: {
-                Text(L10n.localized("settings.language.header"))
-            } footer: {
-                Text(L10n.localized("settings.language.footer"))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            .alert(L10n.localized("settings.language.header"), isPresented: $showRestartAlert) {
-                Button(L10n.localized("settings.alert.ok"), role: .cancel) {}
-            } message: {
-                Text(L10n.localized("settings.language.footer"))
-            }
+    private func quickButton(_ page: ManagementCenterPage) -> some View {
+        Button {
+            viewModel.select(page: page)
+        } label: {
+            Label(page.title, systemImage: page.iconName)
+        }
+    }
+}
 
-            // -- Save / Reset --
+struct OverviewCard: View {
+    let title: String
+    let value: String
+    let subtitle: String
+    let icon: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
             HStack {
+                Image(systemName: icon)
+                    .font(.title3)
+                    .foregroundColor(.accentColor)
                 Spacer()
-                Button(L10n.localized("settings.restoreDefaults")) {
-                    viewModel.resetToDefaults()
-                }
-                .help(L10n.localized("settings.restoreDefaults.help"))
-
-                Button(L10n.localized("settings.save")) {
-                    Task {
-                        await viewModel.save()
-                    }
-                }
-                .keyboardShortcut(.defaultAction)
-                .help(L10n.localized("settings.save.help"))
             }
+            Text(title)
+                .font(.headline)
+            Text(value)
+                .font(.system(size: 18, weight: .semibold))
+                .lineLimit(2)
+            Text(subtitle)
+                .font(.caption)
+                .foregroundColor(.secondary)
         }
-        .padding()
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
 
-// MARK: - Shortcuts Settings
-
-struct ShortcutsSettingsView: View {
-    var body: some View {
-        Form {
-            Section {
-                HStack {
-                    Text(L10n.localized("settings.shortcuts.togglePanel"))
-                        .frame(width: 120, alignment: .trailing)
-                    KeyboardShortcuts.Recorder(for: .togglePanel)
-                    Spacer()
-                }
-
-                HStack {
-                    Text(L10n.localized("settings.shortcuts.captureRegion"))
-                        .frame(width: 120, alignment: .trailing)
-                    KeyboardShortcuts.Recorder(for: .captureRegion)
-                    Spacer()
-                }
-
-                HStack {
-                    Text(L10n.localized("settings.shortcuts.captureWindow"))
-                        .frame(width: 120, alignment: .trailing)
-                    KeyboardShortcuts.Recorder(for: .captureWindow)
-                    Spacer()
-                }
-
-                HStack {
-                    Spacer()
-                    Button(L10n.localized("settings.restoreDefaults")) {
-                        KeyboardShortcuts.reset(.togglePanel)
-                        KeyboardShortcuts.reset(.captureRegion)
-                        KeyboardShortcuts.reset(.captureWindow)
-                    }
-                    .help(L10n.localized("settings.restoreDefaults.help"))
-                }
-            } header: {
-                Text(L10n.localized("settings.shortcuts.header"))
-            } footer: {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(L10n.localized("settings.shortcuts.footer.defaults"))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Text(L10n.localized("settings.shortcuts.footer.spotlightWarning"))
-                        .font(.caption)
-                        .foregroundColor(.orange)
-                    Text(L10n.localized("settings.shortcuts.footer.instructions"))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-        }
-        .padding()
-    }
-}
-
-// MARK: - Data Settings
-
-struct DataSettingsView: View {
+struct ManagementSettingsPage: View {
     @ObservedObject var viewModel: SettingsViewModel
 
     var body: some View {
-        Form {
-            // -- Database Info --
-            Section {
-                HStack {
-                    Text(L10n.localized("settings.data.dbSize"))
-                        .frame(width: 140, alignment: .trailing)
-                    Text(formatSize(viewModel.databaseSizeMB))
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    Button(L10n.localized("settings.data.refresh")) {
-                        viewModel.loadDatabaseStats()
-                    }
-                    .buttonStyle(.borderless)
-                    .font(.caption)
-                }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                pageHeader(
+                    title: L10n.localized("management.settings.title"),
+                    subtitle: L10n.localized("management.settings.subtitle"),
+                    icon: "slider.horizontal.3"
+                )
 
-                HStack {
-                    Text(L10n.localized("settings.data.totalItems"))
-                        .frame(width: 140, alignment: .trailing)
-                    Text("\(viewModel.totalItemCount)")
-                        .foregroundColor(.secondary)
-                    Spacer()
-                }
-            } header: {
-                Text(L10n.localized("settings.data.storage.header"))
-            }
-
-            // -- Export --
-            Section {
-                HStack {
-                    Button(action: { exportJSON() }) {
-                        Label(L10n.localized("settings.data.exportJson"), systemImage: "doc.text")
-                    }
-                    .disabled(viewModel.isExporting)
-
-                    Spacer()
-
-                    Button(action: { exportCSV() }) {
-                        Label(L10n.localized("settings.data.exportCsv"), systemImage: "tablecells")
-                    }
-                    .disabled(viewModel.isExporting)
-                }
-
-                HStack {
-                    Button(action: { exportDatabase() }) {
-                        Label(L10n.localized("settings.data.exportDb"), systemImage: "internaldrive")
-                    }
-                    .disabled(viewModel.isExporting)
-
-                    Spacer()
-                }
-            } header: {
-                Text(L10n.localized("settings.data.export.header"))
-            } footer: {
-                Text(L10n.localized("settings.data.export.footer"))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-
-            // -- Import --
-            Section {
-                Button(action: { importJSON() }) {
-                    Label(L10n.localized("settings.data.importJson"), systemImage: "square.and.arrow.down")
-                }
-                .disabled(viewModel.isImporting)
-
-                if viewModel.isImporting {
-                    ProgressView(value: viewModel.importProgress)
-                        .progressViewStyle(.linear)
-                    Text(L10n.localized("settings.data.importing"))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            } header: {
-                Text(L10n.localized("settings.data.import.header"))
-            } footer: {
-                Text(L10n.localized("settings.data.import.footer"))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-
-            // -- Status --
-            if let status = viewModel.dataOperationStatus {
-                Section {
+                section(L10n.localized("management.settings.shortcuts")) {
+                    shortcutRow(L10n.localized("management.shortcuts.search"), recorder: KeyboardShortcuts.Recorder(for: .togglePanel))
+                    shortcutRow(L10n.localized("management.shortcuts.captureRegion"), recorder: KeyboardShortcuts.Recorder(for: .captureRegion))
+                    shortcutRow(L10n.localized("management.shortcuts.captureWindow"), recorder: KeyboardShortcuts.Recorder(for: .captureWindow))
                     HStack {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
-                        Text(status)
-                            .font(.caption)
-                            .foregroundColor(.green)
                         Spacer()
-                        Button(L10n.localized("settings.data.status.dismiss")) {
-                            viewModel.dataOperationStatus = nil
+                        Button(L10n.localized("settings.restoreDefaults")) {
+                            KeyboardShortcuts.reset(.togglePanel)
+                            KeyboardShortcuts.reset(.captureRegion)
+                            KeyboardShortcuts.reset(.captureWindow)
                         }
-                        .buttonStyle(.borderless)
-                        .font(.caption)
                     }
                 }
-            }
 
-            // -- Danger Zone --
-            Section {
-                HStack {
-                    Button(action: { viewModel.showClearHistoryConfirm = true }) {
-                        Label(L10n.localized("settings.data.clearHistory"), systemImage: "trash")
-                            .foregroundColor(.red)
-                    }
-                    .disabled(viewModel.isClearingHistory)
-                    .confirmationDialog(
-                        L10n.localized("settings.data.clearHistory.confirm.title"),
-                        isPresented: $viewModel.showClearHistoryConfirm,
-                        titleVisibility: .visible
-                    ) {
-                        Button(L10n.localized("settings.data.clearHistory.confirm.action"), role: .destructive) {
-                            Task {
-                                await viewModel.clearHistory()
+                section(L10n.localized("management.settings.sources")) {
+                    ForEach($viewModel.sourceToggles) { $source in
+                        Toggle(isOn: $source.isEnabled) {
+                            Label {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(source.title)
+                                    Text(source.subtitle)
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            } icon: {
+                                Image(systemName: source.iconName)
                             }
                         }
-                        Button(L10n.localized("settings.data.clearHistory.cancel"), role: .cancel) {}
-                    } message: {
-                        Text(L10n.localized("settings.data.clearHistory.confirm.message"))
+                    }
+                }
+
+                section(L10n.localized("management.settings.clipboard")) {
+                    Toggle(isOn: $viewModel.clipboardEnabled) {
+                        Text(L10n.localized("management.clipboard.enabled"))
                     }
 
-                    Spacer()
+                    Picker(L10n.localized("management.clipboard.retention"), selection: $viewModel.clipboardRetention) {
+                        ForEach(SettingsViewModel.retentionOptions, id: \.self) { retention in
+                            Text(viewModel.retentionTitle(retention)).tag(retention)
+                        }
+                    }
+                    .pickerStyle(.segmented)
                 }
-            } header: {
-                Text(L10n.localized("settings.data.dangerZone.header"))
+
+                section(L10n.localized("management.settings.screenshot")) {
+                    HStack {
+                        Text(L10n.localized("management.screenshot.saveDirectory"))
+                        Spacer()
+                        Text(viewModel.screenshotSaveDirectory.path)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        Button(L10n.localized("management.screenshot.choose")) {
+                            viewModel.showDirectoryImporter = true
+                        }
+                    }
+                }
+
+                section(L10n.localized("management.settings.system")) {
+                    Toggle(isOn: $viewModel.launchAtLoginEnabled) {
+                        Text(L10n.localized("settings.launchAtLogin"))
+                    }
+
+                    Picker(L10n.localized("settings.language"), selection: $viewModel.languageMode) {
+                        ForEach(SettingsViewModel.languageOptions, id: \.self) { language in
+                            Text(viewModel.languageTitle(language)).tag(language)
+                        }
+                    }
+                }
+
+                BlacklistManagementSection(viewModel: viewModel)
+
+                HStack {
+                    if let status = viewModel.statusMessage {
+                        Label(status, systemImage: "checkmark.circle.fill")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                    }
+                    Spacer()
+                    Button(L10n.localized("settings.restoreDefaults")) {
+                        Task { await viewModel.resetSettingsToDefaults() }
+                    }
+                    Button(L10n.localized("settings.save")) {
+                        Task { await viewModel.saveSettings() }
+                    }
+                    .keyboardShortcut(.defaultAction)
+                }
+            }
+            .padding(24)
+        }
+        .fileImporter(isPresented: $viewModel.showDirectoryImporter, allowedContentTypes: [.folder], allowsMultipleSelection: false) { result in
+            if case .success(let urls) = result, let url = urls.first {
+                viewModel.updateScreenshotDirectory(url)
             }
         }
-        .padding()
-        .alert(viewModel.alertTitle, isPresented: $viewModel.showAlert) {
-            Button(L10n.localized("settings.alert.ok")) {}
-        } message: {
-            Text(viewModel.alertMessage)
-        }
     }
 
-    // MARK: - Export Actions
-
-    private func exportJSON() {
-        let panel = NSSavePanel()
-        panel.title = L10n.localized("settings.savePanel.json")
-        panel.nameFieldStringValue = "assistant-export.json"
-        panel.allowedContentTypes = [.json]
-        panel.canCreateDirectories = true
-
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-
-        Task {
-            await viewModel.exportJSON(to: url)
+    private func shortcutRow<R: View>(_ label: String, recorder: R) -> some View {
+        HStack {
+            Text(label)
+                .frame(width: 170, alignment: .leading)
+            recorder
+            Spacer()
         }
-    }
-
-    private func exportCSV() {
-        let panel = NSSavePanel()
-        panel.title = L10n.localized("settings.savePanel.csv")
-        panel.nameFieldStringValue = "assistant-export.csv"
-        panel.allowedContentTypes = [.commaSeparatedText]
-        panel.canCreateDirectories = true
-
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-
-        Task {
-            await viewModel.exportCSV(to: url)
-        }
-    }
-
-    private func exportDatabase() {
-        let panel = NSSavePanel()
-        panel.title = L10n.localized("settings.savePanel.db")
-        panel.nameFieldStringValue = "assistant.db"
-        panel.allowedContentTypes = [.init(filenameExtension: "db")!]
-        panel.canCreateDirectories = true
-
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-
-        Task {
-            await viewModel.exportDatabase(to: url)
-        }
-    }
-
-    // MARK: - Import Actions
-
-    private func importJSON() {
-        let panel = NSOpenPanel()
-        panel.title = L10n.localized("settings.openPanel.import")
-        panel.allowedContentTypes = [.json]
-        panel.allowsMultipleSelection = false
-        panel.canChooseDirectories = false
-
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-
-        Task {
-            await viewModel.importJSON(from: url)
-        }
-    }
-
-    // MARK: - Helpers
-
-    private func formatSize(_ mb: Double) -> String {
-        if mb < 1.0 {
-            return String(format: "%.0f KB", mb * 1024)
-        }
-        return String(format: "%.1f MB", mb)
     }
 }
 
-// MARK: - About Settings
-
-struct AboutSettingsView: View {
-    private var appVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
-    }
-
-    private var buildNumber: String {
-        Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
-    }
+struct BlacklistManagementSection: View {
+    @ObservedObject var viewModel: SettingsViewModel
 
     var body: some View {
-        VStack(spacing: 16) {
-            Spacer()
+        section(L10n.localized("management.blacklist.title")) {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Picker(L10n.localized("management.blacklist.source"), selection: $viewModel.newBlacklistSourceID) {
+                        ForEach(SettingsViewModel.sourceOptions, id: \.id) { option in
+                            Text(option.label).tag(option.id.rawValue)
+                        }
+                    }
+                    TextField(L10n.localized("management.blacklist.resultID"), text: $viewModel.newBlacklistResultID)
+                    TextField(L10n.localized("management.blacklist.titleField"), text: $viewModel.newBlacklistTitle)
+                    TextField(L10n.localized("management.blacklist.type"), text: $viewModel.newBlacklistType)
+                        .frame(width: 120)
+                    Button(L10n.localized("management.blacklist.add")) {
+                        Task { await viewModel.addBlacklistItem() }
+                    }
+                }
 
-            // App icon
-            if let icon = NSApplication.shared.applicationIconImage {
-                Image(nsImage: icon)
-                    .resizable()
-                    .frame(width: 64, height: 64)
-            } else {
-                Image(systemName: "clipboard.fill")
-                    .font(.system(size: 48))
-                    .foregroundColor(.accentColor)
+                if viewModel.blacklistItems.isEmpty {
+                    Text(L10n.localized("management.blacklist.empty"))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                } else {
+                    ForEach(viewModel.blacklistItems) { item in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(item.title)
+                                    .font(.subheadline)
+                                Text("\(item.sourceID.rawValue) · \(item.resultID.rawValue) · \(item.resultType)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            Button(role: .destructive) {
+                                Task { await viewModel.removeBlacklistItem(item) }
+                            } label: {
+                                Label(L10n.localized("management.blacklist.remove"), systemImage: "trash")
+                            }
+                        }
+                        Divider()
+                    }
+                }
             }
+        }
+    }
+}
 
-            Text(L10n.localized("settings.about.appName"))
-                .font(.title)
-                .fontWeight(.bold)
+struct PermissionsManagementPage: View {
+    @ObservedObject var viewModel: SettingsViewModel
 
-            Text(L10n.localized("settings.about.version", appVersion, buildNumber))
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                pageHeader(
+                    title: L10n.localized("management.permissions.title"),
+                    subtitle: L10n.localized("management.permissions.subtitle"),
+                    icon: "lock.shield"
+                )
+
+                ForEach(PermissionKind.allCases, id: \.self) { kind in
+                    let status = viewModel.permissionStatuses[kind] ?? .unknown
+                    section(viewModel.permissionTitle(kind)) {
+                        HStack(alignment: .top, spacing: 14) {
+                            Image(systemName: status.isAuthorized ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
+                                .font(.title2)
+                                .foregroundColor(status.isAuthorized ? .green : .orange)
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(viewModel.statusTitle(status))
+                                    .font(.headline)
+                                Text(viewModel.permissionDescription(kind))
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            Button(L10n.localized("onboarding.permission.openSettings")) {
+                                viewModel.openSystemSettings(for: kind)
+                            }
+                        }
+                    }
+                }
+
+                HStack {
+                    Spacer()
+                    Button {
+                        Task { await viewModel.refreshPermissions() }
+                    } label: {
+                        Label(L10n.localized("management.permissions.refresh"), systemImage: "arrow.clockwise")
+                    }
+                }
+            }
+            .padding(24)
+        }
+    }
+}
+
+@ViewBuilder
+private func pageHeader(title: String, subtitle: String, icon: String) -> some View {
+    HStack(spacing: 14) {
+        Image(systemName: icon)
+            .font(.system(size: 28, weight: .semibold))
+            .foregroundColor(.accentColor)
+            .frame(width: 44, height: 44)
+            .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.system(size: 26, weight: .semibold))
+            Text(subtitle)
                 .font(.subheadline)
                 .foregroundColor(.secondary)
-
-            Text(L10n.localized("settings.about.description"))
-                .font(.body)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-
-            // Check for Updates button
-            Button(L10n.localized("settings.about.checkUpdates")) {
-                NotificationCenter.default.post(name: .checkForUpdates, object: nil)
-            }
-            .buttonStyle(.bordered)
-
-            Divider()
-
-            VStack(spacing: 4) {
-                Text(L10n.localized("settings.about.techStack"))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-
-                Text(L10n.localized("settings.about.dataNote"))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-
-            Spacer()
         }
-        .frame(maxWidth: .infinity)
-        .padding()
+        Spacer()
+    }
+}
+
+@ViewBuilder
+private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+    VStack(alignment: .leading, spacing: 12) {
+        Text(title)
+            .font(.headline)
+        VStack(alignment: .leading, spacing: 12) {
+            content()
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
 

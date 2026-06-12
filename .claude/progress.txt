@@ -3264,3 +3264,40 @@ US-025 从零构建了完整的截图标注编辑器，替换 US-024 的 Annotat
 - US-014 只实现首次引导和强制权限流程；未实现 US-015 管理中心权限页，也未新增 US-016 截图捕获能力。
 - 当前 AppDelegate 仍保留 legacy GRDB 设置同步路径；US-014 的完成状态、默认剪贴板、快捷键和开机启动使用 US-010 的 Core Data `SettingsService`/`AppSetting` 键。
 - 真实屏幕录制/辅助功能授权仍需人工按 `doc/test.md` ONB-005 ~ ONB-007 在系统设置中验证；自动化测试通过 mock 覆盖拒绝/授权/重新检测路径。
+
+
+## 2026-06-12 - US-015 管理中心、设置、权限与黑名单 UI
+
+### 完成内容
+1. **管理中心四页结构**
+   - 将设置窗口承载内容升级为 `ManagementCenterView`，包含首页/概览、剪贴板历史、设置、权限四个页面。
+   - 首页展示快捷入口、权限授权数量、当前开启的搜索源和搜索快捷键提示。
+   - 菜单栏“剪贴板”“设置”“关于”和 SettingsSource / CommandSource 的设置路由统一打开管理中心对应页面。
+
+2. **设置页与服务状态同步**
+   - `SettingsViewModel` 改为使用 Assistant MVP Core Data `SettingsService`、`PermissionService`、`SearchBlacklistRepository`、`LaunchAtLoginService`。
+   - 设置页支持快捷键录制、搜索源展示开关、剪贴板记录开关、剪贴板保留时间预设、截图保存目录、开机启动、语言选项。
+   - `SettingsBackedSearchSource` 包装 App/Command/Calculator 搜索源，搜索时即时读取 Core Data 设置开关；ClipboardSource 同时读取 `clipboard.showInSearch` 和 `clipboard.enabled`。
+   - `.settingsDidChange` 会同步剪贴板记录服务运行状态，关闭剪贴板记录后新事件不会进入历史，重新开启后恢复。
+
+3. **搜索黑名单 UI**
+   - 设置页新增具体结果黑名单管理，可查看、添加和移除 `sourceID + resultID` 级别黑名单。
+   - 保持 MVP 边界：只管理具体搜索结果，不实现关键词/路径/来源规则黑名单，也不实现搜索结果右键菜单加入黑名单。
+
+4. **权限页**
+   - 权限页展示屏幕录制和辅助功能状态。
+   - 支持打开对应系统设置页面和重新检测权限状态，不绕过 macOS 系统授权。
+
+5. **本地化与测试**
+   - 为管理中心、设置、权限、黑名单新增中英文 `Localizable.xcstrings` 文案。
+   - 新增设置开关即时隐藏/恢复搜索结果的单元测试；复用既有黑名单过滤/移除恢复测试。
+
+### 验证结果
+- `swift test --skip-update`：通过，执行 114 个 XCTest，0 失败。
+- `xcodebuild -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug build`：通过，`** BUILD SUCCEEDED **`。
+- `xcodebuild test -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug`：通过，执行 109 个 XCTest，0 失败，`** TEST SUCCEEDED **`。
+
+### 留给后续 Agent 的提示
+- US-015 已满足管理中心 4 页、设置持久化与运行时同步、黑名单管理、权限重新检测和中英文文案要求。
+- 关于页发布级材料、隐私政策、反馈邮件、检查更新落地仍属于 US-018；本任务只将 about 路由导向管理中心设置页，未实现 US-018 范围。
+- 截图捕获/预览/保存/标注仍按 US-016/US-017 继续，不要把本任务中的截图保存目录 UI 误认为截图流程已完成。

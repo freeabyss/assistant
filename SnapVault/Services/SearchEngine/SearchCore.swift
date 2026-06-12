@@ -241,6 +241,34 @@ final class DefaultSearchActionExecutor: SearchActionExecutorProtocol {
 
 typealias NoopSearchActionExecutor = DefaultSearchActionExecutor
 
+final class SettingsBackedSearchSource: SearchSource {
+    let id: SearchSourceID
+    let displayName: String
+    let isEnabledInSearch: Bool = true
+
+    private let source: SearchSource
+    private let settingsService: SettingsServiceProtocol
+    private let settingKey: SettingKey
+
+    init(source: SearchSource, settingsService: SettingsServiceProtocol, settingKey: SettingKey) {
+        self.source = source
+        self.settingsService = settingsService
+        self.settingKey = settingKey
+        self.id = source.id
+        self.displayName = source.displayName
+    }
+
+    func canSearch(query: String) -> Bool {
+        source.canSearch(query: query)
+    }
+
+    func search(query: String) async -> [SearchResult] {
+        let enabled = (try? await settingsService.value(for: settingKey, as: Bool.self)) ?? true
+        guard enabled else { return [] }
+        return await source.search(query: query)
+    }
+}
+
 final class SearchService: SearchServiceProtocol {
     static let defaultResultLimit = 12
 
