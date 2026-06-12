@@ -2826,3 +2826,62 @@ US-025 从零构建了完整的截图标注编辑器，替换 US-024 的 Annotat
 - US-007/US-008 实现真实 AppSource/CommandSource 时，可使用 `SourcePriority` 与 `SearchUsageStoreProtocol`，并将 `UsageStat` 的 Core Data 持久化实现注入 `SearchService`。
 - 当前 `SearchActionExecutorProtocol` 默认 no-op，仅用于核心服务和测试；统一搜索面板 UI 执行动作时应注入真实执行器，并根据 `shouldCloseSearchPanel` 关闭搜索框。
 - 旧 `UnifiedSearchService` / `UnifiedSearchSource` / `ClipboardFTSSearchService` 是历史兼容层，后续迁移 UI 时注意不要与新 Assistant MVP `SearchService` 混淆。
+
+
+## 2026-06-12 - Assistant MVP US-006 拼音匹配、中英文别名与搜索黑名单
+
+### 任务状态
+- US-006 已完成，`.claude/task.json` 中 `US-006.passes=true`、`blocked=false`。
+- 本次只处理当前 Assistant MVP 任务体系中的 US-006；未实现 US-007+ 应用启动、US-008+ 14 个 MVP 命令执行、US-010+ 完整设置服务/UI，也未实现规则黑名单或搜索结果右键菜单。
+
+### 完成内容
+1. **中文拼音、首字母与别名匹配基础能力**
+   - 复用并保留已有 `PinyinHelper` 的 CFStringTransform 拼音转换、首字母生成、ASCII 快路径与缓存设计。
+   - 在 `SearchCore.swift` 新增 `SearchTextCandidate` / `SearchTextMatcher`，统一支持 exact、prefix、alias、pinyinPrefix、initials、contains、pinyinContains 匹配分级。
+   - 匹配器支持中文标题、中文别名、英文别名和拼音/首字母搜索，可供后续 AppSource / CommandSource / SettingsSource 复用。
+
+2. **命令中英文别名与拼音/首字母搜索**
+   - 更新现有兼容层 `SystemCommandSource` 的搜索匹配逻辑，改用 `SearchTextMatcher`。
+   - 命令搜索现在可同时通过英文别名（如 `zzz`）、中文别名（如 `休眠`）和中文标题首字母（如 `sm` 命中“睡眠”）匹配；匹配不依赖当前界面语言。
+   - 未扩展命令清单，也未引入任意 shell 或危险命令执行能力；现有命令执行测试仍只验证 action，不执行系统命令。
+
+3. **设置项拼音/首字母搜索接口**
+   - 新增 `SettingsSource.swift`，基于新 US-005 `SearchSource` / `SearchResult` 模型实现页面级设置入口搜索。
+   - 覆盖设置、权限、剪贴板历史、搜索源设置、快捷键设置、截图设置、关于等 route。
+   - 每个 route 维护中文标题、英文别名、中文/英文别名、拼音、首字母；主动作返回 `.openSettings(SettingsRoute)`。
+   - 这是 US-006 所需“设置项拼音搜索和设置页黑名单管理所需接口”的模型基础，不实现 US-010 的完整设置服务持久化或 US-015 的管理中心 UI。
+
+4. **SearchBlacklistItem Repository**
+   - 新增 `SearchBlacklistRepository.swift`，基于 US-002 的 `PersistenceController` 和 `CDSearchBlacklistItem` 实体实现 Core Data 黑名单 Repository。
+   - 定义 `SearchBlacklistItemSnapshot`、`SearchBlacklistDraft`、`SearchBlacklistRepositoryProtocol`。
+   - 支持添加具体结果、列出、按 id 移除、按 `(sourceID, resultID)` 移除、检查是否存在。
+   - Repository 只存储稳定的 `(sourceID, resultID)` 具体结果，不实现关键词、路径、来源规则等规则黑名单。
+   - `SearchBlacklistDraft.init(result:)` 为未来从右键菜单或 secondary action 加入黑名单预留模型入口，但本任务未实现 UI 入口。
+
+5. **黑名单过滤搜索结果**
+   - `SearchService` 新增可注入 `SearchBlacklistCheckingProtocol`，默认使用空检查器保持既有测试行为。
+   - 聚合 Provider 结果后、排序和截断前过滤黑名单结果，确保最终不会展示已隐藏的具体结果。
+   - 移除黑名单后，同一 Provider 返回的具体结果会重新展示。
+
+6. **测试覆盖**
+   - 新增 `SearchBlacklistRepositoryTests.swift`：验证 add/list/contains/remove，以及 SearchService 只过滤被加入黑名单的具体结果、移除后恢复展示。
+   - 新增 `SearchTextMatcherTests.swift`：验证中文拼音前缀、中文首字母、英文别名、中文别名首字母匹配。
+   - 新增 `SettingsSourceTests.swift`：验证设置项拼音、首字母和英文别名搜索。
+   - 扩展 `SystemCommandSourceTests.swift`：验证命令中文首字母和中英文别名匹配，不执行真实系统命令。
+   - 更新 `SnapVault.xcodeproj/project.pbxproj`，将新源码和测试加入 Xcode app/test target。
+
+### 技术方案核对
+- 已按要求阅读 `.claude/progress.txt`、`.claude/task.json`、`doc/prd.md`、`doc/architecture.md`、`doc/architecture_db.md`、`doc/architecture_api.md`、`doc/test.md`。
+- 现有文档已覆盖 US-006 所需方案：PRD FR-SEARCH-8c~8k、FR-SEARCH-12/13、FR-CMD-8~10；`architecture.md` 7.7/13.3；`architecture_db.md` SearchBlacklistItem；`architecture_api.md` SearchService/Command/Settings 接口；`doc/test.md` 3.3/3.8。
+- 本次未发现必须补充架构文档的缺口，因此未修改 `doc/architecture*.md`、`doc/prd.md` 或 `doc/test.md`。
+
+### 验证结果
+- `swift test --skip-update`：通过，执行 73 个 XCTest，73 通过、0 失败。
+- `xcodebuild -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug build`：通过，命令返回成功。
+- `xcodebuild test -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug`：通过，命令返回成功。
+
+### 留给后续 Agent 的提示
+- US-007 应将真实 AppSource 基于新 `SearchSource` 接入，并为应用索引项计算/保存 `PinyinHelper.toPinyin` 与 `toInitials`，再通过 `SearchTextMatcher` 实现精确、前缀、拼音、首字母、包含、模糊匹配。
+- US-008 应实现 14 个 MVP 内置命令权威清单，建议迁移到新 `SearchSource` / `CommandID` 模型，并继续复用 `SearchTextMatcher` 的中英文别名、拼音和首字母匹配；不要复用旧历史高风险命令清单作为 MVP 权威范围。
+- US-010 / US-015 可复用 `SearchBlacklistRepository` 的 add/list/remove/contains 接口实现设置页黑名单查看、添加和移除；从搜索结果右键菜单或 secondary action 加入黑名单仍属于后续版本能力。
+- 本次仍保留旧 `UnifiedSearchService` / `UnifiedSearchSource` / 历史 GRDB 搜索链路，避免大规模 UI 迁移；后续迁移时注意不要混淆旧兼容层和当前 Assistant MVP `SearchService`。

@@ -106,7 +106,7 @@
       "id": "US-006",
       "title": "拼音匹配、中英文别名与搜索黑名单",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": ["US-005"],
       "steps": [

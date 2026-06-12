@@ -100,45 +100,25 @@ final class SystemCommandSource: UnifiedSearchSource {
 
         let normalizedQuery = normalize(trimmed)
 
-        // matchPriority: 0 = prefix on primary, 1 = contains on primary, 2 = alias match
         var scored: [Scored] = []
 
         for entry in catalog {
-            let primaryNormalized = normalize(entry.primaryKeyword)
-
-            // 1. Prefix match on primary keyword (highest priority)
-            if primaryNormalized.hasPrefix(normalizedQuery) {
+            let candidate = SearchTextCandidate(
+                text: entry.primaryKeyword,
+                aliases: entry.aliases + [entry.title],
+                pinyin: PinyinHelper.toPinyin(entry.title),
+                initials: PinyinHelper.toInitials(entry.title)
+            )
+            if let matchKind = SearchTextMatcher.match(query: normalizedQuery, candidate: candidate) {
                 let range = highlightRange(in: entry.title, queryNormalized: normalizedQuery)
-                scored.append(Scored(entry: entry, priority: 0, highlightRange: range))
-                continue
-            }
-
-            // 2. Contains match on primary keyword
-            if primaryNormalized.contains(normalizedQuery) {
-                let range = highlightRange(in: entry.title, queryNormalized: normalizedQuery)
-                scored.append(Scored(entry: entry, priority: 1, highlightRange: range))
-                continue
-            }
-
-            // 3. Alias match (any alias has prefix OR contains the query)
-            var aliasMatched = false
-            for alias in entry.aliases {
-                let aliasNormalized = normalize(alias)
-                if aliasNormalized.hasPrefix(normalizedQuery) || aliasNormalized.contains(normalizedQuery) {
-                    aliasMatched = true
-                    break
-                }
-            }
-            if aliasMatched {
-                let range = highlightRange(in: entry.title, queryNormalized: normalizedQuery)
-                scored.append(Scored(entry: entry, priority: 2, highlightRange: range))
+                scored.append(Scored(entry: entry, matchKind: matchKind, highlightRange: range))
             }
         }
 
-        // Sort by priority ascending (prefix first), then alphabetically by title
+        // Sort by match quality first, then alphabetically by title.
         scored.sort { lhs, rhs in
-            if lhs.priority != rhs.priority {
-                return lhs.priority < rhs.priority
+            if lhs.matchKind != rhs.matchKind {
+                return lhs.matchKind < rhs.matchKind
             }
             return lhs.entry.title.localizedCaseInsensitiveCompare(rhs.entry.title) == .orderedAscending
         }
@@ -155,7 +135,7 @@ final class SystemCommandSource: UnifiedSearchSource {
     /// Scored entry shared between `search()` and `buildResult()`.
     private struct Scored {
         let entry: CommandEntry
-        let priority: Int
+        let matchKind: SearchTextMatcher.MatchKind
         let highlightRange: NSRange?
     }
 
@@ -164,13 +144,8 @@ final class SystemCommandSource: UnifiedSearchSource {
         let icon = NSImage(systemSymbolName: entry.iconName, accessibilityDescription: entry.title)
         icon?.size = NSSize(width: 24, height: 24)
 
-        // Score: prefix 1.0, contains 0.75, alias 0.6
-        let relevance: Double
-        switch scored.priority {
-        case 0: relevance = 1.0
-        case 1: relevance = 0.75
-        default: relevance = 0.6
-        }
+        // Normalize the shared match-kind score into the legacy 0...1 unified result range.
+        let relevance = scored.matchKind.score / SearchTextMatcher.MatchKind.exact.score
 
         return UnifiedSearchResult(
             id: "system:\(entry.command.rawValue)",

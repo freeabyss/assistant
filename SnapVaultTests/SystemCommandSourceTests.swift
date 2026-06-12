@@ -49,6 +49,35 @@ final class SystemCommandSourceTests: XCTestCase {
         })
     }
 
+    func testCommandChinesePinyinInitialsMatch() async throws {
+        let source = SystemCommandSource()
+
+        let results = try await source.search(query: "sm", limit: 5)
+
+        XCTAssertTrue(results.contains { result in
+            if case .runSystemCommand(let command) = result.action {
+                return command == .sleep
+            }
+            return false
+        })
+    }
+
+    func testCommandEnglishAndChineseAliasesAreBothSearchable() async throws {
+        let source = SystemCommandSource()
+
+        let english = try await source.search(query: "zzz", limit: 5)
+        let chinese = try await source.search(query: "休眠", limit: 5)
+
+        XCTAssertTrue(english.contains { result in
+            if case .runSystemCommand(let command) = result.action { return command == .sleep }
+            return false
+        })
+        XCTAssertTrue(chinese.contains { result in
+            if case .runSystemCommand(let command) = result.action { return command == .sleep }
+            return false
+        })
+    }
+
     func testUnknownCommandReturnsNoResults() async throws {
         let source = SystemCommandSource()
 

@@ -76,6 +76,11 @@
 		A10001000000000000000045 /* InMemorySearchIndexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000045; };
 		B00500000000000000000001 /* SearchCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00500000000000000000002; };
 		B00500000000000000000003 /* SearchServiceCoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00500000000000000000004; };
+		B00600000000000000000001 /* SearchBlacklistRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00600000000000000000002; };
+		B00600000000000000000003 /* SearchBlacklistRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00600000000000000000004; };
+		B00600000000000000000005 /* SettingsSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00600000000000000000006; };
+		B00600000000000000000007 /* SettingsSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00600000000000000000008; };
+		B00600000000000000000009 /* SearchTextMatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0060000000000000000000A; };
 		/* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -152,6 +157,11 @@
 		A10000000000000000000045 /* InMemorySearchIndexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InMemorySearchIndexTests.swift; sourceTree = "<group>"; };
 		B00500000000000000000002 /* SearchCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchCore.swift; sourceTree = "<group>"; };
 		B00500000000000000000004 /* SearchServiceCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchServiceCoreTests.swift; sourceTree = "<group>"; };
+		B00600000000000000000002 /* SearchBlacklistRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchBlacklistRepository.swift; sourceTree = "<group>"; };
+		B00600000000000000000004 /* SearchBlacklistRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchBlacklistRepositoryTests.swift; sourceTree = "<group>"; };
+		B00600000000000000000006 /* SettingsSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSource.swift; sourceTree = "<group>"; };
+		B00600000000000000000008 /* SettingsSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSourceTests.swift; sourceTree = "<group>"; };
+		B0060000000000000000000A /* SearchTextMatcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchTextMatcherTests.swift; sourceTree = "<group>"; };
 		/* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -307,6 +317,9 @@
 				A10000000000000000000043 /* AssistantClipboardRepositoryTests.swift */,
 				A10000000000000000000045 /* InMemorySearchIndexTests.swift */,
 				B00500000000000000000004 /* SearchServiceCoreTests.swift */,
+				B00600000000000000000004 /* SearchBlacklistRepositoryTests.swift */,
+				B00600000000000000000008 /* SettingsSourceTests.swift */,
+				B0060000000000000000000A /* SearchTextMatcherTests.swift */,
 			);
 			path = SnapVaultTests;
 			sourceTree = "<group>";
@@ -394,6 +407,7 @@
 				A1000000000000000000002F /* UnitConverterSource.swift */,
 				A10000000000000000000044 /* InMemorySearchIndex.swift */,
 				B00500000000000000000002 /* SearchCore.swift */,
+				B00600000000000000000006 /* SettingsSource.swift */,
 			);
 			path = SearchEngine;
 			sourceTree = "<group>";
@@ -426,6 +440,7 @@
 			children = (
 				A10000000000000000000005 /* ContentRepository.swift */,
 				A10000000000000000000042 /* AssistantClipboardRepository.swift */,
+				B00600000000000000000002 /* SearchBlacklistRepository.swift */,
 			);
 			path = Repositories;
 			sourceTree = "<group>";
@@ -616,6 +631,9 @@
 				A10001000000000000000043 /* AssistantClipboardRepositoryTests.swift in Sources */,
 				A10001000000000000000045 /* InMemorySearchIndexTests.swift in Sources */,
 				B00500000000000000000003 /* SearchServiceCoreTests.swift in Sources */,
+				B00600000000000000000003 /* SearchBlacklistRepositoryTests.swift in Sources */,
+				B00600000000000000000007 /* SettingsSourceTests.swift in Sources */,
+				B00600000000000000000009 /* SearchTextMatcherTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -630,6 +648,7 @@
 				A1000100000000000000003F /* PersistenceController.swift in Sources */,
 				A10001000000000000000040 /* AssistantFileSystem.swift in Sources */,
 				A10001000000000000000042 /* AssistantClipboardRepository.swift in Sources */,
+				B00600000000000000000001 /* SearchBlacklistRepository.swift in Sources */,
 				A10001000000000000000005 /* ContentRepository.swift in Sources */,
 				A10001000000000000000006 /* ClipboardItem.swift in Sources */,
 				A10001000000000000000007 /* Tag.swift in Sources */,
@@ -663,6 +682,7 @@
 				A1000100000000000000002F /* UnitConverterSource.swift in Sources */,
 				A10001000000000000000044 /* InMemorySearchIndex.swift in Sources */,
 				B00500000000000000000001 /* SearchCore.swift in Sources */,
+				B00600000000000000000005 /* SettingsSource.swift in Sources */,
 				A10001000000000000000026 /* ScreenshotService.swift in Sources */,
 				A10001000000000000000027 /* ScreenshotOverlay.swift in Sources */,
 				A10001000000000000000028 /* UnifiedSearchViewModel.swift in Sources */,

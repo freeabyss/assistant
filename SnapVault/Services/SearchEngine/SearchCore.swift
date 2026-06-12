@@ -114,6 +114,16 @@ protocol SearchUsageStoreProtocol {
     func recordSelection(resultID: SearchResultID, sourceID: SearchSourceID) async
 }
 
+protocol SearchBlacklistCheckingProtocol {
+    func contains(sourceID: SearchSourceID, resultID: SearchResultID) async -> Bool
+}
+
+struct EmptySearchBlacklistChecker: SearchBlacklistCheckingProtocol {
+    func contains(sourceID: SearchSourceID, resultID: SearchResultID) async -> Bool {
+        false
+    }
+}
+
 protocol SearchScoringProtocol {
     func score(result: SearchResult, query: String) -> Double
 }
@@ -225,6 +235,7 @@ final class SearchService: SearchServiceProtocol {
     private let resultLimit: Int
     private let scorer: SearchScoringProtocol
     private let usageStore: SearchUsageStoreProtocol
+    private let blacklistChecker: SearchBlacklistCheckingProtocol
     private let actionExecutor: SearchActionExecutorProtocol
 
     init(
@@ -232,12 +243,14 @@ final class SearchService: SearchServiceProtocol {
         resultLimit: Int = SearchService.defaultResultLimit,
         scorer: SearchScoringProtocol = DefaultSearchScoring(),
         usageStore: SearchUsageStoreProtocol = InMemorySearchUsageStore(),
+        blacklistChecker: SearchBlacklistCheckingProtocol = EmptySearchBlacklistChecker(),
         actionExecutor: SearchActionExecutorProtocol = NoopSearchActionExecutor()
     ) {
         self.sources = sources
         self.resultLimit = resultLimit
         self.scorer = scorer
         self.usageStore = usageStore
+        self.blacklistChecker = blacklistChecker
         self.actionExecutor = actionExecutor
     }
 
@@ -250,7 +263,8 @@ final class SearchService: SearchServiceProtocol {
         let start = CFAbsoluteTimeGetCurrent()
         let eligibleSources = sources.filter { $0.isEnabledInSearch && $0.canSearch(query: trimmed) }
         let rawResults = await collectResults(from: eligibleSources, query: trimmed)
-        let ranked = await rank(rawResults, query: trimmed)
+        let visibleResults = await filterBlacklisted(rawResults)
+        let ranked = await rank(visibleResults, query: trimmed)
         let elapsed = CFAbsoluteTimeGetCurrent() - start
         return SearchResponse(query: trimmed, results: Array(ranked.prefix(resultLimit)), elapsed: elapsed)
     }
@@ -278,6 +292,18 @@ final class SearchService: SearchServiceProtocol {
             }
             return all
         }
+    }
+
+    private func filterBlacklisted(_ results: [SearchResult]) async -> [SearchResult] {
+        var visible: [SearchResult] = []
+        visible.reserveCapacity(results.count)
+        for result in results {
+            let isHidden = await blacklistChecker.contains(sourceID: result.sourceID, resultID: result.id)
+            if !isHidden {
+                visible.append(result)
+            }
+        }
+        return visible
     }
 
     private func rank(_ results: [SearchResult], query: String) async -> [SearchResult] {
@@ -333,5 +359,98 @@ enum SearchTriggerRules {
         default:
             return false
         }
+    }
+}
+
+// MARK: - Pinyin / alias matching helpers
+
+struct SearchTextCandidate: Hashable {
+    let text: String
+    let aliases: [String]
+    let pinyin: String?
+    let initials: String?
+
+    init(text: String, aliases: [String] = [], pinyin: String? = nil, initials: String? = nil) {
+        self.text = text
+        self.aliases = aliases
+        self.pinyin = pinyin
+        self.initials = initials
+    }
+}
+
+struct SearchTextMatcher {
+    enum MatchKind: Int, Comparable, Hashable {
+        case exact = 0
+        case prefix = 1
+        case alias = 2
+        case pinyinPrefix = 3
+        case initials = 4
+        case contains = 5
+        case pinyinContains = 6
+
+        static func < (lhs: MatchKind, rhs: MatchKind) -> Bool {
+            lhs.rawValue < rhs.rawValue
+        }
+
+        var score: Double {
+            switch self {
+            case .exact: return 30
+            case .prefix: return 24
+            case .alias: return 22
+            case .pinyinPrefix: return 20
+            case .initials: return 18
+            case .contains: return 14
+            case .pinyinContains: return 10
+            }
+        }
+    }
+
+    static func match(query: String, candidate: SearchTextCandidate) -> MatchKind? {
+        let normalizedQuery = normalize(query)
+        guard !normalizedQuery.isEmpty else { return nil }
+
+        let normalizedText = normalize(candidate.text)
+        if normalizedText == normalizedQuery { return .exact }
+        if normalizedText.hasPrefix(normalizedQuery) { return .prefix }
+
+        for alias in candidate.aliases {
+            let normalizedAlias = normalize(alias)
+            if normalizedAlias == normalizedQuery || normalizedAlias.hasPrefix(normalizedQuery) || normalizedAlias.contains(normalizedQuery) {
+                return .alias
+            }
+        }
+
+        if isASCII(normalizedQuery) {
+            let pinyin = candidate.pinyin ?? PinyinHelper.toPinyin(candidate.text)
+            let initials = candidate.initials ?? PinyinHelper.toInitials(candidate.text)
+            if !pinyin.isEmpty, pinyin.hasPrefix(normalizedQuery) { return .pinyinPrefix }
+            if !initials.isEmpty, initials.hasPrefix(normalizedQuery) { return .initials }
+            if !pinyin.isEmpty, pinyin.contains(normalizedQuery) { return .pinyinContains }
+
+            for alias in candidate.aliases {
+                let aliasPinyin = PinyinHelper.toPinyin(alias)
+                let aliasInitials = PinyinHelper.toInitials(alias)
+                if !aliasPinyin.isEmpty, aliasPinyin.hasPrefix(normalizedQuery) { return .pinyinPrefix }
+                if !aliasInitials.isEmpty, aliasInitials.hasPrefix(normalizedQuery) { return .initials }
+                if !aliasPinyin.isEmpty, aliasPinyin.contains(normalizedQuery) { return .pinyinContains }
+            }
+        }
+
+        if normalizedText.contains(normalizedQuery) { return .contains }
+        return nil
+    }
+
+    static func normalize(_ value: String) -> String {
+        value
+            .folding(options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive], locale: .current)
+            .lowercased()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private static func isASCII(_ value: String) -> Bool {
+        for scalar in value.unicodeScalars where scalar.value > 127 {
+            return false
+        }
+        return !value.isEmpty
     }
 }

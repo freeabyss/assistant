@@ -133,18 +133,25 @@ enum PinyinHelper {
         var initials: [Character] = []
         let tokens = input.split { $0.isWhitespace || $0 == "-" || $0 == "_" }
         for token in tokens {
-            var prevWasLower = false
-            for (idx, ch) in token.enumerated() {
+            let chars = Array(token)
+            for idx in chars.indices {
+                let ch = chars[idx]
                 if idx == 0 {
                     initials.append(Character(ch.lowercased()))
-                    prevWasLower = ch.isLowercase
                     continue
                 }
-                if ch.isUppercase && prevWasLower {
-                    // camelCase transition (e.g. VSCode → V, then S, then C)
+
+                let previous = chars[idx - 1]
+                let next = idx + 1 < chars.count ? chars[idx + 1] : nil
+
+                // Lowercase/digit → uppercase starts a camelCase word.
+                // Consecutive uppercase acronym letters are also initials when
+                // followed by another uppercase letter, so VSCode becomes vsc
+                // while Safari remains s and Code remains c.
+                if ch.isUppercase,
+                   previous.isLowercase || previous.isNumber || (previous.isUppercase && next != nil) {
                     initials.append(Character(ch.lowercased()))
                 }
-                prevWasLower = ch.isLowercase
             }
         }
         return String(initials)
