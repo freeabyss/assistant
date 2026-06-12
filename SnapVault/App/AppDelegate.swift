@@ -32,11 +32,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Flag to prevent double-close
     private var isClosingPanel = false
 
-    /// Clipboard polling monitor.
+    /// Clipboard polling monitor for the Assistant MVP Core Data clipboard chain.
     private let clipboardMonitor = ClipboardMonitor()
 
-    /// Content store that persists new clipboard events.
+    /// Content store that persists screenshots through the legacy screenshot path until US-016 migrates it.
     private let contentStore = ContentStore()
+
+    /// Assistant MVP clipboard resource store, repository, index, and service.
+    private let assistantClipboardIndex = InMemorySearchIndex()
+    private lazy var assistantResourceStore = FileResourceStore(fileSystem: PersistenceController.shared.fileSystem)
+    private lazy var assistantClipboardRepository: ClipboardRepositoryProtocol = {
+        let base = ClipboardRepository(persistence: .shared, resourceStore: assistantResourceStore)
+        let loader = ClipboardSearchIndexLoader(persistence: .shared, index: assistantClipboardIndex)
+        return IndexingClipboardRepository(base: base, index: assistantClipboardIndex, loader: loader)
+    }()
+    private lazy var assistantClipboardService = ClipboardService(
+        repository: assistantClipboardRepository,
+        resourceStore: assistantResourceStore
+    )
 
     /// Task that consumes clipboard events from the monitor stream.
     private var monitorTask: Task<Void, Never>?
@@ -97,6 +110,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             logger.info("Database initialized successfully")
         } catch {
             logger.error("Database initialization failed: \(error.localizedDescription, privacy: .public)")
+        }
+
+        // Initialize Assistant MVP Core Data + file resource directories.
+        do {
+            try PersistenceController.shared.load()
+            startInitialClipboardIndexRebuild()
+            logger.info("Assistant Core Data clipboard stack initialized successfully")
+        } catch {
+            logger.error("Assistant Core Data initialization failed: \(error.localizedDescription, privacy: .public)")
         }
 
         // Ensure Application Support directory exists
@@ -600,15 +622,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Start the monitor (begins polling).
         clipboardMonitor.start()
 
-        // Consume the event stream and forward to ContentStore.
+        // Consume the event stream and forward to the Assistant MVP Core Data clipboard service.
         monitorTask = Task { [weak self] in
             guard let self else { return }
-            for await event in self.clipboardMonitor.onNewContent {
+            for await event in self.clipboardMonitor.events {
                 do {
-                    let id = try await self.contentStore.processEvent(event)
-                    self.logger.debug("Processed clipboard event -> item id=\(id)")
+                    if let snapshot = try await self.assistantClipboardService.handle(event: event) {
+                        self.logger.debug("Processed Assistant clipboard event -> record id=\(snapshot.id.uuidString, privacy: .public)")
+                    }
                 } catch {
-                    self.logger.error("Failed to process clipboard event: \(error.localizedDescription, privacy: .public)")
+                    self.logger.error("Failed to process Assistant clipboard event: \(error.localizedDescription, privacy: .public)")
                 }
             }
         }
@@ -624,6 +647,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // MARK: - Private
+
+    private func startInitialClipboardIndexRebuild() {
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let loader = ClipboardSearchIndexLoader(persistence: .shared, index: self.assistantClipboardIndex)
+                try await loader.rebuildFromPersistentStore()
+                self.logger.info("Assistant clipboard in-memory index rebuilt from Core Data")
+            } catch {
+                self.logger.error("Failed to rebuild Assistant clipboard index: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+    }
 
     private func createApplicationSupportDirectory() {
         let fileManager = FileManager.default

@@ -237,7 +237,7 @@
       "id": "US-012",
       "title": "剪贴板监听与历史记录链路",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": [
         "US-003",

@@ -3032,3 +3032,64 @@ US-025 从零构建了完整的截图标注编辑器，替换 US-024 的 Annotat
 - US-011 统一搜索面板执行计算器/换算结果时，可直接使用 `SearchService.execute(result.primaryAction)`；`.copyText` 已默认写入系统剪贴板并返回关闭搜索框语义。
 - CalculatorSource 不应扩展货币、复杂函数、变量、历史、体积/时长等范围外能力；如未来产品范围变化，应先更新 PRD/架构/测试文档。
 - 当前仍保留旧 `UnifiedSearchService` 注册路径，`UnitConverterSource` 只是兼容包装器；后续迁移 UI 时优先接入当前 Assistant MVP `SearchService`。
+
+## 2026-06-12 - Assistant MVP US-012 剪贴板监听与历史记录链路
+
+### 任务状态
+- US-012 已完成，`.claude/task.json` 中 `US-012.passes=true`、`blocked=false`。
+- 本次只处理当前 Assistant MVP 任务体系中的 US-012；未实现 US-013+ 剪贴板历史页面 UI，也未删除旧 GRDB/FTS5 兼容链路。
+
+### 完成内容
+1. **ClipboardMonitor 基于 NSPasteboard changeCount 的新 Assistant 链路**
+   - 重写 `SnapVault/Services/ClipboardMonitor/ClipboardMonitor.swift`，新增 `PasteboardReading` 抽象和 `SystemPasteboardReader`，真实实现读取 `NSPasteboard.general.changeCount`，测试可注入 fake pasteboard。
+   - `ClipboardMonitor` 现在输出 `AsyncStream<AssistantClipboardEvent>`，事件 payload 使用 US-003 的 `ClipboardPayload` / `AssistantClipboardEvent`，与 Core Data Repository 链路一致。
+   - 保留旧 `ClipboardEvent` struct 仅供历史 `ContentStore` 截图/GRDB 代码编译，不再作为新监听链路输出。
+
+2. **自适应轮询**
+   - 默认/变化后使用 500ms active polling。
+   - 长时间无变化后降级到 2s idle polling。
+   - 检测到 `changeCount` 变化后立即恢复 500ms。
+   - 轮询不依赖 App 激活/失焦通知，保持后台常驻监听。
+
+3. **剪贴板类型读取**
+   - 文本：读取 `.string` 并生成 `.plainText` payload。
+   - 富文本：读取 `.rtf`、`.html` / `public.html`，同时保存纯文本 + RTF/HTML 原始数据。
+   - 图片：读取 PNG 或 TIFF，尽量规范化为 PNG 数据。
+   - 文件引用：读取 file URL，构建 `FileClipboardItem`，只保存路径、展示名、UTI 和文件大小元信息，不复制源文件内容。
+
+4. **ClipboardService 资源写入与 Repository/Index 接入**
+   - 新增 `ClipboardServiceProtocol` / `ClipboardService`，负责把 `AssistantClipboardEvent` 写入 `ClipboardRepositoryProtocol`。
+   - 富文本通过 `FileResourceStore` 写入 RTF/HTML 原始资源。
+   - 图片通过 `FileResourceStore` 写入原图，并生成最长边 256px 的 PNG 缩略图后写入 Thumbnails。
+   - 文件引用不写资源文件，只进入 Core Data 结构化记录。
+   - Repository 注入 `IndexingClipboardRepository` 后，upsert 成功自动同步 `InMemorySearchIndex`。
+   - 写入成功后发送 `.clipboardItemSaved` 通知，供现有 UI/后续历史页刷新。
+
+5. **AppDelegate 启动接入**
+   - `AppDelegate` 启动时加载 `PersistenceController.shared`，异步重建剪贴板内存索引。
+   - 启动 `ClipboardMonitor` 后消费 `clipboardMonitor.events`，调用 `assistantClipboardService.handle(event:)` 写入 Core Data + 文件资源 + 内存索引。
+   - 旧 `ContentStore` 保留用于当前截图/历史兼容路径，避免 US-012 范围内大规模迁移 UI。
+
+6. **测试覆盖**
+   - 新增 `SnapVaultTests/ClipboardMonitorTests.swift`，覆盖：
+     * 文本事件捕获和短期内存去重。
+     * 富文本纯文本 + RTF/HTML payload。
+     * 文件 payload 只保存引用和元信息。
+     * 自适应轮询 500ms → 2s → 500ms。
+     * ClipboardService 写入富文本资源、图片原图/缩略图、文件引用，并同步内存索引。
+   - 更新 `SnapVault.xcodeproj/project.pbxproj`，将新测试加入 Xcode test target。
+
+### 技术方案核对
+- 已按要求阅读 `.claude/progress.txt`、`.claude/task.json`、`doc/prd.md`、`doc/architecture.md`、`doc/architecture_db.md`、`doc/architecture_api.md`、`doc/test.md`。
+- 现有文档已覆盖 US-012 所需方案：PRD FR-CLIP-36~47、architecture.md 第 9/10/11 节、architecture_db.md 写入流程/文件系统/内存索引、architecture_api.md ClipboardMonitor/ClipboardService/FileResourceStore/InMemorySearchIndex 接口、doc/test.md 3.5~3.7 与性能验收。
+- 本次未发现必须补充架构文档的缺口，因此未修改 `doc/architecture*.md`、`doc/prd.md` 或 `doc/test.md`；也未覆盖用户/其他 Agent 的既有脏文档改动。
+
+### 验证结果
+- `swift test --skip-update`：通过，执行 92 个 XCTest，92 通过、0 失败。
+- `xcodebuild -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug build`：通过，命令成功返回。
+- `xcodebuild test -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug`：通过，命令成功返回；安静复跑同样成功返回，仅有 XCTest 链接目标版本 warning。
+
+### 留给后续 Agent 的提示
+- US-013 剪贴板历史页面 UI 应优先读取 `ClipboardIndexQueryService` / `ClipboardRepository` 新链路，而不是旧 GRDB `ContentRepository`。
+- 旧 `ClipboardListViewModel`、`ContentStore`、`ClipboardSearchSource` 仍在历史兼容路径中使用 GRDB/FTS5；本次未删除，避免 UI 迁移超出 US-012 范围。
+- 截图复制进入历史在当前 UI 中仍走旧 `ContentStore.processScreenshot`；US-016 迁移截图复制时应复用本次 `ClipboardService` 或写入系统剪贴板后由 `ClipboardMonitor` 统一捕获。
