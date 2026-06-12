@@ -2736,3 +2736,54 @@ US-025 从零构建了完整的截图标注编辑器，替换 US-024 的 Annotat
 - 后续 US-004 可基于 `ClipboardRecordSnapshot` / `ClipboardResourceSnapshot` 构建轻量内存搜索索引；不要直接把图片原图、RTF/HTML 原始数据加载进索引。
 - 当前新增的是 Assistant MVP Core Data Repository；旧 `DatabaseManager` / `ContentRepository` / GRDB 仍保留供现有 app 代码使用，后续任务应逐步接入新 Repository，而不是一次性删除旧链路。
 - `ClipboardHistoryService` 已提供清空历史确认所需 service 能力；后续 CommandSource 或管理中心 UI 可直接依赖其 confirmation model。
+
+
+## 2026-06-12 - Assistant MVP US-004 轻量内存搜索索引
+
+### 完成内容
+1. **InMemorySearchIndexProtocol 与轻量索引模型**
+   - 新增 `SnapVault/Services/SearchEngine/InMemorySearchIndex.swift`。
+   - 实现 `SearchSourceID`、`SearchIndexItem`、`ClipboardIndexSearchOptions`、`InMemorySearchIndexProtocol` 与线程安全 `InMemorySearchIndex`。
+   - 索引字段对齐 `doc/architecture_db.md`：id、sourceID、recordID、title、plainText、summary、contentType、updatedAt、isPinned、contentHash、resourceReferences、usageCount、lastUsedAt。
+   - 剪贴板正文只做原文搜索；搜索支持 title/plainText/summary/hash 等轻量字段归一化匹配。
+
+2. **启动时从 Core Data 全量加载轻量字段**
+   - 新增 `ClipboardSearchIndexLoader`，从 US-002 的 `PersistenceController` / `CDClipboardRecord` 全量读取轻量字段并 `rebuild(from:)`。
+   - 只读取 Core Data 结构化字段和 `ClipboardResource.id`，不读取 `FileResourceStore.read`，不会加载图片原图、缩略图、RTF/HTML 原始数据。
+   - 支持按 Core Data 事实来源重建索引，索引本身可丢弃并恢复。
+
+3. **索引查询接口**
+   - `InMemorySearchIndex.searchClipboard(query:filter:)` 支持剪贴板历史和 ClipboardSource 所需的 query + type filter 查询。
+   - `historyClipboard(filter:limit:offset:)` 支持历史页默认列表：置顶优先、更新时间倒序、分页。
+   - `ClipboardIndexQueryService` 提供 `searchIndex`、`historyIndex` 与 `loadDetails(for:)`，搜索命中先返回轻量索引项，详情按需通过 `ClipboardRepositoryProtocol.fetch(id:)` 加载。
+
+4. **新增/更新/删除/置顶/清理同步机制**
+   - 新增 `IndexingClipboardRepository` 装饰器，封装 US-003 的 `ClipboardRepositoryProtocol`。
+   - `upsert` 后写入/替换索引；重复复制更新同一 id 的 `updatedAt`。
+   - `togglePin` 后同步 `isPinned` 与更新时间。
+   - `delete` 后移除单条索引；`clearAll` 后移除 clipboard source 全部索引。
+   - `cleanupExpired` 删除记录后通过 `ClipboardSearchIndexLoader` 从 Core Data 重建索引，确保清理后的内存索引与持久化一致。
+
+5. **测试覆盖**
+   - 新增 `SnapVaultTests/InMemorySearchIndexTests.swift`，覆盖 5 个测试：
+     * Core Data 启动重建只加载轻量索引字段和资源 UUID，不加载 RTF/HTML 原始数据或图片原图。
+     * 剪贴板搜索按置顶、匹配度、更新时间排序；历史列表置顶优先并支持分页/类型筛选。
+     * upsert、重复复制、delete、clearAll、togglePin 与索引同步。
+     * cleanupExpired 后按 Core Data 重建索引。
+     * 查询服务返回索引命中并可按需加载 `ClipboardRecordSnapshot` 详情。
+   - 更新 `SnapVault.xcodeproj/project.pbxproj`，将 `InMemorySearchIndex.swift` 加入 Assistant App target，将 `InMemorySearchIndexTests.swift` 加入 SnapVaultTests target。
+
+### 技术方案核对
+- 已按要求阅读 `.claude/progress.txt`、`.claude/task.json`、`doc/prd.md`、`doc/architecture.md`、`doc/architecture_db.md`、`doc/architecture_api.md`、`doc/test.md`。
+- US-004 所需方案已由现有架构文档覆盖：`architecture.md` 第 11 节、`architecture_db.md` 第 13 节、`architecture_api.md` 第 7/8 节和 `test.md` 第 3.7 节均明确了轻量内存索引字段、启动加载、不加载大对象、同步和测试要求。
+- 本次未发现必须补充的架构缺口，因此未修改 `doc/architecture*.md` / `doc/test.md`；也未触碰既有脏文件 `CalculatorSource.swift`、`PinyinHelper.swift`、`doc/prd.md`、`doc/architecture_api.md`、`doc/architecture_db.md`、`.claude/scheduled_tasks.lock`。
+
+### 验证结果
+- `swift test --skip-update`：通过，执行 56 个 XCTest，56 通过、0 失败。
+- `xcodebuild -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug build`：通过，`** BUILD SUCCEEDED **`。
+- `xcodebuild test -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug`：通过，执行 56 个 XCTest，56 通过、0 失败，`** TEST SUCCEEDED **`。
+
+### 留给后续 Agent 的提示
+- US-005 可基于 `ClipboardIndexQueryService` / `InMemorySearchIndexProtocol` 实现 ClipboardSource Provider，不需要直接查询 Core Data 或加载大对象。
+- US-012 接入真实剪贴板监听链路时，建议将 `ClipboardRepository` 包装为 `IndexingClipboardRepository` 后注入 ClipboardService，从而保证写入后自动同步索引。
+- 当前保留旧 GRDB / FTS5 `ClipboardSearchSource` 和旧搜索 UI 链路，属于历史实现和现有 app 兼容层；后续 Assistant MVP SearchSource 迁移应逐步接入新索引，不要在 US-004 范围内删除旧链路。

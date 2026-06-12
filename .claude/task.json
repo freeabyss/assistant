@@ -71,7 +71,7 @@
       "id": "US-004",
       "title": "轻量内存搜索索引",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": ["US-003"],
       "steps": [
