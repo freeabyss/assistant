@@ -81,6 +81,7 @@
 		B00600000000000000000005 /* SettingsSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00600000000000000000006; };
 		B00600000000000000000007 /* SettingsSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00600000000000000000008; };
 		B00600000000000000000009 /* SearchTextMatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0060000000000000000000A; };
+		B00700000000000000000001 /* AppSearchSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00700000000000000000002; };
 		/* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -162,6 +163,7 @@
 		B00600000000000000000006 /* SettingsSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSource.swift; sourceTree = "<group>"; };
 		B00600000000000000000008 /* SettingsSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSourceTests.swift; sourceTree = "<group>"; };
 		B0060000000000000000000A /* SearchTextMatcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchTextMatcherTests.swift; sourceTree = "<group>"; };
+		B00700000000000000000002 /* AppSearchSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSearchSourceTests.swift; sourceTree = "<group>"; };
 		/* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -320,6 +322,7 @@
 				B00600000000000000000004 /* SearchBlacklistRepositoryTests.swift */,
 				B00600000000000000000008 /* SettingsSourceTests.swift */,
 				B0060000000000000000000A /* SearchTextMatcherTests.swift */,
+				B00700000000000000000002 /* AppSearchSourceTests.swift */,
 			);
 			path = SnapVaultTests;
 			sourceTree = "<group>";
@@ -634,6 +637,7 @@
 				B00600000000000000000003 /* SearchBlacklistRepositoryTests.swift in Sources */,
 				B00600000000000000000007 /* SettingsSourceTests.swift in Sources */,
 				B00600000000000000000009 /* SearchTextMatcherTests.swift in Sources */,
+				B00700000000000000000001 /* AppSearchSourceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

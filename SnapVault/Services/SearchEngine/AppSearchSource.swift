@@ -1,8 +1,11 @@
-import Foundation
 import AppKit
+import CoreData
+import Foundation
 import os.log
 
-/// Application information for search results.
+// MARK: - App source domain models
+
+/// Application information for legacy unified-search callers.
 struct AppInfo {
     let name: String
     let bundleID: String
@@ -12,519 +15,679 @@ struct AppInfo {
     let useCount: Int
 }
 
-/// Protocol for application search source.
-protocol AppSearchSourceProtocol: UnifiedSearchSource {
-    /// Build or refresh the application index.
-    func rebuildIndex() async
+/// Stable, lightweight app index item used by the Assistant MVP AppSource.
+///
+/// Icons are represented by the app bundle path in `SearchResultIcon.appIcon`
+/// instead of being stored in the index, keeping the in-memory index cheap and
+/// hashable while still allowing UI code to render the real app icon lazily.
+struct ApplicationIndexItem: Identifiable, Hashable {
+    let id: ApplicationID
+    let bundleIdentifier: String?
+    let displayName: String
+    let localizedName: String?
+    let path: URL
+    let pinyin: String?
+    let initials: String?
+    let launchCount: Int
+    let lastLaunchAt: Date?
 
-    /// Get application info by bundle identifier.
+    var targetID: String { id.rawValue }
+}
+
+protocol AppSourceProtocol: SearchSource {
+    func rebuildIndex() async
+    func refreshIndex() async
+    func application(for id: ApplicationID) -> ApplicationIndexItem?
+}
+
+/// Compatibility protocol for the older UnifiedSearchService path that still
+/// exists in the project while Assistant MVP search UI is migrated.
+protocol AppSearchSourceProtocol: UnifiedSearchSource {
+    func rebuildIndex() async
     func getAppInfo(bundleID: String) -> AppInfo?
 }
 
-/// Search source for installed applications.
+// MARK: - Usage stats
+
+struct UsageStatSnapshot: Hashable {
+    let targetID: String
+    let targetType: String
+    let useCount: Int
+    let lastUsedAt: Date?
+}
+
+protocol UsageStatRepositoryProtocol: SearchUsageStoreProtocol {
+    func usage(targetType: String, targetID: String) async -> UsageStatSnapshot?
+    func recordUse(targetType: String, targetID: String) async throws -> UsageStatSnapshot
+}
+
+/// Core Data backed UsageStat repository used by AppSource and later CommandSource.
+final class UsageStatRepository: UsageStatRepositoryProtocol {
+    static let applicationTargetType = "application"
+    static let commandTargetType = "command"
+
+    private let persistence: PersistenceController
+    private let now: () -> Date
+
+    init(persistence: PersistenceController = .shared, now: @escaping () -> Date = Date.init) {
+        self.persistence = persistence
+        self.now = now
+    }
+
+    func usage(targetType: String, targetID: String) async -> UsageStatSnapshot? {
+        let context = persistence.viewContext
+        return await context.perform {
+            do {
+                guard let stat = try self.fetch(targetType: targetType, targetID: targetID, in: context) else {
+                    return nil
+                }
+                return Self.snapshot(from: stat)
+            } catch {
+                return nil
+            }
+        }
+    }
+
+    func recordUse(targetType: String, targetID: String) async throws -> UsageStatSnapshot {
+        let context = persistence.viewContext
+        return try await context.perform {
+            let timestamp = self.now()
+            let stat: CDUsageStat
+            if let existing = try self.fetch(targetType: targetType, targetID: targetID, in: context) {
+                stat = existing
+                stat.useCount += 1
+                stat.lastUsedAt = timestamp
+                stat.updatedAt = timestamp
+            } else {
+                stat = CDUsageStat(context: context)
+                stat.id = UUID()
+                stat.targetType = targetType
+                stat.targetID = targetID
+                stat.useCount = 1
+                stat.lastUsedAt = timestamp
+                stat.createdAt = timestamp
+                stat.updatedAt = timestamp
+            }
+            if context.hasChanges {
+                try context.save()
+            }
+            return Self.snapshot(from: stat)
+        }
+    }
+
+    func usageBoost(for resultID: SearchResultID, sourceID: SearchSourceID) async -> Double {
+        guard sourceID == .app || sourceID == .command else { return 0 }
+        let targetType = sourceID == .app ? Self.applicationTargetType : Self.commandTargetType
+        let targetID = Self.targetID(from: resultID, sourceID: sourceID)
+        guard let stat = await usage(targetType: targetType, targetID: targetID) else { return 0 }
+        return Self.usageBoost(useCount: stat.useCount, lastUsedAt: stat.lastUsedAt, now: now())
+    }
+
+    func recordSelection(resultID: SearchResultID, sourceID: SearchSourceID) async {
+        guard sourceID == .app || sourceID == .command else { return }
+        let targetType = sourceID == .app ? Self.applicationTargetType : Self.commandTargetType
+        let targetID = Self.targetID(from: resultID, sourceID: sourceID)
+        _ = try? await recordUse(targetType: targetType, targetID: targetID)
+    }
+
+    static func usageBoost(useCount: Int, lastUsedAt: Date?, now: Date = Date()) -> Double {
+        let frequencyBoost = min(12.0, log(Double(max(0, useCount)) + 1.0) / log(21.0) * 12.0)
+        guard let lastUsedAt else { return frequencyBoost }
+
+        let age = max(0, now.timeIntervalSince(lastUsedAt))
+        let day: TimeInterval = 24 * 60 * 60
+        let recencyBoost: Double
+        if age <= day {
+            recencyBoost = 8
+        } else if age <= 7 * day {
+            recencyBoost = 5
+        } else if age <= 30 * day {
+            recencyBoost = 2
+        } else {
+            recencyBoost = 0
+        }
+        return frequencyBoost + recencyBoost
+    }
+
+    private func fetch(targetType: String, targetID: String, in context: NSManagedObjectContext) throws -> CDUsageStat? {
+        let request = CDUsageStat.fetchRequest()
+        request.fetchLimit = 1
+        request.predicate = NSPredicate(format: "targetType == %@ AND targetID == %@", targetType, targetID)
+        return try context.fetch(request).first
+    }
+
+    private static func snapshot(from stat: CDUsageStat) -> UsageStatSnapshot {
+        UsageStatSnapshot(
+            targetID: stat.targetID,
+            targetType: stat.targetType,
+            useCount: Int(stat.useCount),
+            lastUsedAt: stat.lastUsedAt
+        )
+    }
+
+    private static func targetID(from resultID: SearchResultID, sourceID: SearchSourceID) -> String {
+        let prefix = "\(sourceID.rawValue):"
+        if resultID.rawValue.hasPrefix(prefix) {
+            return String(resultID.rawValue.dropFirst(prefix.count))
+        }
+        return resultID.rawValue
+    }
+}
+
+// MARK: - Application launching
+
+protocol ApplicationLaunching {
+    func launchApplication(at url: URL) async throws
+}
+
+struct NSWorkspaceApplicationLauncher: ApplicationLaunching {
+    func launchApplication(at url: URL) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            let configuration = NSWorkspace.OpenConfiguration()
+            NSWorkspace.shared.openApplication(at: url, configuration: configuration) { _, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume()
+                }
+            }
+        }
+    }
+}
+
+/// Search action executor that launches indexed apps via NSWorkspace and records
+/// successful launches in Core Data UsageStat.
+final class AppSearchActionExecutor: SearchActionExecutorProtocol {
+    private let appSource: AppSourceProtocol
+    private let launcher: ApplicationLaunching
+
+    init(appSource: AppSourceProtocol, launcher: ApplicationLaunching = NSWorkspaceApplicationLauncher()) {
+        self.appSource = appSource
+        self.launcher = launcher
+    }
+
+    func execute(_ action: SearchAction) async throws {
+        guard case .openApplication(let applicationID) = action else { return }
+        guard let app = appSource.application(for: applicationID) else {
+            throw NSError(
+                domain: "com.assistant.appsource",
+                code: 404,
+                userInfo: [NSLocalizedDescriptionKey: "Application not found: \(applicationID.rawValue)"]
+            )
+        }
+        try await launcher.launchApplication(at: app.path)
+        if let source = appSource as? AppSearchSource {
+            await source.recordApplicationLaunch(applicationID)
+        }
+    }
+}
+
+// MARK: - AppSource
+
+/// Assistant MVP AppSource.
 ///
-/// Scans /Applications and ~/Applications on startup, builds an in-memory
-/// sorted index, and supports prefix / contains / fuzzy (Levenshtein) matching.
-final class AppSearchSource: AppSearchSourceProtocol {
+/// Scans only `/Applications`, `~/Applications`, and `/System/Applications` by
+/// default, indexes `.app` bundles in memory, supports exact/prefix/pinyin/
+/// initials/contains/fuzzy matching, and returns stable `app:<id>` result IDs so
+/// SearchService blacklist filtering can hide concrete app results.
+final class AppSearchSource: AppSourceProtocol, AppSearchSourceProtocol {
+    let id: SearchSourceID = .app
+    let displayName = "Applications"
+    let isEnabledInSearch = true
+
+    // Legacy UnifiedSearchSource compatibility.
     let sourceType: SearchResultType = .application
+
     private let logger = Logger.search
-
-    // MARK: - Index State
-
-    /// In-memory app index, sorted by normalized name for binary search.
-    private var apps: [IndexedApp] = []
-
-    /// Lock protecting the apps array.
+    private let fileManager: FileManager
+    private let usageRepository: UsageStatRepositoryProtocol
+    private let allowedSearchDirectories: [URL]
     private let lock = NSLock()
 
-    /// Whether the initial index build has completed.
+    private var apps: [ApplicationIndexItem] = []
     private var isReady = false
-
-    /// Use count per bundle ID, persisted to UserDefaults.
-    private let useCountKey = "app_search_use_counts"
-    private var useCounts: [String: Int]
-
-    /// Periodic refresh timer (every 5 minutes).
     private var refreshTimer: Timer?
 
-    // MARK: - Init
+    init(
+        searchDirectories: [URL] = AppSearchSource.defaultSearchDirectories(),
+        fileManager: FileManager = .default,
+        usageRepository: UsageStatRepositoryProtocol = UsageStatRepository(),
+        autoBuildIndex: Bool = true,
+        schedulesRefresh: Bool = true
+    ) {
+        self.fileManager = fileManager
+        self.usageRepository = usageRepository
+        self.allowedSearchDirectories = searchDirectories.map(Self.standardizedDirectory)
 
-    init() {
-        // Load persisted use counts
-        if let data = UserDefaults.standard.data(forKey: useCountKey),
-           let counts = try? JSONDecoder().decode([String: Int].self, from: data) {
-            useCounts = counts
-        } else {
-            useCounts = [:]
+        if autoBuildIndex {
+            Task.detached(priority: .utility) { [weak self] in
+                await self?.rebuildIndex()
+                NotificationCenter.default.post(name: .appSearchIndexReady, object: nil)
+            }
         }
 
-        // Build initial index asynchronously
-        buildIndexAsync()
-
-        // Schedule periodic refresh every 5 minutes
-        schedulePeriodicRefresh()
+        if schedulesRefresh {
+            schedulePeriodicRefresh()
+        }
     }
 
     deinit {
         refreshTimer?.invalidate()
     }
 
-    // MARK: - SearchSource
+    static func defaultSearchDirectories(homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser) -> [URL] {
+        [
+            URL(fileURLWithPath: "/Applications", isDirectory: true),
+            homeDirectory.appendingPathComponent("Applications", isDirectory: true),
+            URL(fileURLWithPath: "/System/Applications", isDirectory: true)
+        ]
+    }
 
-    func search(query: String, limit: Int) async throws -> [UnifiedSearchResult] {
+    func canSearch(query: String) -> Bool {
+        SearchTriggerRules.standardMinimumLength(sourceID: .app, query: query)
+    }
+
+    func search(query: String) async -> [SearchResult] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return [] }
-
-        guard isReady else {
-            logger.warning("App index not ready yet, returning empty results for '\(trimmed, privacy: .public)'")
-            return []
+        if !readySnapshot() {
+            await rebuildIndex()
         }
 
-        let queryNormalized = normalize(trimmed)
-        var results: [UnifiedSearchResult] = []
+        let snapshot = appSnapshot()
+        let matches = rankMatches(query: trimmed, apps: snapshot)
+        let results = await buildResults(from: matches)
 
-        lock.lock()
-        let snapshot = apps
-        lock.unlock()
-
-        // Strategy 1: Prefix match (highest priority, uses binary search)
-        let prefixResults = prefixMatch(in: snapshot, query: queryNormalized, limit: limit)
-        results.append(contentsOf: prefixResults.map { buildResult(app: $0, matchType: .prefix, queryNormalized: queryNormalized) })
-
-        // Strategy 2: Contains match (medium priority)
-        if results.count < limit {
-            let containsResults = containsMatch(in: snapshot, query: queryNormalized, excluding: Set(prefixResults.map(\.bundleID)), limit: limit - results.count)
-            results.append(contentsOf: containsResults.map { buildResult(app: $0, matchType: .contains, queryNormalized: queryNormalized) })
-        }
-
-        // Strategy 3: Pinyin matching for CJK app names (only relevant when the
-        // query is plain ASCII — otherwise the literal text strategies above
-        // already covered it). Three tiers:
-        //   - Pinyin prefix (e.g. "weix" -> "微信" pinyin "weixin")
-        //   - Initials match (e.g. "sf" -> "Safari" or "数符" initials)
-        //   - Pinyin contains
-        if results.count < limit && isASCIIQuery(queryNormalized) {
-            let existingIDs = Set(results.compactMap { extractBundleID(from: $0.id) })
-            let pinyinResults = pinyinMatch(in: snapshot, query: queryNormalized, excluding: existingIDs, limit: limit - results.count)
-            results.append(contentsOf: pinyinResults)
-        }
-
-        // Strategy 4: Fuzzy match (Levenshtein distance <= 2, lowest priority)
-        if results.count < limit {
-            let existingIDs = Set(results.compactMap { extractBundleID(from: $0.id) })
-            let fuzzyResults = fuzzyMatch(in: snapshot, query: queryNormalized, excluding: existingIDs, limit: limit - results.count)
-            results.append(contentsOf: fuzzyResults.map { buildResult(app: $0, matchType: .fuzzy, queryNormalized: queryNormalized) })
-        }
-
-        // Sort: prefix > contains > fuzzy, then by useCount descending, then by name
-        results.sort { lhs, rhs in
-            if lhs.score != rhs.score { return lhs.score > rhs.score }
-            let lhsCount = extractUseCount(from: lhs.id)
-            let rhsCount = extractUseCount(from: rhs.id)
-            if lhsCount != rhsCount { return lhsCount > rhsCount }
-            return lhs.title.localizedCaseInsensitiveCompare(rhs.title) == .orderedAscending
-        }
-
-        logger.info("App search '\(trimmed, privacy: .public)': \(results.count) results")
+        logger.info("AppSource search '\(trimmed, privacy: .public)': \(results.count) results")
         return results
     }
 
-    // MARK: - AppSearchSourceProtocol
+    /// Legacy UnifiedSearchSource compatibility for existing view models.
+    func search(query: String, limit: Int) async throws -> [UnifiedSearchResult] {
+        let results = await search(query: query)
+        return results.prefix(limit).compactMap { result in
+            guard case .openApplication(let applicationID) = result.primaryAction,
+                  let item = application(for: applicationID) else {
+                return nil
+            }
+            return UnifiedSearchResult(
+                id: result.id.rawValue,
+                title: result.title,
+                subtitle: result.subtitle,
+                icon: NSWorkspace.shared.icon(forFile: item.path.path),
+                type: .application,
+                score: min(1.0, result.finalScore / 150.0),
+                highlightRanges: [],
+                action: .launchApp(bundleID: item.bundleIdentifier ?? item.targetID, path: item.path)
+            )
+        }
+    }
 
     func rebuildIndex() async {
-        logger.info("Rebuilding application index (forced)")
-        await buildIndex()
+        let start = CFAbsoluteTimeGetCurrent()
+        let paths = scanApplicationPaths()
+        var indexed: [ApplicationIndexItem] = []
+        indexed.reserveCapacity(paths.count)
+        for path in paths {
+            if let item = await readApplicationIndexItem(from: path) {
+                indexed.append(item)
+            }
+        }
+
+        indexed.sort {
+            SearchTextMatcher.normalize($0.displayName) < SearchTextMatcher.normalize($1.displayName)
+        }
+
+        lock.lock()
+        apps = indexed
+        isReady = true
+        lock.unlock()
+
+        let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1000
+        logger.info("Indexed \(indexed.count) applications in \(String(format: "%.1f", elapsed))ms")
+    }
+
+    func refreshIndex() async {
+        await rebuildIndex()
+    }
+
+    func application(for id: ApplicationID) -> ApplicationIndexItem? {
+        lock.lock()
+        defer { lock.unlock() }
+        return apps.first { $0.id == id }
     }
 
     func getAppInfo(bundleID: String) -> AppInfo? {
         lock.lock()
-        defer { lock.unlock() }
-        guard let app = apps.first(where: { $0.bundleID == bundleID }) else {
-            return nil
-        }
+        let item = apps.first { $0.bundleIdentifier == bundleID || $0.targetID == bundleID }
+        lock.unlock()
+
+        guard let item else { return nil }
+        let icon = NSWorkspace.shared.icon(forFile: item.path.path)
+        icon.size = NSSize(width: 32, height: 32)
         return AppInfo(
-            name: app.name,
-            bundleID: app.bundleID,
-            path: app.path,
-            icon: app.icon,
-            lastUsed: nil,
-            useCount: useCounts[bundleID] ?? 0
+            name: item.localizedName ?? item.displayName,
+            bundleID: item.bundleIdentifier ?? item.targetID,
+            path: item.path,
+            icon: icon,
+            lastUsed: item.lastLaunchAt,
+            useCount: item.launchCount
         )
     }
 
-    // MARK: - Index Building
-
-    private func buildIndexAsync() {
-        Task.detached(priority: .utility) { [weak self] in
-            guard let self else { return }
-            await self.buildIndex()
-            self.lock.lock()
-            self.isReady = true
-            self.lock.unlock()
-            self.logger.info("Initial application index build complete")
-            NotificationCenter.default.post(name: .appSearchIndexReady, object: nil)
+    func recordApplicationLaunch(_ id: ApplicationID) async {
+        guard let item = application(for: id) else { return }
+        guard let stat = try? await usageRepository.recordUse(targetType: UsageStatRepository.applicationTargetType, targetID: item.targetID) else {
+            return
         }
+        updateUsageStats(for: id, stat: stat)
     }
 
-    private func buildIndex() async {
-        let startTime = CFAbsoluteTimeGetCurrent()
-        let paths = scanApplicationPaths()
-        let indexedApps = paths.compactMap { readAppInfo(from: $0) }
+    // MARK: - Scanning
 
-        lock.lock()
-        apps = indexedApps.sorted { $0.normalizedName < $1.normalizedName }
-        lock.unlock()
-
-        let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
-        logger.info("Indexed \(indexedApps.count) applications in \(String(format: "%.1f", elapsed))ms")
-    }
-
-    /// Scan /Applications and ~/Applications for .app bundles.
     private func scanApplicationPaths() -> [URL] {
+        var seen = Set<String>()
         var paths: [URL] = []
-        let fm = FileManager.default
 
-        // System-wide /Applications
-        if let systemApps = fm.urls(for: .applicationDirectory, in: .localDomainMask).first {
-            paths.append(contentsOf: findAppBundles(in: systemApps))
+        for directory in allowedSearchDirectories {
+            guard isAllowedSearchDirectory(directory) else { continue }
+            for appURL in findAppBundles(in: directory) {
+                let standardized = Self.standardizedDirectory(appURL)
+                guard isAllowedApplicationURL(standardized) else { continue }
+                let key = standardized.path
+                if seen.insert(key).inserted {
+                    paths.append(standardized)
+                }
+            }
         }
-
-        // User ~/Applications
-        if let userApps = fm.urls(for: .applicationDirectory, in: .userDomainMask).first {
-            paths.append(contentsOf: findAppBundles(in: userApps))
-        }
-
         return paths
     }
 
-    /// Recursively find .app bundles in a directory.
     private func findAppBundles(in directory: URL) -> [URL] {
-        let fm = FileManager.default
         var result: [URL] = []
+        var isDirectory: ObjCBool = false
+        guard fileManager.fileExists(atPath: directory.path, isDirectory: &isDirectory), isDirectory.boolValue else {
+            return result
+        }
 
-        guard let enumerator = fm.enumerator(
+        if directory.pathExtension.lowercased() == "app" {
+            return [directory]
+        }
+
+        guard let enumerator = fileManager.enumerator(
             at: directory,
-            includingPropertiesForKeys: [.isDirectoryKey],
-            options: [.skipsHiddenFiles]
+            includingPropertiesForKeys: [.isDirectoryKey, .isPackageKey],
+            options: [.skipsHiddenFiles, .skipsPackageDescendants]
         ) else {
             return result
         }
 
         while let url = enumerator.nextObject() as? URL {
-            if url.pathExtension == "app" {
+            if url.pathExtension.lowercased() == "app" {
                 result.append(url)
                 enumerator.skipDescendants()
             }
         }
-
         return result
     }
 
-    /// Read app metadata from a .app bundle's Info.plist.
-    private func readAppInfo(from appURL: URL) -> IndexedApp? {
-        let plistURL = appURL.appendingPathComponent("Contents/Info.plist")
-        guard let plistData = FileManager.default.contents(atPath: plistURL.path),
-              let plist = try? PropertyListSerialization.propertyList(from: plistData, format: nil) as? [String: Any]
-        else {
-            return nil
-        }
+    private func readApplicationIndexItem(from appURL: URL) async -> ApplicationIndexItem? {
+        guard appURL.pathExtension.lowercased() == "app", isAllowedApplicationURL(appURL) else { return nil }
 
-        // Get display name (prefer CFBundleDisplayName, fallback to CFBundleName)
-        let name: String
-        if let displayName = plist["CFBundleDisplayName"] as? String, !displayName.isEmpty {
-            name = displayName
-        } else if let bundleName = plist["CFBundleName"] as? String, !bundleName.isEmpty {
-            name = bundleName
-        } else {
-            name = appURL.deletingPathExtension().lastPathComponent
-        }
+        let bundle = Bundle(url: appURL)
+        let info = bundle?.infoDictionary ?? readInfoPlist(at: appURL)
+        let localizedInfo = bundle?.localizedInfoDictionary
 
-        // Get bundle ID
-        guard let bundleID = plist["CFBundleIdentifier"] as? String, !bundleID.isEmpty else {
-            return nil
-        }
+        let displayName = firstNonEmptyString([
+            info?["CFBundleDisplayName"],
+            info?["CFBundleName"],
+            appURL.deletingPathExtension().lastPathComponent
+        ]) ?? appURL.deletingPathExtension().lastPathComponent
 
-        // Get app icon from workspace
-        let icon = NSWorkspace.shared.icon(forFile: appURL.path)
-        icon.size = NSSize(width: 32, height: 32)
+        let localizedName = firstNonEmptyString([
+            localizedInfo?["CFBundleDisplayName"],
+            localizedInfo?["CFBundleName"]
+        ])
 
-        return IndexedApp(
-            name: name,
-            bundleID: bundleID,
+        let bundleIdentifier = firstNonEmptyString([info?["CFBundleIdentifier"]])
+        let targetID = Self.makeApplicationTargetID(bundleIdentifier: bundleIdentifier, path: appURL)
+        let stat = await usageRepository.usage(targetType: UsageStatRepository.applicationTargetType, targetID: targetID)
+        let indexName = localizedName ?? displayName
+
+        return ApplicationIndexItem(
+            id: ApplicationID(rawValue: targetID),
+            bundleIdentifier: bundleIdentifier,
+            displayName: displayName,
+            localizedName: localizedName,
             path: appURL,
-            icon: icon,
-            normalizedName: normalize(name),
-            pinyin: PinyinHelper.toPinyin(name),
-            initials: PinyinHelper.toInitials(name)
+            pinyin: PinyinHelper.toPinyin(indexName),
+            initials: PinyinHelper.toInitials(indexName),
+            launchCount: stat?.useCount ?? 0,
+            lastLaunchAt: stat?.lastUsedAt
         )
     }
 
-    // MARK: - Search Strategies
-
-    /// Prefix match using binary search on the sorted index.
-    private func prefixMatch(in apps: [IndexedApp], query: String, limit: Int) -> [IndexedApp] {
-        guard !apps.isEmpty else { return [] }
-
-        // Binary search for the first app whose name starts with the query
-        var low = 0
-        var high = apps.count
-        while low < high {
-            let mid = (low + high) / 2
-            if apps[mid].normalizedName < query {
-                low = mid + 1
-            } else {
-                high = mid
-            }
-        }
-
-        var results: [IndexedApp] = []
-        var i = low
-        while i < apps.count && results.count < limit {
-            if apps[i].normalizedName.hasPrefix(query) {
-                results.append(apps[i])
-            } else {
-                break // Sorted, so no more prefix matches possible
-            }
-            i += 1
-        }
-
-        return results
+    private func readInfoPlist(at appURL: URL) -> [String: Any]? {
+        let plistURL = appURL.appendingPathComponent("Contents/Info.plist")
+        guard let data = fileManager.contents(atPath: plistURL.path) else { return nil }
+        return (try? PropertyListSerialization.propertyList(from: data, format: nil)) as? [String: Any]
     }
 
-    /// Contains match: linear scan excluding already-matched bundle IDs.
-    private func containsMatch(in apps: [IndexedApp], query: String, excluding: Set<String>, limit: Int) -> [IndexedApp] {
-        var results: [IndexedApp] = []
-        for app in apps {
-            if results.count >= limit { break }
-            if excluding.contains(app.bundleID) { continue }
-            if app.normalizedName.contains(query) {
-                results.append(app)
+    private func firstNonEmptyString(_ values: [Any?]) -> String? {
+        for value in values {
+            if let string = value as? String, !string.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return string
             }
         }
-        return results
+        return nil
     }
 
-    /// Fuzzy match using Levenshtein distance.
-    private func fuzzyMatch(in apps: [IndexedApp], query: String, excluding: Set<String>, limit: Int) -> [IndexedApp] {
-        let maxDistance = min(2, max(0, query.count - 1))
-        guard maxDistance > 0 else { return [] }
-
-        var results: [IndexedApp] = []
-        for app in apps {
-            if results.count >= limit { break }
-            if excluding.contains(app.bundleID) { continue }
-            // Skip short names that are unlikely fuzzy matches
-            guard app.normalizedName.count >= query.count - maxDistance else { continue }
-            let distance = levenshteinDistance(query, app.normalizedName)
-            if distance <= maxDistance {
-                results.append(app)
-            }
+    private static func makeApplicationTargetID(bundleIdentifier: String?, path: URL) -> String {
+        if let bundleIdentifier, !bundleIdentifier.isEmpty {
+            return bundleIdentifier
         }
-        return results
+        return "path-\(abs(path.standardizedFileURL.path.hashValue))"
     }
 
-    /// Pinyin / initials match. Returns ranked UnifiedSearchResults directly so
-    /// each app can carry its own match-tier score (prefix > initials > contains).
-    private func pinyinMatch(in apps: [IndexedApp], query: String, excluding: Set<String>, limit: Int) -> [UnifiedSearchResult] {
-        var matched: [(IndexedApp, MatchType)] = []
-        var seenIDs = excluding
-
-        // Pass 1: pinyin prefix (highest)
-        for app in apps {
-            if matched.count >= limit { break }
-            if seenIDs.contains(app.bundleID) { continue }
-            if app.pinyin == app.normalizedName { continue } // Latin-only, already covered
-            if app.pinyin.hasPrefix(query) {
-                matched.append((app, .pinyinPrefix))
-                seenIDs.insert(app.bundleID)
-            }
-        }
-
-        // Pass 2: initials match (whole query equals initials, or prefix of initials)
-        if matched.count < limit {
-            for app in apps {
-                if matched.count >= limit { break }
-                if seenIDs.contains(app.bundleID) { continue }
-                if !app.initials.isEmpty && app.initials.hasPrefix(query) {
-                    matched.append((app, .initials))
-                    seenIDs.insert(app.bundleID)
-                }
-            }
-        }
-
-        // Pass 3: pinyin contains
-        if matched.count < limit {
-            for app in apps {
-                if matched.count >= limit { break }
-                if seenIDs.contains(app.bundleID) { continue }
-                if app.pinyin == app.normalizedName { continue }
-                if app.pinyin.contains(query) {
-                    matched.append((app, .pinyinContains))
-                    seenIDs.insert(app.bundleID)
-                }
-            }
-        }
-
-        return matched.map { buildResult(app: $0.0, matchType: $0.1, queryNormalized: query) }
+    private static func standardizedDirectory(_ url: URL) -> URL {
+        url.standardizedFileURL.resolvingSymlinksInPath()
     }
 
-    // MARK: - Result Building
+    private func isAllowedSearchDirectory(_ directory: URL) -> Bool {
+        let path = Self.standardizedDirectory(directory).path
+        return allowedSearchDirectories.contains { $0.path == path }
+    }
 
-    /// Match type for ranking.
-    private enum MatchType {
-        case prefix
-        case contains
-        case pinyinPrefix
-        case initials
-        case pinyinContains
-        case fuzzy
+    private func isAllowedApplicationURL(_ appURL: URL) -> Bool {
+        let standardizedPath = Self.standardizedDirectory(appURL).path
+        return allowedSearchDirectories.contains { root in
+            let rootPath = root.path.hasSuffix("/") ? root.path : root.path + "/"
+            return standardizedPath.hasPrefix(rootPath) && standardizedPath.hasSuffix(".app")
+        }
+    }
+
+    // MARK: - Matching
+
+    private struct RankedAppMatch {
+        let item: ApplicationIndexItem
+        let kind: AppMatchKind
+    }
+
+    private enum AppMatchKind: Int, Comparable {
+        case exact = 0
+        case prefix = 1
+        case pinyinPrefix = 2
+        case initials = 3
+        case contains = 4
+        case fuzzy = 5
+
+        static func < (lhs: AppMatchKind, rhs: AppMatchKind) -> Bool {
+            lhs.rawValue < rhs.rawValue
+        }
 
         var score: Double {
             switch self {
-            case .prefix:         return 1.0
-            case .contains:       return 0.7
-            case .pinyinPrefix:   return 0.65 // below literal contains; above fuzzy
-            case .initials:       return 0.55
-            case .pinyinContains: return 0.5
-            case .fuzzy:          return 0.4
+            case .exact: return 30
+            case .prefix: return 24
+            case .pinyinPrefix: return 20
+            case .initials: return 18
+            case .contains: return 14
+            case .fuzzy: return 6
             }
         }
     }
 
-    /// Build a UnifiedSearchResult from an indexed app.
-    private func buildResult(app: IndexedApp, matchType: MatchType, queryNormalized: String) -> UnifiedSearchResult {
-        let count = useCounts[app.bundleID] ?? 0
+    private func rankMatches(query: String, apps: [ApplicationIndexItem]) -> [RankedAppMatch] {
+        let normalizedQuery = SearchTextMatcher.normalize(query)
+        guard !normalizedQuery.isEmpty else { return [] }
 
-        // Compute highlight range in the display name
-        var highlightRanges: [NSRange] = []
-        let nameNormalized = normalize(app.name)
-        if let range = nameNormalized.range(of: queryNormalized) {
-            let nsRange = NSRange(range, in: app.name)
-            highlightRanges.append(nsRange)
+        var matches: [RankedAppMatch] = []
+        for item in apps {
+            if let kind = directMatchKind(query: normalizedQuery, item: item) {
+                matches.append(RankedAppMatch(item: item, kind: kind))
+            } else if isFuzzyMatch(query: normalizedQuery, item: item) {
+                matches.append(RankedAppMatch(item: item, kind: .fuzzy))
+            }
         }
 
-        // Encode useCount into the ID for sorting
-        let resultID = "app:\(app.bundleID):\(count)"
+        return matches.sorted { lhs, rhs in
+            if lhs.kind != rhs.kind { return lhs.kind < rhs.kind }
+            if lhs.item.launchCount != rhs.item.launchCount { return lhs.item.launchCount > rhs.item.launchCount }
+            switch (lhs.item.lastLaunchAt, rhs.item.lastLaunchAt) {
+            case let (left?, right?) where left != right:
+                return left > right
+            case (_?, nil):
+                return true
+            case (nil, _?):
+                return false
+            default:
+                let left = lhs.item.localizedName ?? lhs.item.displayName
+                let right = rhs.item.localizedName ?? rhs.item.displayName
+                return left.localizedCaseInsensitiveCompare(right) == .orderedAscending
+            }
+        }
+    }
 
-        return UnifiedSearchResult(
-            id: resultID,
-            title: app.name,
-            subtitle: app.bundleID,
-            icon: app.icon,
-            type: .application,
-            score: matchType.score,
-            highlightRanges: highlightRanges,
-            action: .launchApp(bundleID: app.bundleID, path: app.path)
+    private func directMatchKind(query normalizedQuery: String, item: ApplicationIndexItem) -> AppMatchKind? {
+        let title = item.localizedName ?? item.displayName
+        let aliases = [item.displayName, item.localizedName, item.bundleIdentifier]
+            .compactMap { $0 }
+            .filter { $0 != title }
+        let candidate = SearchTextCandidate(
+            text: title,
+            aliases: aliases,
+            pinyin: item.pinyin,
+            initials: item.initials
         )
-    }
-
-    /// Extract use count encoded in result ID.
-    private func extractUseCount(from id: String) -> Int {
-        let parts = id.split(separator: ":")
-        if parts.count >= 3, let count = Int(parts[2]) {
-            return count
+        guard let match = SearchTextMatcher.match(query: normalizedQuery, candidate: candidate) else { return nil }
+        switch match {
+        case .exact:
+            return .exact
+        case .prefix, .alias:
+            return .prefix
+        case .pinyinPrefix:
+            return .pinyinPrefix
+        case .initials:
+            return .initials
+        case .contains, .pinyinContains:
+            return .contains
         }
-        return 0
     }
 
-    /// Extract bundleID encoded in result ID format "app:<bundleID>:<count>".
-    private func extractBundleID(from id: String) -> String? {
-        let parts = id.split(separator: ":")
-        return parts.count >= 2 ? String(parts[1]) : nil
+    private func isFuzzyMatch(query: String, item: ApplicationIndexItem) -> Bool {
+        guard query.count >= 3 else { return false }
+        let title = SearchTextMatcher.normalize(item.localizedName ?? item.displayName)
+        let maxDistance = min(2, max(1, query.count / 4))
+        return levenshteinDistance(query, title) <= maxDistance
     }
 
-    /// True when the (normalized) query contains only ASCII characters, i.e.
-    /// it could plausibly be a pinyin/initials prefix typed by the user.
-    private func isASCIIQuery(_ query: String) -> Bool {
-        for scalar in query.unicodeScalars where scalar.value > 127 {
-            return false
+    private func buildResults(from matches: [RankedAppMatch]) async -> [SearchResult] {
+        var results: [SearchResult] = []
+        results.reserveCapacity(matches.count)
+
+        for match in matches {
+            let latestStat = await usageRepository.usage(targetType: UsageStatRepository.applicationTargetType, targetID: match.item.targetID)
+            let usageScore = UsageStatRepository.usageBoost(
+                useCount: latestStat?.useCount ?? match.item.launchCount,
+                lastUsedAt: latestStat?.lastUsedAt ?? match.item.lastLaunchAt
+            )
+            let title = match.item.localizedName ?? match.item.displayName
+            results.append(SearchResult(
+                id: SearchResultID(rawValue: "app:\(match.item.targetID)"),
+                sourceID: .app,
+                title: title,
+                subtitle: match.item.path.path,
+                icon: .appIcon(match.item.path),
+                typeLabel: "Application",
+                baseScore: SourcePriority.application,
+                matchScore: match.kind.score,
+                usageScore: usageScore,
+                primaryAction: .openApplication(match.item.id),
+                secondaryActions: []
+            ))
         }
-        return !query.isEmpty
+        return results
     }
 
-    // MARK: - String Helpers
+    private func levenshteinDistance(_ lhs: String, _ rhs: String) -> Int {
+        let left = Array(lhs)
+        let right = Array(rhs)
+        guard !left.isEmpty else { return right.count }
+        guard !right.isEmpty else { return left.count }
 
-    /// Normalize a string for matching: lowercase + strip diacritics.
-    private func normalize(_ string: String) -> String {
-        return string.folding(options: .diacriticInsensitive, locale: .current).lowercased()
-    }
-
-    // MARK: - Levenshtein Distance
-
-    /// Compute Levenshtein edit distance between two strings.
-    private func levenshteinDistance(_ s: String, _ t: String) -> Int {
-        let sChars = Array(s)
-        let tChars = Array(t)
-        let sCount = sChars.count
-        let tCount = tChars.count
-
-        guard sCount > 0 else { return tCount }
-        guard tCount > 0 else { return sCount }
-
-        // Use two-row optimization to save memory
-        var prev = [Int](0...tCount)
-        var curr = [Int](repeating: 0, count: tCount + 1)
-
-        for i in 1...sCount {
-            curr[0] = i
-            for j in 1...tCount {
-                let cost = sChars[i - 1] == tChars[j - 1] ? 0 : 1
-                curr[j] = min(
-                    prev[j] + 1,       // deletion
-                    curr[j - 1] + 1,   // insertion
-                    prev[j - 1] + cost  // substitution
-                )
+        var previous = Array(0...right.count)
+        var current = Array(repeating: 0, count: right.count + 1)
+        for i in 1...left.count {
+            current[0] = i
+            for j in 1...right.count {
+                let cost = left[i - 1] == right[j - 1] ? 0 : 1
+                current[j] = min(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + cost)
             }
-            swap(&prev, &curr)
+            swap(&previous, &current)
         }
-
-        return prev[tCount]
+        return previous[right.count]
     }
 
-    // MARK: - Periodic Refresh
+    // MARK: - State helpers
+
+    private func readySnapshot() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return isReady
+    }
+
+    private func appSnapshot() -> [ApplicationIndexItem] {
+        lock.lock()
+        defer { lock.unlock() }
+        return apps
+    }
+
+    private func updateUsageStats(for id: ApplicationID, stat: UsageStatSnapshot) {
+        lock.lock()
+        defer { lock.unlock() }
+        apps = apps.map { item in
+            guard item.id == id else { return item }
+            return ApplicationIndexItem(
+                id: item.id,
+                bundleIdentifier: item.bundleIdentifier,
+                displayName: item.displayName,
+                localizedName: item.localizedName,
+                path: item.path,
+                pinyin: item.pinyin,
+                initials: item.initials,
+                launchCount: stat.useCount,
+                lastLaunchAt: stat.lastUsedAt
+            )
+        }
+    }
 
     private func schedulePeriodicRefresh() {
         refreshTimer = Timer.scheduledTimer(withTimeInterval: 300, repeats: true) { [weak self] _ in
-            self?.logger.debug("Periodic app index refresh triggered")
-            self?.refreshIndexAsync()
+            Task.detached(priority: .utility) { [weak self] in
+                await self?.refreshIndex()
+            }
         }
     }
-
-    /// Refresh the index in the background.
-    private func refreshIndexAsync() {
-        Task.detached(priority: .utility) { [weak self] in
-            guard let self else { return }
-            await self.buildIndex()
-            self.logger.info("Application index refreshed")
-        }
-    }
-
-    // MARK: - Use Count Tracking
-
-    /// Record that an app was launched via search, incrementing its use count.
-    func recordAppLaunch(bundleID: String) {
-        useCounts[bundleID, default: 0] += 1
-        if let data = try? JSONEncoder().encode(useCounts) {
-            UserDefaults.standard.set(data, forKey: useCountKey)
-        }
-        logger.debug("Recorded app launch for '\(bundleID, privacy: .public)', count=\(self.useCounts[bundleID] ?? 0)")
-    }
-}
-
-// MARK: - Indexed App (Internal)
-
-/// Internal representation of an indexed application.
-private struct IndexedApp {
-    let name: String
-    let bundleID: String
-    let path: URL
-    let icon: NSImage?
-    let normalizedName: String
-    /// Full pinyin (e.g. "weixin" for "微信"). Equals `normalizedName` when
-    /// `name` is already Latin.
-    let pinyin: String
-    /// Pinyin initials (e.g. "wx" for "微信"; "sf" for "Safari" → "safari").
-    let initials: String
 }
 
 // MARK: - Notification Names

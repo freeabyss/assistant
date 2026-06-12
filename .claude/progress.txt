@@ -2885,3 +2885,55 @@ US-025 从零构建了完整的截图标注编辑器，替换 US-024 的 Annotat
 - US-008 应实现 14 个 MVP 内置命令权威清单，建议迁移到新 `SearchSource` / `CommandID` 模型，并继续复用 `SearchTextMatcher` 的中英文别名、拼音和首字母匹配；不要复用旧历史高风险命令清单作为 MVP 权威范围。
 - US-010 / US-015 可复用 `SearchBlacklistRepository` 的 add/list/remove/contains 接口实现设置页黑名单查看、添加和移除；从搜索结果右键菜单或 secondary action 加入黑名单仍属于后续版本能力。
 - 本次仍保留旧 `UnifiedSearchService` / `UnifiedSearchSource` / 历史 GRDB 搜索链路，避免大规模 UI 迁移；后续迁移时注意不要混淆旧兼容层和当前 Assistant MVP `SearchService`。
+
+## 2026-06-12 - Assistant MVP US-007 AppSource 应用启动
+
+### 任务状态
+- US-007 已完成，`.claude/task.json` 中 `US-007.passes=true`、`blocked=false`。
+- 本次只处理当前 Assistant MVP 任务体系中的 US-007；未实现 US-008+ 内置白名单命令、US-011 统一搜索面板 UI 或后续管理中心 UI。
+
+### 完成内容
+1. **真实 AppSource 与 MVP 扫描范围**
+   - 重写 `SnapVault/Services/SearchEngine/AppSearchSource.swift`，将 AppSource 接入当前 US-005/US-006 的 `SearchSource` / `SearchResult` / `SearchTextMatcher` 模型，同时保留旧 `UnifiedSearchSource` 兼容入口，避免大规模迁移现有 UI。
+   - 默认搜索范围严格限定为 `/Applications`、`~/Applications`、`/System/Applications`，只索引 `.app` bundle；测试中验证配置目录外的 `.app` 不进入索引。
+   - 索引构建使用 `FileManager.enumerator` 扫描 bundle，不扫描全盘；遇到 `.app` 后跳过子目录。
+
+2. **ApplicationIndexItem 内存索引字段**
+   - 新增 `ApplicationIndexItem`，包含稳定 `ApplicationID`、bundle identifier、display name、localized name、路径、拼音、首字母、launchCount、lastLaunchAt。
+   - 从 bundle `Info.plist` / `localizedInfoDictionary` 提取应用名称、localized name、bundle id，图标通过 `SearchResultIcon.appIcon(URL)` 懒加载表达，避免把 `NSImage` 放进 Hashable 索引。
+   - 对中文或混合名称使用 `PinyinHelper.toPinyin` / `toInitials` 生成拼音和首字母。
+
+3. **应用匹配策略**
+   - 搜索支持精确、前缀、拼音前缀、拼音首字母、包含、模糊匹配。
+   - 复用 US-006 的 `SearchTextMatcher` 处理标题、localized name、bundle id 等候选字段；模糊匹配使用 Levenshtein 距离保护短查询。
+   - `SearchResult` 使用稳定 id `app:<bundleID or path-id>`，便于黑名单和使用统计定位具体应用。
+
+4. **启动 App 与使用统计**
+   - 新增 `ApplicationLaunching` / `NSWorkspaceApplicationLauncher`，真实启动通过 `NSWorkspace.shared.openApplication(at:configuration:)`，不执行任意 shell。
+   - 新增 `AppSearchActionExecutor`，执行 `.openApplication(ApplicationID)` 时通过 macOS API 启动应用，并在成功后记录使用统计。
+   - 新增 `UsageStatRepository`，基于 US-002 Core Data `UsageStat` 实体记录应用启动次数和最后启动时间，并实现 `SearchUsageStoreProtocol`，可供后续 CommandSource 复用。
+   - AppSource 搜索结果结合 Core Data 使用统计计算 usageScore，最近/高频应用排序加权生效。
+
+5. **黑名单接入**
+   - AppSource 结果的 `sourceID=.app`、稳定 `SearchResultID` 与 US-006 `SearchBlacklistRepository` / `SearchService` 兼容。
+   - 新增测试验证加入黑名单后具体 App 结果被隐藏，移除后恢复展示。
+
+6. **测试覆盖**
+   - 新增 `SnapVaultTests/AppSearchSourceTests.swift`，覆盖 6 个测试：MVP 默认三目录、只扫描配置应用目录、ApplicationIndexItem 字段、精确/前缀/拼音/首字母/包含/模糊匹配、黑名单过滤和移除恢复、UsageStat 持久化与排序加权、AppSearchActionExecutor 使用 macOS API 启动并记录统计。
+   - 更新 `SnapVault.xcodeproj/project.pbxproj`，将新测试加入 Xcode test target。
+
+### 技术方案核对
+- 已按要求阅读 `.claude/progress.txt`、`.claude/task.json`、`doc/prd.md`、`doc/architecture.md`、`doc/architecture_db.md`、`doc/architecture_api.md`、`doc/test.md`。
+- 现有文档已覆盖 US-007 所需方案：PRD FR-APP-1~6、FR-SEARCH-10/12、architecture.md 第 8 节、architecture_db.md UsageStat/SearchBlacklistItem、architecture_api.md AppSource/SearchAction/SearchService 接口、doc/test.md 3.1/3.2/3.3/3.8。
+- 本次未发现必须补充架构文档的缺口，因此未修改 `doc/architecture*.md`、`doc/prd.md` 或 `doc/test.md`。
+
+### 验证结果
+- `swift test --skip-update`：通过，执行 79 个 XCTest，79 通过、0 失败。
+- `xcodebuild -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug build`：通过，`** BUILD SUCCEEDED **`。
+- `xcodebuild test -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug`：通过，执行 79 个 XCTest，79 通过、0 失败，`** TEST SUCCEEDED **`。
+- Xcode test 期间出现 `com.apple.linkd.autoShortcut` 连接日志，但测试最终通过，未影响 US-007 验收。
+
+### 留给后续 Agent 的提示
+- US-008 可复用 `UsageStatRepository` 记录命令执行次数和最后执行时间，但必须以 `doc/architecture_api.md` 的 14 个 MVP 内置命令权威清单为准，不要复用旧历史高风险命令清单。
+- US-011 统一搜索面板执行应用结果时，可将 `AppSearchActionExecutor` 注入 `SearchService` 或组合执行器；执行后 `SearchService.execute` 已具备关闭搜索框事件语义。
+- 当前仍保留旧 `UnifiedSearchService` / `UnifiedSearchSource` 兼容层和历史 GRDB 搜索链路，避免在 US-007 中做 UI 大迁移；后续迁移时注意区分旧兼容层和当前 Assistant MVP `SearchService`。

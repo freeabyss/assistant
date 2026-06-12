@@ -124,7 +124,7 @@
       "id": "US-007",
       "title": "AppSource 应用启动",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": ["US-006"],
       "steps": [
