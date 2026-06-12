@@ -74,6 +74,8 @@
 		A10001000000000000000043 /* AssistantClipboardRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000043; };
 		A10001000000000000000044 /* InMemorySearchIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000044; };
 		A10001000000000000000045 /* InMemorySearchIndexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000045; };
+		B00500000000000000000001 /* SearchCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00500000000000000000002; };
+		B00500000000000000000003 /* SearchServiceCoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00500000000000000000004; };
 		/* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -148,6 +150,8 @@
 		A10000000000000000000043 /* AssistantClipboardRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantClipboardRepositoryTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000044 /* InMemorySearchIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InMemorySearchIndex.swift; sourceTree = "<group>"; };
 		A10000000000000000000045 /* InMemorySearchIndexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InMemorySearchIndexTests.swift; sourceTree = "<group>"; };
+		B00500000000000000000002 /* SearchCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchCore.swift; sourceTree = "<group>"; };
+		B00500000000000000000004 /* SearchServiceCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchServiceCoreTests.swift; sourceTree = "<group>"; };
 		/* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -302,6 +306,7 @@
 				A10000000000000000000041 /* PersistenceControllerTests.swift */,
 				A10000000000000000000043 /* AssistantClipboardRepositoryTests.swift */,
 				A10000000000000000000045 /* InMemorySearchIndexTests.swift */,
+				B00500000000000000000004 /* SearchServiceCoreTests.swift */,
 			);
 			path = SnapVaultTests;
 			sourceTree = "<group>";
@@ -388,6 +393,7 @@
 				A1000000000000000000002E /* CalculatorSource.swift */,
 				A1000000000000000000002F /* UnitConverterSource.swift */,
 				A10000000000000000000044 /* InMemorySearchIndex.swift */,
+				B00500000000000000000002 /* SearchCore.swift */,
 			);
 			path = SearchEngine;
 			sourceTree = "<group>";
@@ -609,6 +615,7 @@
 				A10001000000000000000041 /* PersistenceControllerTests.swift in Sources */,
 				A10001000000000000000043 /* AssistantClipboardRepositoryTests.swift in Sources */,
 				A10001000000000000000045 /* InMemorySearchIndexTests.swift in Sources */,
+				B00500000000000000000003 /* SearchServiceCoreTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -655,6 +662,7 @@
 				A1000100000000000000002E /* CalculatorSource.swift in Sources */,
 				A1000100000000000000002F /* UnitConverterSource.swift in Sources */,
 				A10001000000000000000044 /* InMemorySearchIndex.swift in Sources */,
+				B00500000000000000000001 /* SearchCore.swift in Sources */,
 				A10001000000000000000026 /* ScreenshotService.swift in Sources */,
 				A10001000000000000000027 /* ScreenshotOverlay.swift in Sources */,
 				A10001000000000000000028 /* UnifiedSearchViewModel.swift in Sources */,

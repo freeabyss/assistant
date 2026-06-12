@@ -13,7 +13,7 @@ struct AppInfo {
 }
 
 /// Protocol for application search source.
-protocol AppSearchSourceProtocol: SearchSource {
+protocol AppSearchSourceProtocol: UnifiedSearchSource {
     /// Build or refresh the application index.
     func rebuildIndex() async
 

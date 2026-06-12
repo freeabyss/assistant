@@ -20,7 +20,7 @@ import os.log
 ///
 /// If the input does not parse, or the unit token is unknown, the source
 /// silently returns `[]` so it does not pollute other search results.
-final class UnitConverterSource: SearchSource {
+final class UnitConverterSource: UnifiedSearchSource {
     let sourceType: SearchResultType = .unitConversion
     private let logger = Logger.search
 

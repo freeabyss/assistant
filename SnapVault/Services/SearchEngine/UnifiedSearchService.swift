@@ -6,7 +6,7 @@ import os.log
 /// Protocol for the unified search service.
 protocol UnifiedSearchServiceProtocol {
     /// Register a search source.
-    func registerSource(_ source: SearchSource)
+    func registerSource(_ source: UnifiedSearchSource)
 
     /// Search all registered sources in parallel.
     /// - Parameters:
@@ -28,7 +28,7 @@ protocol UnifiedSearchServiceProtocol {
 /// results grouped by type.
 final class UnifiedSearchService: UnifiedSearchServiceProtocol {
     private let logger = Logger.search
-    private var sources: [SearchSource] = []
+    private var sources: [UnifiedSearchSource] = []
     private let sourcesLock = NSLock()
 
     /// User selection frequency for ranking boost.
@@ -53,7 +53,7 @@ final class UnifiedSearchService: UnifiedSearchServiceProtocol {
 
     // MARK: - UnifiedSearchServiceProtocol
 
-    func registerSource(_ source: SearchSource) {
+    func registerSource(_ source: UnifiedSearchSource) {
         sourcesLock.lock()
         defer { sourcesLock.unlock() }
         sources.append(source)

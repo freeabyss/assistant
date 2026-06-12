@@ -14,7 +14,7 @@ import os.log
 ///
 /// Failure modes (division by zero, syntax errors, non-numeric result, ...)
 /// silently return `[]` so the user simply sees no calculator row.
-final class CalculatorSource: SearchSource {
+final class CalculatorSource: UnifiedSearchSource {
     let sourceType: SearchResultType = .calculator
     private let logger = Logger.search
 

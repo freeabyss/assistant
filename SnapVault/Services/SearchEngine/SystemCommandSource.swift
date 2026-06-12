@@ -6,7 +6,7 @@ import os.log
 ///
 /// Holds a fixed in-memory catalog of commands with English primary keywords
 /// and bilingual (Chinese / English) aliases. Matching strategy: prefix > contains > alias.
-final class SystemCommandSource: SearchSource {
+final class SystemCommandSource: UnifiedSearchSource {
     let sourceType: SearchResultType = .systemCommand
     private let logger = Logger.search
 

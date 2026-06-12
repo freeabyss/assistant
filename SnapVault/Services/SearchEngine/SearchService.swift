@@ -10,7 +10,7 @@ enum SearchScope {
 }
 
 /// A search result with relevance scoring and highlight information.
-struct SearchResult {
+struct ClipboardFTSSearchResult {
     let item: ClipboardItem
     let score: Double
     let matchedField: String
@@ -18,8 +18,8 @@ struct SearchResult {
 }
 
 /// Protocol for search operations.
-protocol SearchServiceProtocol {
-    func search(query: String, limit: Int, scope: SearchScope) async throws -> [SearchResult]
+protocol ClipboardSearchServiceProtocol {
+    func search(query: String, limit: Int, scope: SearchScope) async throws -> [ClipboardFTSSearchResult]
 }
 
 /// Search service combining FTS5 and Spotlight results.
@@ -27,14 +27,14 @@ protocol SearchServiceProtocol {
 /// Primary search: GRDB FTS5 (fast, local, immediate).
 /// Supplementary search: NSMetadataQuery / Spotlight (covers system-indexed content).
 /// Spotlight results are merged with FTS5 results, deduped by item id, and sorted by relevance.
-final class SearchService: SearchServiceProtocol {
+final class ClipboardFTSSearchService: ClipboardSearchServiceProtocol {
     private let logger = Logger.search
     private let repository = ContentRepository()
 
     /// Spotlight query timeout in seconds.
     private let spotlightTimeout: TimeInterval = 2.0
 
-    func search(query: String, limit: Int = 50, scope: SearchScope = .all) async throws -> [SearchResult] {
+    func search(query: String, limit: Int = 50, scope: SearchScope = .all) async throws -> [ClipboardFTSSearchResult] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return [] }
 
@@ -56,7 +56,7 @@ final class SearchService: SearchServiceProtocol {
     // MARK: - FTS5 Search
 
     /// Search using GRDB FTS5 full-text index.
-    private func searchFTS5(query: String, limit: Int, scope: SearchScope) throws -> [SearchResult] {
+    private func searchFTS5(query: String, limit: Int, scope: SearchScope) throws -> [ClipboardFTSSearchResult] {
         let ftsResults = try repository.searchStructured(query: query, limit: limit, scope: scope)
 
         return ftsResults.map { ftsResult in
@@ -64,7 +64,7 @@ final class SearchService: SearchServiceProtocol {
                 in: ftsResult.item.textContent ?? ftsResult.item.ocrText ?? "",
                 query: query
             )
-            return SearchResult(
+            return ClipboardFTSSearchResult(
                 item: ftsResult.item,
                 score: ftsResult.score,
                 matchedField: ftsResult.matchedField,
@@ -76,7 +76,7 @@ final class SearchService: SearchServiceProtocol {
     // MARK: - Spotlight Search
 
     /// Search using NSMetadataQuery (Spotlight) as supplementary source.
-    private func searchSpotlight(query: String, limit: Int, scope: SearchScope) async -> [SearchResult] {
+    private func searchSpotlight(query: String, limit: Int, scope: SearchScope) async -> [ClipboardFTSSearchResult] {
         // Spotlight is supplementary; if it fails or times out, we still have FTS5 results.
         return await withCheckedContinuation { continuation in
             let metadataQuery = NSMetadataQuery()
@@ -103,7 +103,7 @@ final class SearchService: SearchServiceProtocol {
             var didResume = false
             let lock = NSLock()
 
-            func safeResume(with results: [SearchResult]) {
+            func safeResume(with results: [ClipboardFTSSearchResult]) {
                 lock.lock()
                 defer { lock.unlock() }
                 guard !didResume else { return }
@@ -143,10 +143,10 @@ final class SearchService: SearchServiceProtocol {
     }
 
     /// Process Spotlight query results into SearchResult objects.
-    private func processSpotlightResults(_ query: NSMetadataQuery, limit: Int) -> [SearchResult] {
+    private func processSpotlightResults(_ query: NSMetadataQuery, limit: Int) -> [ClipboardFTSSearchResult] {
         guard let items = query.results as? [NSMetadataItem] else { return [] }
 
-        var results: [SearchResult] = []
+        var results: [ClipboardFTSSearchResult] = []
         let searchText = query.predicate?.predicateFormat ?? ""
 
         for metadataItem in items.prefix(limit) {
@@ -163,7 +163,7 @@ final class SearchService: SearchServiceProtocol {
                 let relevance = metadataItem.value(forAttribute: NSMetadataQueryResultContentRelevanceAttribute as String) as? Double ?? 0.5
                 let highlightRanges = computeHighlightRanges(in: textContent, query: searchText)
 
-                results.append(SearchResult(
+                results.append(ClipboardFTSSearchResult(
                     item: existingItem,
                     score: relevance,
                     matchedField: "text_content",
@@ -178,9 +178,9 @@ final class SearchService: SearchServiceProtocol {
     // MARK: - Result Merging
 
     /// Merge FTS5 and Spotlight results, dedup by item id, sort by relevance.
-    private func mergeResults(ftsResults: [SearchResult], spotlightResults: [SearchResult], limit: Int) -> [SearchResult] {
+    private func mergeResults(ftsResults: [ClipboardFTSSearchResult], spotlightResults: [ClipboardFTSSearchResult], limit: Int) -> [ClipboardFTSSearchResult] {
         var seen = Set<Int64>()
-        var merged: [SearchResult] = []
+        var merged: [ClipboardFTSSearchResult] = []
 
         // FTS5 results take priority (they are always fresh and directly indexed)
         for result in ftsResults {

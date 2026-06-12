@@ -108,7 +108,7 @@ struct UnifiedSearchResponse {
 ///
 /// Each source searches a specific domain (apps, files, clipboard)
 /// and returns results in the unified format.
-protocol SearchSource {
+protocol UnifiedSearchSource {
     /// The type of results this source produces.
     var sourceType: SearchResultType { get }
 

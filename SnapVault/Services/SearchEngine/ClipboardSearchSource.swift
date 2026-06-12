@@ -7,14 +7,14 @@ import os.log
 /// Wraps the existing SearchService (FTS5 + Spotlight) and adapts
 /// results to the unified SearchSource protocol.
 ///
-/// Also conforms to SearchServiceProtocol for backward compatibility
+/// Also conforms to ClipboardSearchServiceProtocol for backward compatibility
 /// with ClipboardListViewModel.
-final class ClipboardSearchSource: SearchSource, SearchServiceProtocol {
+final class ClipboardSearchSource: UnifiedSearchSource, ClipboardSearchServiceProtocol {
     let sourceType: SearchResultType = .clipboard
     private let logger = Logger.search
-    private let searchService: SearchService
+    private let searchService: ClipboardFTSSearchService
 
-    init(searchService: SearchService = SearchService()) {
+    init(searchService: ClipboardFTSSearchService = ClipboardFTSSearchService()) {
         self.searchService = searchService
     }
 
@@ -25,16 +25,16 @@ final class ClipboardSearchSource: SearchSource, SearchServiceProtocol {
         return results.map { convertToUnified($0) }
     }
 
-    // MARK: - SearchServiceProtocol (backward compatibility)
+    // MARK: - ClipboardSearchServiceProtocol (backward compatibility)
 
-    func search(query: String, limit: Int, scope: SearchScope) async throws -> [SearchResult] {
+    func search(query: String, limit: Int, scope: SearchScope) async throws -> [ClipboardFTSSearchResult] {
         return try await searchService.search(query: query, limit: limit, scope: scope)
     }
 
     // MARK: - Conversion
 
-    /// Convert a legacy SearchResult to a UnifiedSearchResult.
-    private func convertToUnified(_ result: SearchResult) -> UnifiedSearchResult {
+    /// Convert a legacy ClipboardFTSSearchResult to a UnifiedSearchResult.
+    private func convertToUnified(_ result: ClipboardFTSSearchResult) -> UnifiedSearchResult {
         let item = result.item
         let title = item.textContent ?? item.ocrText ?? item.filePath ?? L10n.localized("clipboard.untitled")
         let subtitle = buildSubtitle(for: item)

@@ -2787,3 +2787,42 @@ US-025 从零构建了完整的截图标注编辑器，替换 US-024 的 Annotat
 - US-005 可基于 `ClipboardIndexQueryService` / `InMemorySearchIndexProtocol` 实现 ClipboardSource Provider，不需要直接查询 Core Data 或加载大对象。
 - US-012 接入真实剪贴板监听链路时，建议将 `ClipboardRepository` 包装为 `IndexingClipboardRepository` 后注入 ClipboardService，从而保证写入后自动同步索引。
 - 当前保留旧 GRDB / FTS5 `ClipboardSearchSource` 和旧搜索 UI 链路，属于历史实现和现有 app 兼容层；后续 Assistant MVP SearchSource 迁移应逐步接入新索引，不要在 US-004 范围内删除旧链路。
+
+## 2026-06-12 - Assistant MVP US-005 SearchSource Provider 与搜索服务核心
+
+### 完成内容
+1. **新增 Assistant MVP 搜索核心接口与模型**
+   - 新建 `SnapVault/Services/SearchEngine/SearchCore.swift`，实现当前 `doc/architecture_api.md` 定义的 `SearchSource`、`SearchResult`、`SearchAction`、`SearchServiceProtocol`、`SearchResponse`、`SearchResultID`、`SearchResultIcon` 等核心模型。
+   - 补充 `ApplicationID`、`CommandID`、`SettingsRoute`、`AssistantScreenshotMode` 等动作载荷类型，支持应用、剪贴板、文本复制、命令、设置、截图主动作。
+   - 为后续 UI 提供 `SearchResponse.shouldCloseSearchPanel`，执行主动作后返回关闭搜索框事件语义。
+
+2. **SearchService 聚合与排序**
+   - `SearchService` 可注入多个 mock/真实 Provider，并发聚合结果。
+   - 空输入直接返回空结果，不调用任何 Provider，不展示推荐/最近内容。
+   - 按 Provider 自身 `canSearch(query:)` 执行分来源触发规则；提供 `SearchTriggerRules` 标准辅助：应用/命令/设置 1 字符、剪贴板 2 字符，其它来源按模式检测。
+   - 排序采用来源基础优先级 + 文本匹配分数 + 最近使用加权；来源优先级与 PRD/API 一致：应用 100、命令 90、计算/换算 85、设置 80、剪贴板 70。
+   - 所有来源结果合并后统一排序，总上限 12 条，不按来源分组或按来源截断。
+   - `SearchResult` 包含图标 `icon` 与类型标签 `typeLabel` 字段。
+
+3. **最近使用与执行抽象**
+   - 新增 `SearchUsageStoreProtocol` 与 `InMemorySearchUsageStore`，当前实现应用/命令使用次数和最后使用时间加权，行为数据保留在本地内存实现中，后续 US-007/US-008 可替换为 Core Data `UsageStat`。
+   - 新增 `SearchActionExecutorProtocol` 与 no-op 默认执行器；US-011 UI/后续系统集成可注入真实执行器。
+
+4. **兼容旧历史统一搜索实现**
+   - 将旧 `UnifiedSearchTypes.swift` 中历史统一搜索协议重命名为 `UnifiedSearchSource`，避免与当前 Assistant MVP `SearchSource` 冲突。
+   - 将旧剪贴板 FTS 搜索 `SearchService/SearchResult/SearchServiceProtocol` 重命名为 `ClipboardFTSSearchService/ClipboardFTSSearchResult/ClipboardSearchServiceProtocol`，保留旧 ClipboardListViewModel 和历史 GRDB/FTS 链路可编译，不删除旧实现。
+
+5. **单元测试覆盖**
+   - 新建 `SnapVaultTests/SearchServiceCoreTests.swift`，覆盖 mock Provider 聚合、空输入、分来源触发、排序、总上限 12、图标/类型标签、主动作执行后关闭事件、recordSelection 最近使用加权。
+   - 更新 `SnapVault.xcodeproj/project.pbxproj`，将 `SearchCore.swift` 和 `SearchServiceCoreTests.swift` 加入 Xcode app/test Sources。
+
+### 验证结果
+- `swift test --skip-update`：通过，执行 62 个 XCTest，62 通过、0 失败。
+- `xcodebuild -project SnapVault.xcodeproj -scheme SnapVault -configuration Debug build`：通过，`** BUILD SUCCEEDED **`。
+- `xcodebuild test -project SnapVault.xcodeproj -scheme SnapVault -configuration Debug`：通过，执行 62 个 XCTest，62 通过、0 失败，`** TEST SUCCEEDED **`。
+
+### 留给后续 Agent 的提示
+- US-006 可基于新的 `SearchSource` / `SearchResult` 模型实现拼音、别名和黑名单过滤；黑名单 Repository 尚未接入 `SearchService`，应在 US-006 按 task 要求补齐。
+- US-007/US-008 实现真实 AppSource/CommandSource 时，可使用 `SourcePriority` 与 `SearchUsageStoreProtocol`，并将 `UsageStat` 的 Core Data 持久化实现注入 `SearchService`。
+- 当前 `SearchActionExecutorProtocol` 默认 no-op，仅用于核心服务和测试；统一搜索面板 UI 执行动作时应注入真实执行器，并根据 `shouldCloseSearchPanel` 关闭搜索框。
+- 旧 `UnifiedSearchService` / `UnifiedSearchSource` / `ClipboardFTSSearchService` 是历史兼容层，后续迁移 UI 时注意不要与新 Assistant MVP `SearchService` 混淆。

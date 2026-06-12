@@ -14,7 +14,7 @@ struct FileInfo {
 }
 
 /// Protocol for file search source.
-protocol FileSearchSourceProtocol: SearchSource {
+protocol FileSearchSourceProtocol: UnifiedSearchSource {
     /// Set the search scope (default: user home directory).
     func setSearchScope(_ paths: [URL])
 
