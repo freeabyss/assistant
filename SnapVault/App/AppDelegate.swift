@@ -24,6 +24,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Floating panel that hosts the main SwiftUI view.
     private var panel: NSPanel?
 
+    /// Dedicated window that hosts the Assistant MVP clipboard history page.
+    private var clipboardWindow: NSWindow?
+
     /// Cancellable for observing search state changes.
     private var searchStateCancellable: AnyCancellable?
 
@@ -245,9 +248,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         showPanel()
     }
 
+    @MainActor
     @objc private func openClipboardFromMenu() {
         logger.info("Clipboard selected from status menu")
-        showPanel()
+        showClipboardHistoryWindow()
     }
 
     @objc private func startScreenshotFromMenu() {
@@ -384,6 +388,61 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             context.duration = 0.12
             context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
             panel.animator().setFrame(newFrame, display: true)
+        }
+    }
+
+    @MainActor
+    private func showClipboardHistoryWindow() {
+        closePanel(animate: false)
+
+        if let clipboardWindow {
+            clipboardWindow.makeKeyAndOrderFront(nil)
+            activateApp()
+            return
+        }
+
+        let queryService = ClipboardIndexQueryService(index: assistantClipboardIndex, repository: assistantClipboardRepository)
+        let actionExecutor = SearchPanelActionExecutor(
+            appExecutor: NoopSearchActionExecutor(),
+            commandExecutor: NoopSearchActionExecutor(),
+            clipboardRepository: assistantClipboardRepository,
+            resourceStore: assistantResourceStore
+        )
+        let viewModel = ClipboardListViewModel(
+            queryService: queryService,
+            repository: assistantClipboardRepository,
+            historyService: ClipboardHistoryService(repository: assistantClipboardRepository),
+            actionExecutor: actionExecutor,
+            resourceStore: assistantResourceStore
+        )
+        let view = ClipboardListView(viewModel: viewModel)
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 820, height: 620),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "Clipboard History"
+        window.center()
+        window.contentView = NSHostingView(rootView: view)
+        window.isReleasedWhenClosed = false
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification,
+            object: window,
+            queue: .main
+        ) { [weak self] _ in
+            self?.clipboardWindow = nil
+        }
+        clipboardWindow = window
+        window.makeKeyAndOrderFront(nil)
+        activateApp()
+    }
+
+    private func activateApp() {
+        if #available(macOS 14.0, *) {
+            NSApp.activate()
+        } else {
+            NSApp.activate(ignoringOtherApps: true)
         }
     }
 

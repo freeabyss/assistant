@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 			B01200000000000000000001 /* ClipboardMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01200000000000000000002 /* ClipboardMonitorTests.swift */; };
+			B01300000000000000000001 /* ClipboardListViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01300000000000000000002 /* ClipboardListViewModelTests.swift */; };
 		A10001000000000000000001 /* SnapVaultApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001; };
 		A10001000000000000000002 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002; };
 		A10001000000000000000003 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000003; };
@@ -92,6 +93,7 @@
 
 /* Begin PBXFileReference section */
 			B01200000000000000000002 /* ClipboardMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardMonitorTests.swift; sourceTree = "<group>"; };
+			B01300000000000000000002 /* ClipboardListViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardListViewModelTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000001 /* SnapVaultApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapVaultApp.swift; sourceTree = "<group>"; };
 		A10000000000000000000002 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A10000000000000000000003 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
@@ -339,6 +341,7 @@
 				B01000000000000000000002 /* SettingsServiceTests.swift */,
 				B00700000000000000000002 /* AppSearchSourceTests.swift */,
 				B01100000000000000000008 /* SearchPanelViewModelTests.swift */,
+					B01300000000000000000002 /* ClipboardListViewModelTests.swift */,
 			);
 			path = SnapVaultTests;
 			sourceTree = "<group>";
@@ -665,6 +668,7 @@
 				B01000000000000000000001 /* SettingsServiceTests.swift in Sources */,
 				B00700000000000000000001 /* AppSearchSourceTests.swift in Sources */,
 					B01100000000000000000009 /* SearchPanelViewModelTests.swift in Sources */,
+					B01300000000000000000001 /* ClipboardListViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

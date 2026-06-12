@@ -258,7 +258,7 @@
       "id": "US-013",
       "title": "剪贴板历史页面 UI",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": [
         "US-012",

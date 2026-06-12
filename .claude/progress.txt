@@ -3178,3 +3178,52 @@ US-025 从零构建了完整的截图标注编辑器，替换 US-024 的 Annotat
 - US-013 剪贴板历史页面 UI 应继续使用新 Core Data/内存索引链路，不要回到旧 GRDB `ClipboardListViewModel`。
 - 当前 `MenuBarView` / `UnifiedSearchViewModel` / `UnifiedResultList` 等旧统一搜索 UI 仍保留但 AppDelegate 不再用于主搜索面板；后续可在完成管理中心迁移后再清理。
 - `SearchPanelActionExecutor.openSettings(_:)` 目前打开系统 Settings scene，尚未按 route 深链到具体管理中心页面；US-015 管理中心 UI 可在此处接入 route 导航。
+
+## 2026-06-12 - Assistant MVP US-013 剪贴板历史页面 UI
+
+### 任务状态
+- US-013 已完成，`.claude/task.json` 中 `US-013.passes=true`、`blocked=false`。
+- 本次只处理当前 Assistant MVP 任务体系中的 US-013；未实现 US-015+ 管理中心其它页面、未实现右键菜单、未实现自动粘贴，也未删除旧 GRDB/FTS5 兼容链路。
+
+### 完成内容
+1. **剪贴板历史页切换到新 Assistant Core Data / 内存索引链路**
+   - 重写 `ClipboardListViewModel`，不再使用旧 `ContentRepository` / GRDB / FTS5 作为历史页主实现。
+   - 历史页通过 `ClipboardIndexQueryService` 查询轻量内存索引，再按需用 `ClipboardRepository` 加载 `ClipboardRecordSnapshot` 详情。
+   - 复制历史项复用 `SearchPanelActionExecutor` 的 `.copyClipboardRecord(UUID)` 逻辑，支持文本、富文本、图片、文件引用写回系统剪贴板，不自动粘贴。
+
+2. **剪贴板历史页面 UI**
+   - 重写 `ClipboardListView` 为管理型历史页面：标题、说明、独立搜索框、类型筛选、存储占用、清空入口、历史列表。
+   - 独立搜索框只搜索剪贴板历史，并通过 ViewModel 的 Combine debounce 即时刷新。
+   - 类型筛选支持：全部、文本、图片、文件；文本筛选同时包含 `text` 与 `richText`。
+   - 默认无搜索时依赖索引历史排序：置顶优先、更新时间倒序；搜索时依赖索引搜索排序：置顶匹配优先、匹配度 + 时间。
+   - 列表项显示类型图标/图片缩略图、摘要、相对时间、置顶标记、资源缺失提示。
+
+3. **键盘与管理操作**
+   - 历史页支持上下键移动选择，回车将选中历史项放回系统剪贴板。
+   - 每条历史项提供复制、置顶/取消置顶、删除单条按钮。
+   - 清空全部入口显示二次确认，文案明确“此操作不可撤销”。
+   - MVP 刻意不实现右键菜单；旧 `ClipboardItemRow` 的右键菜单仅保留给旧 RecentContent 兼容路径，新的 `ClipboardListView` 未使用右键菜单。
+
+4. **菜单栏入口**
+   - `AppDelegate` 中菜单栏 “Clipboard” 从打开搜索面板改为打开独立剪贴板历史窗口。
+   - 历史窗口复用 AppDelegate 已初始化的 `assistantClipboardIndex`、`assistantClipboardRepository`、`assistantResourceStore`，确保和 US-012 剪贴板监听写入链路一致。
+
+5. **本地化与自动化测试**
+   - `Localizable.xcstrings` 新增 US-013 剪贴板历史页相关中英文文案。
+   - 新增 `ClipboardListViewModelTests`，覆盖历史加载与文本/富文本筛选、搜索与图片筛选、键盘选择 + 回车复制、置顶/删除/清空操作委托到新 Repository/Service 链路。
+
+### 技术方案核对
+- 已按要求阅读 `.claude/progress.txt`、`.claude/task.json`、`doc/prd.md`、`doc/architecture.md`、`doc/architecture_db.md`、`doc/architecture_api.md`、`doc/test.md`。
+- 现有文档已覆盖 US-013 所需方案：PRD FR-CLIP-16~19f、FR-CLIP-23~31、FR-CLIP-36~46；`architecture.md` 第 9.5/9.6 节；`architecture_db.md` 排序/存储占用/清空策略；`architecture_api.md` ClipboardHistoryViewModel；`doc/test.md` CLIP-006~CLIP-012。
+- 本次未发现必须补充架构文档的缺口，因此未修改 `doc/architecture*.md`、`doc/prd.md` 或 `doc/test.md`；也未覆盖用户/其他 Agent 的既有脏文档和 scheduled lock 改动。
+
+### 验证结果
+- `swift test --skip-update`：通过，执行 108 个 XCTest，108 通过、0 失败。
+- `xcodebuild -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug build`：通过，`** BUILD SUCCEEDED **`。
+- `xcodebuild test -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug`：通过，`** TEST SUCCEEDED **`。
+- Xcode test 期间仍有既有 `com.apple.linkd.autoShortcut` 连接日志和 Swift 6 warning，但最终测试通过，未影响 US-013 验收。
+
+### 留给后续 Agent 的提示
+- US-015 管理中心可以复用 `ClipboardListViewModel` / `ClipboardListView` 作为剪贴板历史页，不要回退到旧 GRDB `ClipboardListViewModel` 语义。
+- `SearchPanelActionExecutor.copyClipboardRecord` 是当前文本/富文本/图片/文件复制回系统剪贴板的复用点；如后续增强富文本 HTML pasteboard type，应同步搜索面板和历史页。
+- 旧 `ClipboardItemRow` / `PreviewPanel` / `RecentContentView` 仍服务旧 RecentContent 兼容路径，未在 US-013 中清理；后续如迁移 RecentContent，应单独任务处理。
