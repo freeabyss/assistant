@@ -2983,3 +2983,52 @@ US-025 从零构建了完整的截图标注编辑器，替换 US-024 的 Annotat
 - US-009 应继续基于当前 `SearchSource` / `SearchResult` 模型处理 CalculatorSource，不要复用旧历史范围外的货币换算或复杂函数能力。
 - 若 US-011 统一搜索 UI 迁移到新 `SearchService`，可注入 `CommandSearchActionExecutor` 和具体确认 UI；确认取消时不要调用底层 executor。
 - 旧 `UnifiedSearchService` 兼容路径仍存在，但 `SystemCommand` 已被安全化为 14 条 MVP 白名单；后续不要重新加入关机、重启系统、注销、sudo、任意 shell 等能力。
+
+
+## 2026-06-12 - Assistant MVP US-009 CalculatorSource 计算与单位换算
+
+### 任务状态
+- US-009 已完成，`.claude/task.json` 中 `US-009.passes=true`、`blocked=false`。
+- 本次只处理当前 Assistant MVP 任务体系中的 US-009；未实现 US-010+ SettingsSource 或 US-011 统一搜索面板 UI。
+
+### 完成内容
+1. **CalculatorSource 接入当前 SearchSource 模型**
+   - 重写 `SnapVault/Services/SearchEngine/CalculatorSource.swift`，实现 Assistant MVP `SearchSource` / `SearchResult` / `SearchAction.copyText` 模型，同时保留旧 `UnifiedSearchSource` 兼容入口，避免破坏现有历史统一搜索注册路径。
+   - 计算与单位换算统一使用 `SearchSourceID.calculator`，来源优先级保持 `SourcePriority.calculator = 85`。
+
+2. **安全四则表达式解析器**
+   - 移除旧 `NSExpression` 求值路径，改为手写递归下降 parser。
+   - 支持 `+ - * /`、括号、小数、空白和一元正负号。
+   - 非法表达式、括号不平衡、除零、NaN/Infinity 均返回空结果，不污染搜索。
+   - 明确不支持复杂函数、变量、幂运算、计算历史或任意可执行表达式机制。
+
+3. **MVP 单位换算**
+   - 实现长度、重量、数据大小、温度单位换算，要求输入显式包含源单位和目标单位，例如 `10 cm to inch` / `1 GB to MB` / `100 c to f`。
+   - 支持常见长度单位（mm/cm/m/km/in/ft/yd/mi）、重量单位（mg/g/kg/lb/oz/t）、数据大小单位（B/KB/MB/GB/TB/KiB/MiB/GiB/TiB）、温度单位（C/F/K）。
+   - 删除旧 `UnitConverterSource` 中的货币、体积、时长等范围外能力；`UnitConverterSource` 现在仅作为旧 `UnifiedSearchSource` 兼容包装器委托给 `CalculatorSource` 并只返回换算结果。
+
+4. **回车复制到系统剪贴板**
+   - `SearchCore.swift` 中默认 `SearchActionExecutor` 现在处理 `.copyText`：写入 `NSPasteboard.general` 并返回 `shouldCloseSearchPanel=true`。
+   - CalculatorSource 本身不写入剪贴板历史；复制结果是否进入历史继续依赖统一剪贴板监听与 Repository 去重链路。
+   - 其他动作仍保持 no-op/后续 UI 系统集成注入，不在 US-009 范围内扩展。
+
+5. **测试与文档**
+   - 更新 `SnapVaultTests/CalculatorSourceTests.swift` 与 `SnapVaultTests/UnitConverterSourceTests.swift`，覆盖四则、括号、小数、非法表达式、除零、货币/函数/变量/历史/范围外单位拒绝、长度/重量/数据大小/温度换算、旧兼容入口、`SearchService.execute(.copyText)` 写入系统剪贴板。
+   - 更新 `doc/architecture_api.md`，补充 CalculatorSource 安全解析器、copyText 默认执行器、单位换算输入和范围约束。
+   - 更新 `doc/test.md`，补充 US-009 安全与范围外验证点及本轮测试执行记录。
+
+### 技术方案核对
+- 已按要求阅读 `.claude/progress.txt`、`.claude/task.json`、`doc/prd.md`、`doc/architecture.md`、`doc/architecture_db.md`、`doc/architecture_api.md`、`doc/test.md`。
+- 现有文档覆盖 US-009 的主方案，但实现阶段发现需要更明确记录“禁止 NSExpression/可执行表达式机制”和“默认 copyText 执行器写入系统剪贴板”的接口边界，因此已最小更新 `doc/architecture_api.md` 与 `doc/test.md`。
+- 未修改无关的 `doc/prd.md` 与 `doc/architecture_db.md` 遗留脏改动；提交时也未包含这些无关文件。
+
+### 验证结果
+- `swift test --skip-update`：通过，执行 87 个 XCTest，87 通过、0 失败。
+- `xcodebuild -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug build`：通过，`** BUILD SUCCEEDED **`。
+- `xcodebuild test -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug`：通过，执行 87 个 XCTest，87 通过、0 失败，`** TEST SUCCEEDED **`。
+- Xcode test 期间仍出现 `com.apple.linkd.autoShortcut` 连接日志，但测试最终通过，未影响 US-009 验收。
+
+### 留给后续 Agent 的提示
+- US-011 统一搜索面板执行计算器/换算结果时，可直接使用 `SearchService.execute(result.primaryAction)`；`.copyText` 已默认写入系统剪贴板并返回关闭搜索框语义。
+- CalculatorSource 不应扩展货币、复杂函数、变量、历史、体积/时长等范围外能力；如未来产品范围变化，应先更新 PRD/架构/测试文档。
+- 当前仍保留旧 `UnifiedSearchService` 注册路径，`UnitConverterSource` 只是兼容包装器；后续迁移 UI 时优先接入当前 Assistant MVP `SearchService`。

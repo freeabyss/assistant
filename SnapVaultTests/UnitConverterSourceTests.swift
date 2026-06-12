@@ -2,66 +2,74 @@ import XCTest
 @testable import SnapVault
 
 final class UnitConverterSourceTests: XCTestCase {
-    func testConvertsCentimetersToCommonLengthUnits() async throws {
-        let source = UnitConverterSource()
+    func testConvertsCentimetersToInches() async throws {
+        let source = CalculatorSource()
 
-        let results = try await source.search(query: "100 cm", limit: 10)
+        let results = await source.search(query: "10 cm to inch")
 
-        XCTAssertFalse(results.isEmpty)
-        XCTAssertTrue(results.allSatisfy { $0.type == .unitConversion })
-        XCTAssertTrue(results.contains { result in
-            if case .copyText(let value) = result.action {
-                return value == "1 m"
-            }
-            return false
-        })
+        XCTAssertEqual(results.count, 1)
+        XCTAssertEqual(results[0].typeLabel, "Convert")
+        XCTAssertEqual(results[0].title, "3.937008 in")
+        if case .copyText(let value) = results[0].primaryAction {
+            XCTAssertEqual(value, "3.937008 in")
+        } else {
+            XCTFail("Unit conversion should copy the converted value")
+        }
     }
 
     func testConvertsKilogramsToPounds() async throws {
-        let source = UnitConverterSource()
+        let source = CalculatorSource()
 
-        let results = try await source.search(query: "100 kg", limit: 10)
+        let results = await source.search(query: "100 kg to lb")
 
-        // Foundation Measurement: 100 kg → 220.4624 lb (4-decimal formatter drops trailing zeros)
-        XCTAssertTrue(results.contains { result in
-            if case .copyText(let value) = result.action {
-                return value == "220.4624 lb"
-            }
-            return false
-        })
+        XCTAssertEqual(results.first?.title, "220.462262 lb")
+    }
+
+    func testConvertsDataSizeUnits() async throws {
+        let source = CalculatorSource()
+
+        let decimal = await source.search(query: "1 GB to MB")
+        let binary = await source.search(query: "1 GiB to MiB")
+
+        XCTAssertEqual(decimal.first?.title, "1000 MB")
+        XCTAssertEqual(binary.first?.title, "1024 MiB")
     }
 
     func testConvertsCelsiusToFahrenheitAndKelvin() async throws {
-        let source = UnitConverterSource()
+        let source = CalculatorSource()
 
-        let results = try await source.search(query: "100 c", limit: 10)
-        let copiedValues = results.compactMap { result -> String? in
-            if case .copyText(let value) = result.action { return value }
-            return nil
-        }
+        let fahrenheit = await source.search(query: "100 c to f")
+        let kelvin = await source.search(query: "100 °C to K")
 
-        XCTAssertTrue(copiedValues.contains("212 °F"))
-        XCTAssertTrue(copiedValues.contains("373.15 K"))
+        XCTAssertEqual(fahrenheit.first?.title, "212 °F")
+        XCTAssertEqual(kelvin.first?.title, "373.15 K")
     }
 
-    func testConvertsUSDCurrencyUsingStaticRates() async throws {
-        let source = UnitConverterSource()
+    func testRejectsCurrencyVolumeDurationUnknownAndMissingTargetUnit() async throws {
+        let source = CalculatorSource()
 
-        let results = try await source.search(query: "100 usd", limit: 10)
+        let currencyResults = await source.search(query: "100 usd to cny")
+        let volumeResults = await source.search(query: "1 l to ml")
+        let durationResults = await source.search(query: "1 h to min")
+        let unknownUnitResults = await source.search(query: "100 widgets to kg")
+        let missingTargetResults = await source.search(query: "100 cm")
 
-        XCTAssertTrue(results.contains { result in
-            if case .copyText(let value) = result.action {
-                return value == "725 CNY"
-            }
-            return false
-        })
+        XCTAssertTrue(currencyResults.isEmpty)
+        XCTAssertTrue(volumeResults.isEmpty)
+        XCTAssertTrue(durationResults.isEmpty)
+        XCTAssertTrue(unknownUnitResults.isEmpty)
+        XCTAssertTrue(missingTargetResults.isEmpty)
     }
 
-    func testUnknownUnitReturnsNoResults() async throws {
+    func testLegacyUnitConverterWrapperOnlyReturnsConversionResults() async throws {
         let source = UnitConverterSource()
 
-        let results = try await source.search(query: "100 widgets", limit: 10)
+        let conversion = try await source.search(query: "1 m to cm", limit: 5)
+        let expression = try await source.search(query: "1 + 2", limit: 5)
 
-        XCTAssertTrue(results.isEmpty)
+        XCTAssertEqual(conversion.count, 1)
+        XCTAssertEqual(conversion[0].type, .unitConversion)
+        XCTAssertEqual(conversion[0].title, "100 cm")
+        XCTAssertTrue(expression.isEmpty)
     }
 }

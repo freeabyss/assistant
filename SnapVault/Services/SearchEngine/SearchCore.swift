@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 
 // MARK: - Assistant MVP Search Core Models
@@ -222,11 +223,23 @@ actor InMemorySearchUsageStore: SearchUsageStoreProtocol {
     }
 }
 
-final class NoopSearchActionExecutor: SearchActionExecutorProtocol {
+final class DefaultSearchActionExecutor: SearchActionExecutorProtocol {
     func execute(_ action: SearchAction) async throws {
-        // The UI/system integration layer supplies a real executor in later tasks.
+        switch action {
+        case .copyText(let text):
+            await MainActor.run {
+                let pasteboard = NSPasteboard.general
+                pasteboard.clearContents()
+                pasteboard.setString(text, forType: .string)
+            }
+        case .openApplication, .copyClipboardRecord, .runCommand, .openSettings, .startScreenshot:
+            // The UI/system integration layer supplies concrete handlers for non-copy actions in later tasks.
+            break
+        }
     }
 }
+
+typealias NoopSearchActionExecutor = DefaultSearchActionExecutor
 
 final class SearchService: SearchServiceProtocol {
     static let defaultResultLimit = 12

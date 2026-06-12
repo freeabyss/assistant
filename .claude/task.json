@@ -37,7 +37,9 @@
       "priority": "high",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-001"],
+      "depends_on": [
+        "US-001"
+      ],
       "steps": [
         "创建 Core Data Stack 和临时 store 可注入能力",
         "实现 ClipboardRecord、ClipboardResource、SearchBlacklistItem、UsageStat、AppSetting 数据模型",
@@ -55,7 +57,9 @@
       "priority": "high",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-002"],
+      "depends_on": [
+        "US-002"
+      ],
       "steps": [
         "实现 FileResourceStoreProtocol：写入/读取/删除图片原图、缩略图、RTF、HTML",
         "实现 ClipboardRepositoryProtocol：upsert、fetch、history、delete、clearAll、togglePin、cleanupExpired、storageUsage",
@@ -73,7 +77,9 @@
       "priority": "high",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-003"],
+      "depends_on": [
+        "US-003"
+      ],
       "steps": [
         "实现 InMemorySearchIndexProtocol",
         "启动时从 Core Data 全量加载轻量索引字段",
@@ -90,7 +96,9 @@
       "priority": "high",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-004"],
+      "depends_on": [
+        "US-004"
+      ],
       "steps": [
         "实现 SearchSource、SearchResult、SearchAction、SearchService 核心模型与协议",
         "实现空输入不返回推荐结果",
@@ -108,7 +116,9 @@
       "priority": "high",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-005"],
+      "depends_on": [
+        "US-005"
+      ],
       "steps": [
         "实现中文拼音转换和首字母生成工具",
         "支持应用、命令、设置项的拼音搜索和首字母搜索",
@@ -126,7 +136,9 @@
       "priority": "high",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-006"],
+      "depends_on": [
+        "US-006"
+      ],
       "steps": [
         "扫描 /Applications、~/Applications、/System/Applications 下的 .app bundle",
         "建立 ApplicationIndexItem 内存索引",
@@ -144,7 +156,9 @@
       "priority": "high",
       "passes": true,
       "blocked": false,
-      "depends_on": ["US-006"],
+      "depends_on": [
+        "US-006"
+      ],
       "steps": [
         "实现 14 个 MVP 内置命令定义（以 doc/architecture_api.md 的“10.1 MVP 内置命令权威清单”为准）",
         "为每个命令维护中文名、英文名、中英文别名、拼音、首字母",
@@ -160,9 +174,11 @@
       "id": "US-009",
       "title": "CalculatorSource 计算与单位换算",
       "priority": "medium",
-      "passes": false,
+      "passes": true,
       "blocked": false,
-      "depends_on": ["US-005"],
+      "depends_on": [
+        "US-005"
+      ],
       "steps": [
         "实现基础四则运算、括号、小数解析和求值",
         "实现非法表达式、除零、非有限结果防护",
@@ -179,7 +195,9 @@
       "priority": "medium",
       "passes": false,
       "blocked": false,
-      "depends_on": ["US-006"],
+      "depends_on": [
+        "US-006"
+      ],
       "steps": [
         "实现 SettingsServiceProtocol 和 AppSetting 持久化读写",
         "实现 SettingsSource 页面级与具体设置区块入口",
@@ -197,7 +215,13 @@
       "priority": "high",
       "passes": false,
       "blocked": false,
-      "depends_on": ["US-005", "US-007", "US-008", "US-009", "US-010"],
+      "depends_on": [
+        "US-005",
+        "US-007",
+        "US-008",
+        "US-009",
+        "US-010"
+      ],
       "steps": [
         "实现 Spotlight 外观 + Alfred 式空状态的居中搜索面板",
         "空输入只显示输入提示，不显示推荐/最近/剪贴板内容",
@@ -215,7 +239,10 @@
       "priority": "high",
       "passes": false,
       "blocked": false,
-      "depends_on": ["US-003", "US-004"],
+      "depends_on": [
+        "US-003",
+        "US-004"
+      ],
       "steps": [
         "实现基于 NSPasteboard.general.changeCount 的 ClipboardMonitor",
         "实现自适应轮询：500ms 活跃、长时间无变化 2s、变化后恢复 500ms",
@@ -233,7 +260,10 @@
       "priority": "high",
       "passes": false,
       "blocked": false,
-      "depends_on": ["US-012", "US-010"],
+      "depends_on": [
+        "US-012",
+        "US-010"
+      ],
       "steps": [
         "实现管理中心中的剪贴板历史页面",
         "实现独立搜索框，只搜索剪贴板历史，输入 debounce 即时搜索",
@@ -252,7 +282,10 @@
       "priority": "high",
       "passes": false,
       "blocked": false,
-      "depends_on": ["US-001", "US-010"],
+      "depends_on": [
+        "US-001",
+        "US-010"
+      ],
       "steps": [
         "实现 Onboarding 七步流程：欢迎、搜索入口与快捷键、剪贴板说明、截图权限、辅助功能权限、开机启动、完成",
         "实现剪贴板默认开启但显式确认知晓",
@@ -270,7 +303,11 @@
       "priority": "medium",
       "passes": false,
       "blocked": false,
-      "depends_on": ["US-010", "US-014", "US-013"],
+      "depends_on": [
+        "US-010",
+        "US-014",
+        "US-013"
+      ],
       "steps": [
         "实现管理中心：首页/概览、剪贴板历史、设置、权限",
         "首页展示快捷入口、权限状态、开启的搜索源、快捷键提示",
@@ -287,7 +324,11 @@
       "priority": "high",
       "passes": false,
       "blocked": false,
-      "depends_on": ["US-001", "US-012", "US-014"],
+      "depends_on": [
+        "US-001",
+        "US-012",
+        "US-014"
+      ],
       "steps": [
         "实现区域截图、全屏截图、窗口截图",
         "截图完成后显示预览和浮动工具栏",
@@ -307,7 +348,9 @@
       "priority": "high",
       "passes": false,
       "blocked": false,
-      "depends_on": ["US-016"],
+      "depends_on": [
+        "US-016"
+      ],
       "steps": [
         "实现标注模型 AnnotationShape/AnnotationStyle",
         "实现矩形框、箭头、文字、马赛克/模糊",
@@ -326,7 +369,9 @@
       "priority": "medium",
       "passes": false,
       "blocked": false,
-      "depends_on": ["US-015"],
+      "depends_on": [
+        "US-015"
+      ],
       "steps": [
         "实现发布级关于页：应用名称、版本号、构建号、官网/项目主页、隐私政策、检查更新、反馈入口、第三方许可、版权信息",
         "编写隐私政策文档/页面，说明本地保存、不上传、不同步、不训练、关闭记录和清空方式",
@@ -343,7 +388,12 @@
       "priority": "medium",
       "passes": false,
       "blocked": false,
-      "depends_on": ["US-011", "US-014", "US-015", "US-018"],
+      "depends_on": [
+        "US-011",
+        "US-014",
+        "US-015",
+        "US-018"
+      ],
       "steps": [
         "建立本地化资源结构",
         "支持简体中文和 English",
@@ -361,7 +411,9 @@
       "priority": "low",
       "passes": false,
       "blocked": false,
-      "depends_on": ["US-018"],
+      "depends_on": [
+        "US-018"
+      ],
       "steps": [
         "准备标准产品页内容清单：产品名称、Slogan、核心功能介绍、截图/演示动图、下载按钮、版本记录、隐私政策、反馈邮箱、FAQ",
         "补充必要权限用途说明",
@@ -377,7 +429,12 @@
       "priority": "high",
       "passes": false,
       "blocked": false,
-      "depends_on": ["US-002", "US-005", "US-012", "US-016"],
+      "depends_on": [
+        "US-002",
+        "US-005",
+        "US-012",
+        "US-016"
+      ],
       "steps": [
         "建立单元测试目标和运行命令",
         "覆盖 SearchSource、搜索排序、拼音、CalculatorSource、单位换算、hash 去重",
@@ -394,7 +451,29 @@
       "priority": "high",
       "passes": false,
       "blocked": false,
-      "depends_on": ["US-001", "US-002", "US-003", "US-004", "US-005", "US-006", "US-007", "US-008", "US-009", "US-010", "US-011", "US-012", "US-013", "US-014", "US-015", "US-016", "US-017", "US-018", "US-019", "US-020", "US-021"],
+      "depends_on": [
+        "US-001",
+        "US-002",
+        "US-003",
+        "US-004",
+        "US-005",
+        "US-006",
+        "US-007",
+        "US-008",
+        "US-009",
+        "US-010",
+        "US-011",
+        "US-012",
+        "US-013",
+        "US-014",
+        "US-015",
+        "US-016",
+        "US-017",
+        "US-018",
+        "US-019",
+        "US-020",
+        "US-021"
+      ],
       "steps": [
         "按 doc/test.md 执行 P0/P1 自动测试和手动验收",
         "验证 PRD、architecture、architecture_db、architecture_api、test 文档与实现一致",

@@ -87,6 +87,7 @@ Mac Super Assistant（工程内部代号：Assistant）是 macOS 原生效率工
 - 不支持货币换算、复杂函数、变量和计算历史。
 - 回车主动作复制计算/换算结果到系统剪贴板。
 - 计算/换算结果是否进入剪贴板历史遵循统一剪贴板监听与去重逻辑。
+- CalculatorSource 表达式求值必须验证未使用 `NSExpression` 等可执行表达式机制；非法表达式、除零、NaN/Infinity、货币、复杂函数、变量、历史、体积/时长等范围外输入均返回空结果。
 
 ### 3.5 剪贴板数据模型与持久化
 
@@ -310,3 +311,10 @@ MVP 暂不覆盖：
 - `xcodebuild -project SnapVault.xcodeproj -scheme SnapVault -configuration Debug build`：通过，产物为 `Assistant.app`。
 - `xcodebuild test -project SnapVault.xcodeproj -scheme SnapVault -configuration Debug`：通过，执行 35 个 XCTest，35 通过、0 失败。
 - 验证重点：macOS 13 deployment target 保持 13.0；Info.plist 保持 `LSUIElement=true`；菜单栏 App Shell 与菜单项已具备构建级验证，真实菜单栏交互仍按手动验收 `MENU-001` ~ `MENU-004` 执行。
+
+### 2026-06-12 - US-009 CalculatorSource 计算与单位换算验证
+
+- `swift test --skip-update`：通过，执行 87 个 XCTest，87 通过、0 失败。
+- `xcodebuild -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug build`：通过，`** BUILD SUCCEEDED **`。
+- `xcodebuild test -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug`：通过，执行 87 个 XCTest，87 通过、0 失败，`** TEST SUCCEEDED **`。
+- 验证重点：基础四则、括号、小数、除零/非法表达式防护、长度/重量/数据大小/温度换算、货币/复杂函数/变量/历史/范围外单位拒绝、`SearchService.execute(.copyText)` 写入系统剪贴板。
