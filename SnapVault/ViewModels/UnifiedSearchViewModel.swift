@@ -357,96 +357,53 @@ final class UnifiedSearchViewModel: ObservableObject {
     }
 
     // MARK: - System Commands
-    /// Dispatch a system command. Destructive commands (restart / shutdown / empty trash)
-    /// show a confirmation NSAlert before execution.
+
+    /// Dispatch a legacy unified-search command through the Assistant MVP
+    /// whitelist executor. This path intentionally does not expose arbitrary
+    /// shell, sudo, shutdown, system restart, logout, file deletion, or process
+    /// killing. The only confirmation-required commands are clear clipboard
+    /// history, restart Finder, and restart Dock.
     private func runSystemCommand(_ command: SystemCommand) {
-        if command.requiresConfirmation {
-            let alert = NSAlert()
-            switch command {
-            case .restart:
-                alert.messageText = L10n.localized("system.confirm.restart.title")
-                alert.informativeText = L10n.localized("system.confirm.restart.message")
-            case .shutdown:
-                alert.messageText = L10n.localized("system.confirm.shutdown.title")
-                alert.informativeText = L10n.localized("system.confirm.shutdown.message")
-            case .emptyTrash:
-                alert.messageText = L10n.localized("system.confirm.emptyTrash.title")
-                alert.informativeText = L10n.localized("system.confirm.emptyTrash.message")
-            default:
-                alert.messageText = L10n.localized("system.confirm.fallback", command.rawValue)
-            }
-            alert.alertStyle = .warning
-            alert.addButton(withTitle: L10n.localized("settings.alert.ok"))
-            alert.addButton(withTitle: L10n.localized("settings.alert.cancel"))
-
-            let response = alert.runModal()
-            guard response == .alertFirstButtonReturn else {
-                logger.info("User cancelled system command: \(command.rawValue, privacy: .public)")
-                return
-            }
-        }
-
-        switch command {
-        case .sleep:
-            runAppleScript(#"tell application "System Events" to sleep"#)
-        case .restart:
-            runAppleScript(#"tell application "System Events" to restart"#)
-        case .shutdown:
-            runAppleScript(#"tell application "System Events" to shut down"#)
-        case .lock:
-            lockScreenViaCGSession()
-        case .lockScreen:
-            // Turn off the display (pmset displaysleepnow)
-            runProcess(launchPath: "/usr/bin/pmset", arguments: ["displaysleepnow"])
-        case .emptyTrash:
-            runAppleScript(#"tell application "Finder" to empty the trash"#)
-        case .showDesktop:
-            runAppleScript(#"tell application "System Events" to key code 103 using {fn down}"#)
-        }
-    }
-
-    /// Execute an AppleScript snippet via NSAppleScript on a background queue.
-    private func runAppleScript(_ source: String) {
-        DispatchQueue.global(qos: .userInitiated).async {
-            var errorInfo: NSDictionary?
-            if let script = NSAppleScript(source: source) {
-                script.executeAndReturnError(&errorInfo)
-                if let errorInfo = errorInfo {
-                    Logger.search.error("AppleScript error: \(errorInfo, privacy: .public)")
-                } else {
-                    Logger.search.info("AppleScript executed successfully")
-                }
-            } else {
-                Logger.search.error("Failed to create NSAppleScript from source")
-            }
-        }
-    }
-
-    /// Lock the screen using the legacy CGSession suspend command. This is the
-    /// canonical way to lock immediately without sleeping the display.
-    private func lockScreenViaCGSession() {
-        let path = "/System/Library/CoreServices/Menu Extras/User.menu/Contents/Resources/CGSession"
-        if FileManager.default.isExecutableFile(atPath: path) {
-            runProcess(launchPath: path, arguments: ["-suspend"])
-        } else {
-            // Fallback: trigger display sleep (still effectively locks if Login is required after sleep)
-            runProcess(launchPath: "/usr/bin/pmset", arguments: ["displaysleepnow"])
-        }
-    }
-
-    /// Spawn an external process on a background queue.
-    private func runProcess(launchPath: String, arguments: [String]) {
-        DispatchQueue.global(qos: .userInitiated).async {
-            let process = Process()
-            process.launchPath = launchPath
-            process.arguments = arguments
+        let commandID = command.commandID
+        Task { [weak self] in
+            let executor = SystemCommandExecutor()
             do {
-                try process.run()
-                process.waitUntilExit()
-                Logger.search.info("Process \(launchPath, privacy: .public) exited with status \(process.terminationStatus)")
+                let confirmed: Bool
+                if executor.requiresConfirmation(commandID) {
+                    confirmed = await self?.confirmLegacySystemCommand(command) ?? false
+                    guard confirmed else {
+                        self?.logger.info("User cancelled command: \(command.rawValue, privacy: .public)")
+                        return
+                    }
+                } else {
+                    confirmed = false
+                }
+                try await executor.execute(commandID, confirmed: confirmed)
             } catch {
-                Logger.search.error("Failed to run \(launchPath, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                self?.logger.error("Command failed: \(error.localizedDescription, privacy: .public)")
             }
         }
+    }
+
+    @MainActor
+    private func confirmLegacySystemCommand(_ command: SystemCommand) async -> Bool {
+        let alert = NSAlert()
+        switch command {
+        case .clearClipboardHistory:
+            alert.messageText = "清空剪贴板历史 / Clear Clipboard History"
+            alert.informativeText = "此操作不可撤销。This action cannot be undone."
+        case .restartFinder:
+            alert.messageText = "重启 Finder / Restart Finder"
+            alert.informativeText = "Finder 将会重新启动。Finder will relaunch."
+        case .restartDock:
+            alert.messageText = "重启 Dock / Restart Dock"
+            alert.informativeText = "Dock 将会重新启动。Dock will relaunch."
+        default:
+            return true
+        }
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: L10n.localized("settings.alert.ok"))
+        alert.addButton(withTitle: L10n.localized("settings.alert.cancel"))
+        return alert.runModal() == .alertFirstButtonReturn
     }
 }

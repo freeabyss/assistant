@@ -1,177 +1,461 @@
-import Foundation
 import AppKit
+import Foundation
 import os.log
 
-/// Search source for built-in system commands (sleep, restart, shutdown, lock, ...).
+// MARK: - Assistant MVP Command IDs
+
+extension CommandID {
+    static let openSystemSettings = CommandID(rawValue: "openSystemSettings")
+    static let openAppSettings = CommandID(rawValue: "openAppSettings")
+    static let openDownloads = CommandID(rawValue: "openDownloads")
+    static let openApplications = CommandID(rawValue: "openApplications")
+    static let openDesktop = CommandID(rawValue: "openDesktop")
+    static let captureRegion = CommandID(rawValue: "captureRegion")
+    static let captureFullScreen = CommandID(rawValue: "captureFullScreen")
+    static let captureWindow = CommandID(rawValue: "captureWindow")
+    static let clearClipboardHistory = CommandID(rawValue: "clearClipboardHistory")
+    static let toggleClipboardRecording = CommandID(rawValue: "toggleClipboardRecording")
+    static let checkPermissions = CommandID(rawValue: "checkPermissions")
+    static let restartFinder = CommandID(rawValue: "restartFinder")
+    static let restartDock = CommandID(rawValue: "restartDock")
+    static let toggleAppearance = CommandID(rawValue: "toggleAppearance")
+}
+
+// MARK: - Command source domain
+
+protocol CommandSourceProtocol: SearchSource {
+    var commands: [AssistantCommandDefinition] { get }
+}
+
+protocol CommandExecutorProtocol {
+    func execute(_ commandID: CommandID, confirmed: Bool) async throws
+    func requiresConfirmation(_ commandID: CommandID) -> Bool
+}
+
+protocol CommandConfirmationProviding {
+    func confirm(command: AssistantCommandDefinition) async -> Bool
+}
+
+struct AssistantCommandDefinition: Identifiable, Hashable {
+    let id: CommandID
+    let chineseName: String
+    let englishName: String
+    let chineseAliases: [String]
+    let englishAliases: [String]
+    let pinyin: String
+    let initials: String
+    let iconSystemName: String
+    let requiresConfirmation: Bool
+
+    var title: String { chineseName }
+    var subtitle: String { englishName }
+    var aliases: [String] { chineseAliases + englishAliases + [englishName] }
+
+    func candidate() -> SearchTextCandidate {
+        SearchTextCandidate(
+            text: chineseName,
+            aliases: aliases,
+            pinyin: pinyin,
+            initials: initials
+        )
+    }
+}
+
+enum AssistantCommandExecutionError: LocalizedError, Equatable {
+    case unknownCommand(CommandID)
+    case confirmationRequired(CommandID)
+    case executionFailed(CommandID, String)
+
+    var errorDescription: String? {
+        switch self {
+        case .unknownCommand(let id):
+            return "Unknown command: \(id.rawValue)"
+        case .confirmationRequired(let id):
+            return "Command requires confirmation: \(id.rawValue)"
+        case .executionFailed(let id, let reason):
+            return "Command \(id.rawValue) failed: \(reason)"
+        }
+    }
+}
+
+// MARK: - Command catalog
+
+enum AssistantCommandCatalog {
+    static let commands: [AssistantCommandDefinition] = [
+        command(
+            .openSystemSettings,
+            zh: "打开系统设置",
+            en: "Open System Settings",
+            zhAliases: ["系统设置", "设置", "打开系统偏好设置", "系统偏好设置"],
+            enAliases: ["system settings", "settings", "preferences", "open preferences"],
+            icon: "gearshape"
+        ),
+        command(
+            .openAppSettings,
+            zh: "打开本应用设置",
+            en: "Open App Settings",
+            zhAliases: ["应用设置", "本应用设置", "助手设置", "偏好设置"],
+            enAliases: ["app settings", "assistant settings", "preferences"],
+            icon: "slider.horizontal.3"
+        ),
+        command(
+            .openDownloads,
+            zh: "打开下载目录",
+            en: "Open Downloads",
+            zhAliases: ["下载", "下载文件夹", "下载目录"],
+            enAliases: ["downloads", "download folder", "open downloads"],
+            icon: "arrow.down.circle"
+        ),
+        command(
+            .openApplications,
+            zh: "打开应用程序目录",
+            en: "Open Applications",
+            zhAliases: ["应用程序", "应用目录", "程序目录", "打开应用程序"],
+            enAliases: ["applications", "apps folder", "open applications"],
+            icon: "app"
+        ),
+        command(
+            .openDesktop,
+            zh: "打开桌面目录",
+            en: "Open Desktop",
+            zhAliases: ["桌面", "桌面文件夹", "桌面目录"],
+            enAliases: ["desktop", "desktop folder", "open desktop"],
+            icon: "desktopcomputer"
+        ),
+        command(
+            .captureRegion,
+            zh: "区域截图",
+            en: "Capture Region",
+            zhAliases: ["截图", "截屏", "区域截屏", "选择区域截图"],
+            enAliases: ["screenshot", "capture region", "region screenshot", "area screenshot"],
+            icon: "crop"
+        ),
+        command(
+            .captureFullScreen,
+            zh: "全屏截图",
+            en: "Capture Full Screen",
+            zhAliases: ["全屏截屏", "截取全屏", "屏幕截图"],
+            enAliases: ["full screen screenshot", "capture full screen", "screen capture"],
+            icon: "rectangle.inset.filled"
+        ),
+        command(
+            .captureWindow,
+            zh: "窗口截图",
+            en: "Capture Window",
+            zhAliases: ["窗口截屏", "截取窗口", "选窗口截图"],
+            enAliases: ["window screenshot", "capture window"],
+            icon: "macwindow"
+        ),
+        command(
+            .clearClipboardHistory,
+            zh: "清空剪贴板历史",
+            en: "Clear Clipboard History",
+            zhAliases: ["清空历史", "清除剪贴板", "删除剪贴板历史"],
+            enAliases: ["clear clipboard", "clear history", "clear clipboard history"],
+            icon: "trash",
+            requiresConfirmation: true
+        ),
+        command(
+            .toggleClipboardRecording,
+            zh: "暂停或恢复剪贴板记录",
+            en: "Pause or Resume Clipboard Recording",
+            zhAliases: ["暂停剪贴板", "恢复剪贴板", "切换剪贴板记录", "剪贴板记录"],
+            enAliases: ["pause clipboard", "resume clipboard", "toggle clipboard", "clipboard recording"],
+            icon: "pause.circle"
+        ),
+        command(
+            .checkPermissions,
+            zh: "检查权限状态",
+            en: "Check Permissions",
+            zhAliases: ["权限", "检查权限", "权限状态", "查看权限"],
+            enAliases: ["permissions", "check permissions", "permission status"],
+            icon: "checkmark.shield"
+        ),
+        command(
+            .restartFinder,
+            zh: "重启 Finder",
+            en: "Restart Finder",
+            zhAliases: ["重启访达", "重启 Finder", "重新启动 Finder", "重新启动访达"],
+            enAliases: ["restart finder", "relaunch finder"],
+            icon: "face.smiling",
+            requiresConfirmation: true
+        ),
+        command(
+            .restartDock,
+            zh: "重启 Dock",
+            en: "Restart Dock",
+            zhAliases: ["重启程序坞", "重新启动 Dock", "重新启动程序坞"],
+            enAliases: ["restart dock", "relaunch dock"],
+            icon: "dock.rectangle",
+            requiresConfirmation: true
+        ),
+        command(
+            .toggleAppearance,
+            zh: "切换深色或浅色模式",
+            en: "Toggle Appearance",
+            zhAliases: ["切换深色模式", "切换浅色模式", "深色模式", "浅色模式", "外观"],
+            enAliases: ["toggle appearance", "dark mode", "light mode", "toggle dark mode"],
+            icon: "circle.lefthalf.filled"
+        )
+    ]
+
+    static let allowedIDs = Set(commands.map(\.id))
+    static let byID = Dictionary(uniqueKeysWithValues: commands.map { ($0.id, $0) })
+
+    private static func command(
+        _ id: CommandID,
+        zh: String,
+        en: String,
+        zhAliases: [String],
+        enAliases: [String],
+        icon: String,
+        requiresConfirmation: Bool = false
+    ) -> AssistantCommandDefinition {
+        AssistantCommandDefinition(
+            id: id,
+            chineseName: zh,
+            englishName: en,
+            chineseAliases: zhAliases,
+            englishAliases: enAliases,
+            pinyin: PinyinHelper.toPinyin(zh),
+            initials: PinyinHelper.toInitials(zh),
+            iconSystemName: icon,
+            requiresConfirmation: requiresConfirmation
+        )
+    }
+}
+
+// MARK: - Assistant MVP command source
+
+/// Search source for the Assistant MVP built-in command whitelist.
 ///
-/// Holds a fixed in-memory catalog of commands with English primary keywords
-/// and bilingual (Chinese / English) aliases. Matching strategy: prefix > contains > alias.
-final class SystemCommandSource: UnifiedSearchSource {
+/// The catalog is intentionally closed: it exposes exactly the 14 commands in
+/// `doc/architecture_api.md` section 10.1. It does not parse arbitrary user text
+/// as shell, and it does not include shutdown, system restart, logout, sudo,
+/// file deletion, process killing, or custom command execution.
+final class SystemCommandSource: CommandSourceProtocol, UnifiedSearchSource {
+    let id: SearchSourceID = .command
+    let displayName = "Commands"
+    let isEnabledInSearch = true
+
+    // Legacy UnifiedSearchSource compatibility for the old UI path.
     let sourceType: SearchResultType = .systemCommand
+
+    let commands: [AssistantCommandDefinition]
     private let logger = Logger.search
 
-    // MARK: - Catalog Entry
-
-    /// Internal catalog entry for a system command.
-    private struct CommandEntry {
-        let command: SystemCommand
-        /// Primary English keyword used for prefix matching ("sleep", "restart"...).
-        let primaryKeyword: String
-        /// Alternate keywords / Chinese names ("睡眠", "重启", ...). Match is case + diacritic insensitive.
-        let aliases: [String]
-        /// Localized display title shown in the result row.
-        let title: String
-        /// Short description shown as subtitle.
-        let subtitle: String
-        /// SF Symbol icon name.
-        let iconName: String
+    init(commands: [AssistantCommandDefinition] = AssistantCommandCatalog.commands) {
+        self.commands = commands
     }
 
-    private let catalog: [CommandEntry]
+    func canSearch(query: String) -> Bool {
+        SearchTriggerRules.standardMinimumLength(sourceID: .command, query: query)
+    }
 
-    // MARK: - Init
+    func search(query: String) async -> [SearchResult] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard canSearch(query: trimmed) else { return [] }
 
-    init() {
-        self.catalog = [
-            CommandEntry(
-                command: .sleep,
-                primaryKeyword: "sleep",
-                aliases: ["睡眠", "休眠", "sleep", "zzz"],
-                title: L10n.localized("system.sleep.title"),
-                subtitle: L10n.localized("system.sleep.subtitle"),
-                iconName: "moon.fill"
-            ),
-            CommandEntry(
-                command: .restart,
-                primaryKeyword: "restart",
-                aliases: ["重启", "重新启动", "restart", "reboot"],
-                title: L10n.localized("system.restart.title"),
-                subtitle: L10n.localized("system.restart.subtitle"),
-                iconName: "arrow.clockwise.circle.fill"
-            ),
-            CommandEntry(
-                command: .shutdown,
-                primaryKeyword: "shutdown",
-                aliases: ["关机", "关闭", "shutdown", "shut down", "power off", "poweroff"],
-                title: L10n.localized("system.shutdown.title"),
-                subtitle: L10n.localized("system.shutdown.subtitle"),
-                iconName: "power"
-            ),
-            CommandEntry(
-                command: .lock,
-                primaryKeyword: "lock",
-                aliases: ["锁定", "锁屏", "lock", "lock screen"],
-                title: L10n.localized("system.lock.title"),
-                subtitle: L10n.localized("system.lock.subtitle"),
-                iconName: "lock.fill"
-            ),
-            CommandEntry(
-                command: .lockScreen,
-                primaryKeyword: "lockscreen",
-                aliases: ["锁屏", "lockscreen", "lock screen"],
-                title: L10n.localized("system.lockScreen.title"),
-                subtitle: L10n.localized("system.lockScreen.subtitle"),
-                iconName: "lock.display"
-            ),
-            CommandEntry(
-                command: .emptyTrash,
-                primaryKeyword: "emptytrash",
-                aliases: ["清空废纸篓", "清空垃圾桶", "empty trash", "emptytrash", "trash"],
-                title: L10n.localized("system.emptyTrash.title"),
-                subtitle: L10n.localized("system.emptyTrash.subtitle"),
-                iconName: "trash.fill"
-            ),
-            CommandEntry(
-                command: .showDesktop,
-                primaryKeyword: "showdesktop",
-                aliases: ["显示桌面", "桌面", "show desktop", "showdesktop", "desktop"],
-                title: L10n.localized("system.showDesktop.title"),
-                subtitle: L10n.localized("system.showDesktop.subtitle"),
-                iconName: "macwindow.on.rectangle"
+        let matches = matchedCommands(query: trimmed)
+        logger.info("CommandSource search '\(trimmed, privacy: .public)': \(matches.count) results")
+        return matches.map { match in
+            SearchResult(
+                id: SearchResultID(rawValue: "command:\(match.command.id.rawValue)"),
+                sourceID: .command,
+                title: match.command.chineseName,
+                subtitle: match.command.englishName,
+                icon: .systemSymbol(match.command.iconSystemName),
+                typeLabel: "Command",
+                baseScore: SourcePriority.command,
+                matchScore: match.kind.score,
+                usageScore: 0,
+                primaryAction: .runCommand(match.command.id),
+                secondaryActions: []
             )
-        ]
+        }
     }
 
-    // MARK: - SearchSource
-
+    /// Legacy UnifiedSearchSource compatibility. It still exposes only the MVP
+    /// whitelist and maps to the safe `SystemCommand` compatibility enum.
     func search(query: String, limit: Int) async throws -> [UnifiedSearchResult] {
+        let matches = matchedCommands(query: query)
+        return matches.prefix(limit).map { match in
+            let icon = NSImage(systemSymbolName: match.command.iconSystemName, accessibilityDescription: match.command.chineseName)
+            icon?.size = NSSize(width: 24, height: 24)
+            return UnifiedSearchResult(
+                id: "command:\(match.command.id.rawValue)",
+                title: match.command.chineseName,
+                subtitle: match.command.englishName,
+                icon: icon,
+                type: .systemCommand,
+                score: match.kind.score / SearchTextMatcher.MatchKind.exact.score,
+                highlightRanges: highlightRanges(in: match.command.chineseName, query: query),
+                action: .runSystemCommand(SystemCommand(commandID: match.command.id))
+            )
+        }
+    }
+
+    private struct CommandMatch {
+        let command: AssistantCommandDefinition
+        let kind: SearchTextMatcher.MatchKind
+    }
+
+    private func matchedCommands(query: String) -> [CommandMatch] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return [] }
 
-        let normalizedQuery = normalize(trimmed)
-
-        var scored: [Scored] = []
-
-        for entry in catalog {
-            let candidate = SearchTextCandidate(
-                text: entry.primaryKeyword,
-                aliases: entry.aliases + [entry.title],
-                pinyin: PinyinHelper.toPinyin(entry.title),
-                initials: PinyinHelper.toInitials(entry.title)
-            )
-            if let matchKind = SearchTextMatcher.match(query: normalizedQuery, candidate: candidate) {
-                let range = highlightRange(in: entry.title, queryNormalized: normalizedQuery)
-                scored.append(Scored(entry: entry, matchKind: matchKind, highlightRange: range))
+        return commands.compactMap { command -> CommandMatch? in
+            guard let kind = SearchTextMatcher.match(query: trimmed, candidate: command.candidate()) else {
+                return nil
             }
+            return CommandMatch(command: command, kind: kind)
+        }
+        .sorted { lhs, rhs in
+            if lhs.kind != rhs.kind { return lhs.kind < rhs.kind }
+            return lhs.command.chineseName.localizedCaseInsensitiveCompare(rhs.command.chineseName) == .orderedAscending
+        }
+    }
+
+    private func highlightRanges(in title: String, query: String) -> [NSRange] {
+        let normalizedTitle = SearchTextMatcher.normalize(title)
+        let normalizedQuery = SearchTextMatcher.normalize(query)
+        guard let range = normalizedTitle.range(of: normalizedQuery) else { return [] }
+        return [NSRange(range, in: title)]
+    }
+}
+
+// MARK: - Safe command execution
+
+final class SystemCommandExecutor: CommandExecutorProtocol {
+    private let commandLookup: [CommandID: AssistantCommandDefinition]
+    private let clipboardHistoryService: ClipboardHistoryServiceProtocol?
+    private let workspace: NSWorkspace
+    private let notificationCenter: NotificationCenter
+    private let userDefaults: UserDefaults
+
+    init(
+        commands: [AssistantCommandDefinition] = AssistantCommandCatalog.commands,
+        clipboardHistoryService: ClipboardHistoryServiceProtocol? = nil,
+        workspace: NSWorkspace = .shared,
+        notificationCenter: NotificationCenter = .default,
+        userDefaults: UserDefaults = .standard
+    ) {
+        self.commandLookup = Dictionary(uniqueKeysWithValues: commands.map { ($0.id, $0) })
+        self.clipboardHistoryService = clipboardHistoryService
+        self.workspace = workspace
+        self.notificationCenter = notificationCenter
+        self.userDefaults = userDefaults
+    }
+
+    func requiresConfirmation(_ commandID: CommandID) -> Bool {
+        commandLookup[commandID]?.requiresConfirmation ?? false
+    }
+
+    func execute(_ commandID: CommandID, confirmed: Bool = false) async throws {
+        guard let command = commandLookup[commandID] else {
+            throw AssistantCommandExecutionError.unknownCommand(commandID)
+        }
+        guard !command.requiresConfirmation || confirmed else {
+            throw AssistantCommandExecutionError.confirmationRequired(commandID)
         }
 
-        // Sort by match quality first, then alphabetically by title.
-        scored.sort { lhs, rhs in
-            if lhs.matchKind != rhs.matchKind {
-                return lhs.matchKind < rhs.matchKind
+        switch commandID {
+        case .openSystemSettings:
+            try openURL(URL(string: "x-apple.systempreferences:")!, commandID: commandID)
+        case .openAppSettings:
+            await MainActor.run {
+                _ = NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
             }
-            return lhs.entry.title.localizedCaseInsensitiveCompare(rhs.entry.title) == .orderedAscending
+        case .openDownloads:
+            workspace.open(FileManager.default.urls(for: .downloadsDirectory, in: .userDomainMask).first ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Downloads"))
+        case .openApplications:
+            workspace.open(URL(fileURLWithPath: "/Applications", isDirectory: true))
+        case .openDesktop:
+            workspace.open(FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Desktop"))
+        case .captureRegion:
+            notificationCenter.post(name: .commandCaptureRegion, object: nil)
+        case .captureFullScreen:
+            notificationCenter.post(name: .commandCaptureFullScreen, object: nil)
+        case .captureWindow:
+            notificationCenter.post(name: .commandCaptureWindow, object: nil)
+        case .clearClipboardHistory:
+            guard let clipboardHistoryService else { return }
+            try await clipboardHistoryService.clearAll(confirmed: true)
+        case .toggleClipboardRecording:
+            let key = "clipboard.enabled"
+            let current = userDefaults.object(forKey: key) as? Bool ?? true
+            userDefaults.set(!current, forKey: key)
+            notificationCenter.post(name: .commandToggleClipboardRecording, object: nil)
+        case .checkPermissions:
+            notificationCenter.post(name: .commandCheckPermissions, object: nil)
+        case .restartFinder:
+            restartRunningApplication(bundleIdentifier: "com.apple.finder")
+            if let finderURL = workspace.urlForApplication(withBundleIdentifier: "com.apple.finder") {
+                workspace.open(finderURL)
+            }
+        case .restartDock:
+            restartRunningApplication(bundleIdentifier: "com.apple.dock")
+        case .toggleAppearance:
+            toggleAppearance()
+        default:
+            throw AssistantCommandExecutionError.unknownCommand(commandID)
         }
-
-        let truncated = Array(scored.prefix(limit))
-        let results = truncated.map { buildResult(scored: $0) }
-
-        logger.info("System command search '\(trimmed, privacy: .public)': \(results.count) results")
-        return results
     }
 
-    // MARK: - Result Building
-
-    /// Scored entry shared between `search()` and `buildResult()`.
-    private struct Scored {
-        let entry: CommandEntry
-        let matchKind: SearchTextMatcher.MatchKind
-        let highlightRange: NSRange?
-    }
-
-    private func buildResult(scored: Scored) -> UnifiedSearchResult {
-        let entry = scored.entry
-        let icon = NSImage(systemSymbolName: entry.iconName, accessibilityDescription: entry.title)
-        icon?.size = NSSize(width: 24, height: 24)
-
-        // Normalize the shared match-kind score into the legacy 0...1 unified result range.
-        let relevance = scored.matchKind.score / SearchTextMatcher.MatchKind.exact.score
-
-        return UnifiedSearchResult(
-            id: "system:\(entry.command.rawValue)",
-            title: entry.title,
-            subtitle: entry.subtitle,
-            icon: icon,
-            type: .systemCommand,
-            score: relevance,
-            highlightRanges: scored.highlightRange.map { [$0] } ?? [],
-            action: .runSystemCommand(entry.command)
-        )
-    }
-
-    // MARK: - Helpers
-
-    /// Lowercase + strip diacritics for case- and accent-insensitive matching.
-    private func normalize(_ string: String) -> String {
-        return string.folding(options: .diacriticInsensitive, locale: .current).lowercased()
-    }
-
-    /// Compute the highlight NSRange in the display title for the matched query, if any.
-    private func highlightRange(in title: String, queryNormalized: String) -> NSRange? {
-        let titleNormalized = normalize(title)
-        guard let range = titleNormalized.range(of: queryNormalized) else {
-            return nil
+    private func openURL(_ url: URL, commandID: CommandID) throws {
+        if !workspace.open(url) {
+            throw AssistantCommandExecutionError.executionFailed(commandID, "NSWorkspace refused to open URL")
         }
-        return NSRange(range, in: title)
     }
+
+    private func restartRunningApplication(bundleIdentifier: String) {
+        workspace.runningApplications
+            .filter { $0.bundleIdentifier == bundleIdentifier }
+            .forEach { app in
+                if !app.terminate() {
+                    app.forceTerminate()
+                }
+            }
+    }
+
+    private func toggleAppearance() {
+        Task { @MainActor in
+            NSApp.effectiveAppearance.name == .darkAqua
+                ? NSApp.appearance = NSAppearance(named: .aqua)
+                : (NSApp.appearance = NSAppearance(named: .darkAqua))
+        }
+    }
+}
+
+final class CommandSearchActionExecutor: SearchActionExecutorProtocol {
+    private let commandExecutor: CommandExecutorProtocol
+    private let confirmationProvider: CommandConfirmationProviding?
+
+    init(commandExecutor: CommandExecutorProtocol, confirmationProvider: CommandConfirmationProviding? = nil) {
+        self.commandExecutor = commandExecutor
+        self.confirmationProvider = confirmationProvider
+    }
+
+    func execute(_ action: SearchAction) async throws {
+        guard case .runCommand(let commandID) = action else { return }
+        let confirmed: Bool
+        if commandExecutor.requiresConfirmation(commandID) {
+            guard let command = AssistantCommandCatalog.byID[commandID] else {
+                throw AssistantCommandExecutionError.unknownCommand(commandID)
+            }
+            confirmed = await confirmationProvider?.confirm(command: command) ?? false
+            guard confirmed else { return }
+        } else {
+            confirmed = false
+        }
+        try await commandExecutor.execute(commandID, confirmed: confirmed)
+    }
+}
+
+extension Notification.Name {
+    static let commandCaptureRegion = Notification.Name("com.assistant.command.captureRegion")
+    static let commandCaptureFullScreen = Notification.Name("com.assistant.command.captureFullScreen")
+    static let commandCaptureWindow = Notification.Name("com.assistant.command.captureWindow")
+    static let commandToggleClipboardRecording = Notification.Name("com.assistant.command.toggleClipboardRecording")
+    static let commandCheckPermissions = Notification.Name("com.assistant.command.checkPermissions")
 }

@@ -2937,3 +2937,49 @@ US-025 从零构建了完整的截图标注编辑器，替换 US-024 的 Annotat
 - US-008 可复用 `UsageStatRepository` 记录命令执行次数和最后执行时间，但必须以 `doc/architecture_api.md` 的 14 个 MVP 内置命令权威清单为准，不要复用旧历史高风险命令清单。
 - US-011 统一搜索面板执行应用结果时，可将 `AppSearchActionExecutor` 注入 `SearchService` 或组合执行器；执行后 `SearchService.execute` 已具备关闭搜索框事件语义。
 - 当前仍保留旧 `UnifiedSearchService` / `UnifiedSearchSource` 兼容层和历史 GRDB 搜索链路，避免在 US-007 中做 UI 大迁移；后续迁移时注意区分旧兼容层和当前 Assistant MVP `SearchService`。
+
+## 2026-06-12 - Assistant MVP US-008 CommandSource 内置白名单命令
+
+### 任务状态
+- US-008 已完成，`.claude/task.json` 中 `US-008.passes=true`、`blocked=false`。
+- 本次只处理当前 Assistant MVP 任务体系中的 US-008；未实现 US-009+ CalculatorSource 或 US-010+ SettingsSource 后续能力。
+
+### 完成内容
+1. **14 个 MVP 内置命令权威清单实现**
+   - 重写 `SnapVault/Services/SearchEngine/SystemCommandSource.swift`，以 `doc/architecture_api.md` 10.1 的 14 条 MVP 命令为唯一权威清单。
+   - 命令包括：打开系统设置、打开本应用设置、打开下载目录、打开应用程序目录、打开桌面目录、区域截图、全屏截图、窗口截图、清空剪贴板历史、暂停/恢复剪贴板记录、检查权限状态、重启 Finder、重启 Dock、切换深色/浅色模式。
+   - 每个命令维护中文名、英文名、中文别名、英文别名、拼音、首字母、SF Symbol 图标、确认标记。
+
+2. **命令搜索与主动作模型**
+   - `SystemCommandSource` 接入当前 Assistant MVP `SearchSource` / `SearchResult` / `CommandID` 模型，搜索结果使用稳定 id `command:<CommandID>`，主动作统一为 `.runCommand(CommandID)`。
+   - 搜索复用 US-006 `SearchTextMatcher`，支持中文、英文、别名、拼音和首字母匹配，不依赖当前界面语言。
+   - 保留旧 `UnifiedSearchSource` 兼容入口，但旧入口也只返回 14 条 MVP 白名单，不再暴露历史高风险命令。
+
+3. **确认门控与安全执行边界**
+   - 新增 `SystemCommandExecutor` / `CommandSearchActionExecutor` / `CommandConfirmationProviding`。
+   - 清空剪贴板历史、重启 Finder、重启 Dock 必须确认；未确认时抛出/返回确认要求，不执行动作。
+   - 切换深浅色模式不需要确认。
+   - 删除旧兼容 UI 路径中的 sleep、关机、重启系统、清空废纸篓、锁屏、任意进程启动执行逻辑；旧 UI 现在通过白名单 `CommandID` 转发到安全 executor。
+   - 实现中不提供任意 shell、sudo、关机、重启系统、注销、删除文件、杀进程能力；危险关键词搜索返回空结果。
+
+4. **使用统计**
+   - CommandSource 结果使用稳定 `SearchResultID`，可直接复用 US-007 `UsageStatRepository` / US-005 `SearchUsageStoreProtocol` 的命令使用次数和最后使用时间加权。
+   - 新增测试验证命令被 `SearchService.recordSelection` 记录后再次搜索会获得 usageScore 提升。
+
+5. **测试覆盖**
+   - 重写 `SnapVaultTests/SystemCommandSourceTests.swift`，覆盖：14 条白名单全部可搜索；命令中英文/拼音/首字母匹配；3 条确认命令确认标记；切换外观无需确认；危险命令与任意 shell 不可搜索；旧兼容 source 也只返回白名单；未确认不执行；确认后执行；命令使用统计加权。
+
+### 技术方案核对
+- 已按要求阅读 `.claude/progress.txt`、`.claude/task.json`、`doc/prd.md`、`doc/architecture.md`、`doc/architecture_db.md`、`doc/architecture_api.md`、`doc/test.md`。
+- 现有文档已覆盖 US-008 所需方案：PRD FR-CMD-1~10、`architecture.md` 第 13 节、`architecture_api.md` 第 10.1/10.2 节、`doc/test.md` 4.6 CMD-001~CMD-010。
+- 本次未发现必须补充的架构缺口，因此未修改 `doc/architecture*.md`、`doc/prd.md` 或 `doc/test.md`；也未覆盖既有脏文档改动。
+
+### 验证结果
+- `swift test --skip-update`：通过，执行 83 个 XCTest，83 通过、0 失败。
+- `xcodebuild -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug build`：通过，`** BUILD SUCCEEDED **`。
+- `xcodebuild test -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug`：通过，`** TEST SUCCEEDED **`。
+
+### 留给后续 Agent 的提示
+- US-009 应继续基于当前 `SearchSource` / `SearchResult` 模型处理 CalculatorSource，不要复用旧历史范围外的货币换算或复杂函数能力。
+- 若 US-011 统一搜索 UI 迁移到新 `SearchService`，可注入 `CommandSearchActionExecutor` 和具体确认 UI；确认取消时不要调用底层 executor。
+- 旧 `UnifiedSearchService` 兼容路径仍存在，但 `SystemCommand` 已被安全化为 14 条 MVP 白名单；后续不要重新加入关机、重启系统、注销、sudo、任意 shell 等能力。

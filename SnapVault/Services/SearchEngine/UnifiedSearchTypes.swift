@@ -51,25 +51,43 @@ struct UnifiedSearchResult: Identifiable {
 
 // MARK: - System Command
 
-/// System-level commands that can be triggered from the Command Bar.
+/// Legacy unified-search compatibility wrapper for the Assistant MVP command whitelist.
 ///
-/// Commands marked as `requiresConfirmation` will surface an NSAlert before
-/// execution to avoid accidentally restarting or shutting down the machine.
+/// This enum intentionally mirrors the 14 allowed `CommandID` values from
+/// `doc/architecture_api.md` section 10.1. It does not include arbitrary shell,
+/// sudo, shutdown, system restart, logout, file deletion, or process-kill actions.
 enum SystemCommand: String, Codable, CaseIterable {
-    case sleep
-    case restart
-    case shutdown
-    case lock
-    case lockScreen
-    case emptyTrash
-    case showDesktop
+    case openSystemSettings
+    case openAppSettings
+    case openDownloads
+    case openApplications
+    case openDesktop
+    case captureRegion
+    case captureFullScreen
+    case captureWindow
+    case clearClipboardHistory
+    case toggleClipboardRecording
+    case checkPermissions
+    case restartFinder
+    case restartDock
+    case toggleAppearance
 
-    /// Whether this command is destructive enough to warrant a confirmation dialog.
+    init(commandID: CommandID) {
+        self = SystemCommand(rawValue: commandID.rawValue) ?? .openAppSettings
+    }
+
+    var commandID: CommandID {
+        CommandID(rawValue: rawValue)
+    }
+
+    /// Whether this command requires an explicit user confirmation.
     var requiresConfirmation: Bool {
         switch self {
-        case .restart, .shutdown, .emptyTrash:
+        case .clearClipboardHistory, .restartFinder, .restartDock:
             return true
-        case .sleep, .lock, .lockScreen, .showDesktop:
+        case .openSystemSettings, .openAppSettings, .openDownloads, .openApplications, .openDesktop,
+             .captureRegion, .captureFullScreen, .captureWindow, .toggleClipboardRecording,
+             .checkPermissions, .toggleAppearance:
             return false
         }
     }

@@ -142,7 +142,7 @@
       "id": "US-008",
       "title": "CommandSource 内置白名单命令",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": ["US-006"],
       "steps": [
