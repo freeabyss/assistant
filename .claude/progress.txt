@@ -2618,3 +2618,55 @@ US-025 从零构建了完整的截图标注编辑器，替换 US-024 的 Annotat
 - 本次为最小安全改名：运行产物和用户可见标识已是 Assistant / Mac Super Assistant，但物理目录 `SnapVault/`、Xcode project/scheme 名、Swift module `SnapVault`、错误类型 `SnapVaultError` 仍保留，以避免一次性重命名破坏测试与工程引用。若需要彻底重命名，应单独任务处理。
 - 当前数据层仍是历史 GRDB/SQLite 实现，和 Assistant MVP 文档中的 Core Data 目标不一致；US-002 应按当前 task.json 重建 Core Data + 文件系统数据层。
 - `syncLaunchAtLoginPreference()` 在开发构建中可能因未签名/登录项权限导致 register 失败，但失败会记录日志，不阻塞 App 启动；发布前需结合签名策略复验登录项体验。
+
+
+## 2026-06-12 - Assistant MVP US-002 Core Data 与文件系统数据层
+
+### 完成内容
+1. **Core Data Stack（临时 store 可注入）**
+   - 新增 `SnapVault/Database/PersistenceController.swift`，使用 `NSPersistentContainer` + 程序化 `NSManagedObjectModel` 实现 Assistant MVP Core Data stack。
+   - 支持默认持久化 store：`~/Library/Application Support/Assistant/Assistant.sqlite`。
+   - 支持测试注入 `.temporary` in-memory store 与自定义 `AssistantFileSystem` 根目录。
+   - 启用 lightweight migration：`NSMigratePersistentStoresAutomaticallyOption` / `NSInferMappingModelAutomaticallyOption`。
+   - `viewContext.automaticallyMergesChangesFromParent = true`，并使用 `NSMergeByPropertyObjectTrumpMergePolicy` 配合唯一约束做去重合并。
+
+2. **Core Data 实体模型**
+   - 程序化定义实体：`ClipboardRecord`、`ClipboardResource`、`SearchBlacklistItem`、`UsageStat`、`AppSetting`。
+   - 对应 Swift NSManagedObject 类：`CDClipboardRecord`、`CDClipboardResource`、`CDSearchBlacklistItem`、`CDUsageStat`、`CDAppSetting`。
+   - 字段与 `doc/architecture_db.md` 对齐：剪贴板主记录包含 UUID、contentType、plainText、summary、contentHash、置顶、创建/更新时间、文件路径元信息；资源包含 UUID、resourceType、relativePath、mimeType、byteSize、width/height、createdAt；黑名单、使用统计、设置项均具备文档定义字段。
+   - `ClipboardRecord.contentHash` 设置唯一约束；`SearchBlacklistItem` 设置 `sourceID + resultID` 唯一约束；`UsageStat` 设置 `targetType + targetID` 唯一约束；`AppSetting.key` 设置唯一约束。
+   - `ClipboardRecord.resources` → `ClipboardResource.record` 建立关系，record 删除时级联删除资源记录。
+
+3. **Application Support / Assistant 文件系统结构**
+   - 新增 `SnapVault/Database/AssistantFileSystem.swift`。
+   - 自动创建：`Application Support/Assistant/`、`Clipboard/Images/`、`Clipboard/Thumbnails/`、`Clipboard/RichText/`、`Logs/`。
+   - `storeURL` 统一为 `Assistant.sqlite`。
+   - `AssistantClipboardResourceType` 定义图片原图、缩略图、RTF、HTML 的目录、扩展名和 MIME type。
+
+4. **UUID 文件命名与相对路径**
+   - `AssistantFileSystem.resourcePath(for:type:)` 生成相对 Application Support 的路径，例如 `Clipboard/Images/{uuid}.png`、`Clipboard/RichText/{uuid}.html`。
+   - Core Data 资源实体保存 `relativePath`，不保存绝对路径。
+
+5. **默认 AppSetting 初始化**
+   - `AssistantSettingDefaults.values` 初始化 `onboarding.completed`、`hotkey.search`、`launchAtLogin.enabled`、`clipboard.enabled`、`clipboard.showInSearch`、`clipboard.retention`、各 MVP 搜索源展示开关、`screenshot.saveDirectory`、`language.mode`。
+   - 初始化逻辑只插入缺失 key，不覆盖用户已有值。
+
+6. **数据层测试**
+   - 新增 `SnapVaultTests/PersistenceControllerTests.swift`。
+   - 覆盖临时 store 创建/查询/更新/删除核心实体、ClipboardRecord 与 ClipboardResource 关系级联删除、默认设置初始化且不覆盖用户值、目录自动创建、UUID 相对路径生成、contentHash 唯一约束与 merge policy 去重。
+   - 更新 `SnapVault.xcodeproj/project.pbxproj`，将 `PersistenceController.swift`、`AssistantFileSystem.swift` 加入 app target，将 `PersistenceControllerTests.swift` 加入 test target。
+
+### 技术方案核对
+- 已在实现前核对 `doc/prd.md`、`doc/architecture.md`、`doc/architecture_db.md`、`doc/architecture_api.md`、`doc/test.md`。
+- US-002 所需技术方案已由现有 `architecture_db.md` / `architecture_api.md` / `test.md` 覆盖，本次未发现必须补充的架构缺口，因此未修改架构文档。
+- 为避免破坏当前仍存在的旧 GRDB 链路，本任务新增 Assistant Core Data 数据层，不顺手迁移 US-003+ Repository/Clipboard 服务；后续 US-003 应基于本次 Core Data stack 接入 FileResourceStore 与 ClipboardRepository。
+
+### 验证结果
+- `swift test --skip-update`：通过，执行 41 个 XCTest，41 通过、0 失败。
+- `xcodebuild -project SnapVault.xcodeproj -scheme SnapVault -configuration Debug build`：已执行完成；随后 `xcodebuild test` 对同一 scheme 成功构建并运行测试。
+- `xcodebuild -project SnapVault.xcodeproj -scheme SnapVault -configuration Debug test`：通过，执行 41 个 XCTest，41 通过、0 失败，`** TEST SUCCEEDED **`。
+
+### 留给后续 Agent 的提示
+- 后续 US-003 应使用 `PersistenceController` 的临时 store 注入能力和 `AssistantFileSystem` 的临时目录能力继续实现 FileResourceStore 与 ClipboardRepository。
+- 旧 `DatabaseManager` / `ContentRepository` / GRDB 代码仍存在，属于历史实现与当前 app 现有依赖；不要在 US-002 范围内删除，避免大规模连锁迁移。后续任务可逐步切换到 Core Data repository。
+- `AppSetting` 这个实体在 Core Data 中名称仍为 `AppSetting`，Swift 类名使用 `CDAppSetting`，以避免与旧 GRDB `AppSetting` struct 冲突。
