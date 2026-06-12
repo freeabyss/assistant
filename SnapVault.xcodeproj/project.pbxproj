@@ -89,7 +89,14 @@
 			B01100000000000000000003 /* SearchPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01100000000000000000004; };
 			B01100000000000000000005 /* AssistantClipboardSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01100000000000000000006; };
 			B01100000000000000000009 /* SearchPanelViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01100000000000000000008; };
-/* End PBXBuildFile section */
+
+			C01400000000000000000001 /* PermissionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000002 /* PermissionService.swift */; };
+			C01400000000000000000003 /* HotkeyValidationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000004 /* HotkeyValidationService.swift */; };
+			C01400000000000000000005 /* LaunchAtLoginService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000006 /* LaunchAtLoginService.swift */; };
+			C01400000000000000000007 /* OnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000008 /* OnboardingViewModel.swift */; };
+			C01400000000000000000009 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0140000000000000000000A /* OnboardingView.swift */; };
+			C0140000000000000000000B /* OnboardingViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0140000000000000000000C /* OnboardingViewModelTests.swift */; };
+	/* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 			B01200000000000000000002 /* ClipboardMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardMonitorTests.swift; sourceTree = "<group>"; };
@@ -178,6 +185,12 @@
 			B01100000000000000000004 /* SearchPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanelView.swift; sourceTree = "<group>"; };
 			B01100000000000000000006 /* AssistantClipboardSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantClipboardSource.swift; sourceTree = "<group>"; };
 			B01100000000000000000008 /* SearchPanelViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanelViewModelTests.swift; sourceTree = "<group>"; };
+			C01400000000000000000002 /* PermissionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapVault/Services/Permissions/PermissionService.swift; sourceTree = SOURCE_ROOT; };
+			C01400000000000000000004 /* HotkeyValidationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapVault/Services/Hotkey/HotkeyValidationService.swift; sourceTree = SOURCE_ROOT; };
+			C01400000000000000000006 /* LaunchAtLoginService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapVault/Services/LaunchAtLogin/LaunchAtLoginService.swift; sourceTree = SOURCE_ROOT; };
+			C01400000000000000000008 /* OnboardingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapVault/ViewModels/OnboardingViewModel.swift; sourceTree = SOURCE_ROOT; };
+			C0140000000000000000000A /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapVault/Views/Onboarding/OnboardingView.swift; sourceTree = SOURCE_ROOT; };
+			C0140000000000000000000C /* OnboardingViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapVaultTests/OnboardingViewModelTests.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -253,6 +266,7 @@
 		A10003000000000000000005 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
+					C01400000000000000000008 /* OnboardingViewModel.swift */,
 				A10000000000000000000016 /* ClipboardListViewModel.swift */,
 				A10000000000000000000017 /* SettingsViewModel.swift */,
 				A10000000000000000000028 /* UnifiedSearchViewModel.swift */,
@@ -325,6 +339,7 @@
 		A1000300000000000000000B /* SnapVaultTests */ = {
 			isa = PBXGroup;
 			children = (
+					C0140000000000000000000C /* OnboardingViewModelTests.swift */,
 				A10000000000000000000038 /* CalculatorSourceTests.swift */,
 				A10000000000000000000039 /* SystemCommandSourceTests.swift */,
 				A1000000000000000000003A /* UnitConverterSourceTests.swift */,
@@ -529,7 +544,40 @@
 			path = SearchPanel;
 			sourceTree = "<group>";
 		};
-/* End PBXGroup section */
+
+			C01400000000000000000010 /* Onboarding */ = {
+				isa = PBXGroup;
+				children = (
+					C0140000000000000000000A /* OnboardingView.swift */,
+				);
+				path = Onboarding;
+				sourceTree = "<group>";
+			};
+			C01400000000000000000011 /* Permissions */ = {
+				isa = PBXGroup;
+				children = (
+					C01400000000000000000002 /* PermissionService.swift */,
+				);
+				path = Permissions;
+				sourceTree = "<group>";
+			};
+			C01400000000000000000012 /* Hotkey */ = {
+				isa = PBXGroup;
+				children = (
+					C01400000000000000000004 /* HotkeyValidationService.swift */,
+				);
+				path = Hotkey;
+				sourceTree = "<group>";
+			};
+			C01400000000000000000013 /* LaunchAtLogin */ = {
+				isa = PBXGroup;
+				children = (
+					C01400000000000000000006 /* LaunchAtLoginService.swift */,
+				);
+				path = LaunchAtLogin;
+				sourceTree = "<group>";
+			};
+	/* End PBXGroup section */
 
 /* Begin PBXContainerItemProxy section */
 		A1000B000000000000000002 /* PBXContainerItemProxy */ = {
@@ -652,6 +700,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C0140000000000000000000B /* OnboardingViewModelTests.swift in Sources */,
 				A10001000000000000000038 /* CalculatorSourceTests.swift in Sources */,
 				A10001000000000000000039 /* SystemCommandSourceTests.swift in Sources */,
 				A1000100000000000000003A /* UnitConverterSourceTests.swift in Sources */,
@@ -676,6 +725,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C01400000000000000000001 /* PermissionService.swift in Sources */,
+				C01400000000000000000003 /* HotkeyValidationService.swift in Sources */,
+				C01400000000000000000005 /* LaunchAtLoginService.swift in Sources */,
+				C01400000000000000000007 /* OnboardingViewModel.swift in Sources */,
+				C01400000000000000000009 /* OnboardingView.swift in Sources */,
 				A10001000000000000000001 /* SnapVaultApp.swift in Sources */,
 				A10001000000000000000002 /* AppDelegate.swift in Sources */,
 				A10001000000000000000003 /* AppState.swift in Sources */,

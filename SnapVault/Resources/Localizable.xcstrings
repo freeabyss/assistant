@@ -449,30 +449,30 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Defaults: Toggle Panel ⌘Space · Capture Region ⌘⇧A · Capture Window ⌘⇧W."
+            "value": "Defaults: Open Search ⌥Space · Capture Region ⌘⇧A · Capture Window ⌘⇧W."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "默认：切换面板 ⌘空格 · 区域截图 ⌘⇧A · 窗口截图 ⌘⇧W。"
+            "value": "默认：打开搜索 ⌥空格 · 区域截图 ⌘⇧A · 窗口截图 ⌘⇧W。"
           }
         }
       }
     },
     "settings.shortcuts.footer.spotlightWarning": {
-      "comment": "Warning about ⌘Space conflicting with Spotlight",
+      "comment": "Warning about shortcut conflicts",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Heads up: ⌘Space conflicts with macOS Spotlight by default. To use Assistant's Command Bar, either change Spotlight's shortcut in System Settings → Keyboard → Keyboard Shortcuts → Spotlight, or pick a different shortcut here."
+            "value": "If the default shortcut is unavailable on your Mac, record a different one here or during Onboarding."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "注意：⌘空格默认与 macOS Spotlight 冲突。要使用 Assistant 的命令栏，请在系统设置 → 键盘 → 键盘快捷键 → Spotlight 中修改 Spotlight 的快捷键，或在此处选择其他快捷键。"
+            "value": "如果默认快捷键在你的 Mac 上不可用，请在此处或首次引导中重新录制一个可用快捷键。"
           }
         }
       }
@@ -4689,6 +4689,703 @@
           "stringUnit": {
             "state": "translated",
             "value": "图片剪贴板项目"
+          }
+        }
+      }
+    },
+    "onboarding.welcome.title": {
+      "comment": "Onboarding welcome title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welcome to Mac Super Assistant"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "欢迎使用 Mac Super Assistant"
+          }
+        }
+      }
+    },
+    "onboarding.welcome.subtitle": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Spotlight-style command bar for search, clipboard, screenshots, commands, and settings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一个 Spotlight 风格的效率入口，聚合搜索、剪贴板、截图、命令和设置。"
+          }
+        }
+      }
+    },
+    "onboarding.welcome.point.search": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open a centered search panel and run actions from the keyboard."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "通过居中搜索面板，用键盘快速执行常用动作。"
+          }
+        }
+      }
+    },
+    "onboarding.welcome.point.clipboard": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clipboard history is local-first and helps you find copied content again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剪贴板历史以本地优先方式保存，方便找回复制过的内容。"
+          }
+        }
+      }
+    },
+    "onboarding.welcome.point.screenshot": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screenshot permissions are required before capture tools can work reliably."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "截图工具需要先完成必要权限授权才能稳定使用。"
+          }
+        }
+      }
+    },
+    "onboarding.searchHotkey.title": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search shortcut"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索入口与快捷键"
+          }
+        }
+      }
+    },
+    "onboarding.searchHotkey.subtitle": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use ⌥ Space by default, or record another shortcut if it conflicts."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "默认使用 ⌥ 空格；如发生冲突，请重新录制其他快捷键。"
+          }
+        }
+      }
+    },
+    "onboarding.hotkey.description": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistant will register a global shortcut for opening and closing the search panel."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistant 会注册一个全局快捷键，用于打开和关闭搜索面板。"
+          }
+        }
+      }
+    },
+    "onboarding.hotkey.valid": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shortcut is available."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快捷键可用。"
+          }
+        }
+      }
+    },
+    "onboarding.hotkey.conflict": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This shortcut conflicts with an enabled macOS shortcut. Record another one to continue."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "该快捷键与已启用的 macOS 快捷键冲突。请重新录制后继续。"
+          }
+        }
+      }
+    },
+    "onboarding.hotkey.invalid": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record a shortcut before continuing."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先录制一个快捷键。"
+          }
+        }
+      }
+    },
+    "onboarding.hotkey.recheck": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recheck shortcut"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新检测快捷键"
+          }
+        }
+      }
+    },
+    "onboarding.clipboardPrivacy.title": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clipboard history"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剪贴板历史"
+          }
+        }
+      }
+    },
+    "onboarding.clipboardPrivacy.subtitle": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clipboard recording is on by default, with explicit local privacy boundaries."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剪贴板记录默认开启，并明确说明本地隐私边界。"
+          }
+        }
+      }
+    },
+    "onboarding.clipboard.point.defaultOn": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clipboard history is enabled by default for text, images, and file references."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剪贴板历史默认开启，支持文本、图片和文件引用。"
+          }
+        }
+      }
+    },
+    "onboarding.clipboard.point.localOnly": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clipboard data stays on this Mac and is not uploaded, synced, or used for training."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剪贴板数据仅保存在本机，不上传、不同步、不用于训练。"
+          }
+        }
+      }
+    },
+    "onboarding.clipboard.point.control": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can pause recording or clear history later from settings or clipboard history."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "之后可在设置或剪贴板历史中暂停记录或清空历史。"
+          }
+        }
+      }
+    },
+    "onboarding.clipboard.acknowledge": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I understand clipboard history is enabled by default and stored locally."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "我已知晓剪贴板历史默认开启，且数据仅本地保存。"
+          }
+        }
+      }
+    },
+    "onboarding.screenRecording.title": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen Recording permission"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "屏幕录制权限"
+          }
+        }
+      }
+    },
+    "onboarding.screenRecording.subtitle": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Required for region, full-screen, and window screenshots."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "区域、全屏和窗口截图都需要此权限。"
+          }
+        }
+      }
+    },
+    "onboarding.screenRecording.description": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS requires Screen Recording permission before Assistant can capture screenshots. Without it, screenshot features cannot work."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS 要求授予屏幕录制权限后，Assistant 才能进行截图。未授权时截图功能无法使用。"
+          }
+        }
+      }
+    },
+    "onboarding.accessibility.title": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accessibility permission"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "辅助功能权限"
+          }
+        }
+      }
+    },
+    "onboarding.accessibility.subtitle": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Required to support safe system-control workflows."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用于支持安全的系统控制类工作流。"
+          }
+        }
+      }
+    },
+    "onboarding.accessibility.description": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistant needs Accessibility permission for controlled macOS automation paths such as future auto-paste, window control, simulated shortcuts, and controlling other apps."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistant 需要辅助功能权限，用于受控的 macOS 自动化路径，例如后续自动粘贴、窗口控制、模拟快捷键和控制其他 App。"
+          }
+        }
+      }
+    },
+    "onboarding.accessibility.boundary": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MVP uses this permission only within documented Assistant features. It does not run arbitrary shell commands or upload your data."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MVP 仅在已说明的 Assistant 功能边界内使用此权限，不执行任意 shell，也不会上传你的数据。"
+          }
+        }
+      }
+    },
+    "onboarding.permission.authorized": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permission granted."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "权限已授予。"
+          }
+        }
+      }
+    },
+    "onboarding.permission.notAuthorized": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permission not granted yet."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未授予权限。"
+          }
+        }
+      }
+    },
+    "onboarding.permission.openSettings": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open System Settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开系统设置"
+          }
+        }
+      }
+    },
+    "onboarding.permission.recheck": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recheck"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新检测"
+          }
+        }
+      }
+    },
+    "onboarding.permission.required": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This permission is required. If it is denied, you cannot finish Onboarding."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这是必要权限。拒绝授权时无法完成首次引导。"
+          }
+        }
+      }
+    },
+    "onboarding.launchAtLogin.title": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Launch at login"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开机启动"
+          }
+        }
+      }
+    },
+    "onboarding.launchAtLogin.subtitle": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keep Assistant available from the menu bar after login."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录后让 Assistant 常驻菜单栏，随时可用。"
+          }
+        }
+      }
+    },
+    "onboarding.launchAtLogin.description": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistant is designed as a menu bar utility. Launch at login is enabled by default after Onboarding and can be turned off later in Settings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistant 是菜单栏效率工具。完成首次引导后默认启用开机启动，你也可以之后在设置中关闭。"
+          }
+        }
+      }
+    },
+    "onboarding.launchAtLogin.toggle": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable launch at login"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用开机启动"
+          }
+        }
+      }
+    },
+    "onboarding.done.title": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ready to go"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "准备就绪"
+          }
+        }
+      }
+    },
+    "onboarding.done.subtitle": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finish setup and enter Assistant."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成设置并进入 Assistant。"
+          }
+        }
+      }
+    },
+    "onboarding.done.description": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can now use the search shortcut, clipboard history, screenshots, and menu bar entry."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "现在可以使用搜索快捷键、剪贴板历史、截图和菜单栏入口。"
+          }
+        }
+      }
+    },
+    "onboarding.continue": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续"
+          }
+        }
+      }
+    },
+    "onboarding.finish": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finish"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成"
+          }
+        }
+      }
+    },
+    "onboarding.quit": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quit Assistant"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "退出 Assistant"
+          }
+        }
+      }
+    },
+    "onboarding.error.permissionsRequired": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Complete the required shortcut, clipboard acknowledgment, Screen Recording, and Accessibility steps first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先完成快捷键、剪贴板确认、屏幕录制权限和辅助功能权限步骤。"
           }
         }
       }

@@ -3227,3 +3227,40 @@ US-025 从零构建了完整的截图标注编辑器，替换 US-024 的 Annotat
 - US-015 管理中心可以复用 `ClipboardListViewModel` / `ClipboardListView` 作为剪贴板历史页，不要回退到旧 GRDB `ClipboardListViewModel` 语义。
 - `SearchPanelActionExecutor.copyClipboardRecord` 是当前文本/富文本/图片/文件复制回系统剪贴板的复用点；如后续增强富文本 HTML pasteboard type，应同步搜索面板和历史页。
 - 旧 `ClipboardItemRow` / `PreviewPanel` / `RecentContentView` 仍服务旧 RecentContent 兼容路径，未在 US-013 中清理；后续如迁移 RecentContent，应单独任务处理。
+
+## 2026-06-12 - US-014 Onboarding 与权限强制流程
+
+### 完成内容
+1. **首次启动 Onboarding 门禁**
+   - AppDelegate 启动时读取 Core Data `onboarding.completed` 设置。
+   - 未完成首次引导时显示独立 Onboarding 窗口，并阻止搜索面板、剪贴板历史、截图入口等完整体验入口。
+   - 完成后关闭 Onboarding，启动剪贴板监听、清理服务、全局快捷键、搜索服务和截图工具栏。
+
+2. **七步 Onboarding 流程**
+   - 新增 `OnboardingViewModel` 与 `OnboardingView`，实现欢迎、搜索入口与快捷键、剪贴板说明、截图权限、辅助功能权限、开机启动、完成七步流程。
+   - 剪贴板历史默认开启，但剪贴板说明页必须显式勾选知晓后才能继续。
+   - 开机启动页默认开启，完成后写入 `launchAtLogin.enabled` 并调用 `SMAppService`。
+
+3. **权限强制与系统设置跳转**
+   - 新增 `PermissionService`，封装屏幕录制 `CGPreflightScreenCaptureAccess()` 和辅助功能 `AXIsProcessTrusted()` 检测。
+   - 权限页提供打开系统设置和重新检测；辅助功能打开设置前会触发系统授权提示。
+   - 屏幕录制和辅助功能均未授权时不能继续，也不能完成 Onboarding。
+
+4. **快捷键注册/冲突检测/重录流程**
+   - 默认搜索快捷键改为 PRD 要求的 `⌥ Space`。
+   - 新增 `HotkeyValidationService`，基于当前 `KeyboardShortcuts` 录制值和 macOS enabled symbolic hotkeys 检测 invalid/conflict/valid。
+   - 快捷键无效或冲突时停留在快捷键步骤，用户需重新录制并重新检测。
+
+5. **本地化与测试**
+   - `Localizable.xcstrings` 增加 Onboarding、权限说明、快捷键冲突、剪贴板确认、开机启动和完成页中英文文案。
+   - 新增 `OnboardingViewModelTests`，覆盖剪贴板确认门禁、快捷键冲突门禁、权限拒绝停留权限页、完成写入设置并启用开机启动、权限设置/重新检测委托。
+
+### 验证结果
+- `swift test --skip-update`：通过，执行 113 个 XCTest，113 通过、0 失败。
+- `xcodebuild -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug build`：通过，`** BUILD SUCCEEDED **`。
+- `xcodebuild test -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug`：通过，执行 108 个 XCTest，108 通过、0 失败；确认 `OnboardingViewModelTests` 5 个测试均执行通过。
+
+### 留给后续 Agent 的提示
+- US-014 只实现首次引导和强制权限流程；未实现 US-015 管理中心权限页，也未新增 US-016 截图捕获能力。
+- 当前 AppDelegate 仍保留 legacy GRDB 设置同步路径；US-014 的完成状态、默认剪贴板、快捷键和开机启动使用 US-010 的 Core Data `SettingsService`/`AppSetting` 键。
+- 真实屏幕录制/辅助功能授权仍需人工按 `doc/test.md` ONB-005 ~ ONB-007 在系统设置中验证；自动化测试通过 mock 覆盖拒绝/授权/重新检测路径。

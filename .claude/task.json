@@ -280,7 +280,7 @@
       "id": "US-014",
       "title": "Onboarding 与权限强制流程",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": [
         "US-001",

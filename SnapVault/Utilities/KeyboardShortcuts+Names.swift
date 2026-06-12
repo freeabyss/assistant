@@ -2,14 +2,12 @@ import KeyboardShortcuts
 
 extension KeyboardShortcuts.Name {
     /// Toggle the Assistant Command Bar (floating panel) visibility.
-    /// Default shortcut: Command+Space.
+    /// Default shortcut: Option+Space.
     ///
-    /// Note: This conflicts with macOS Spotlight by default. Users are expected to
-    /// either disable Spotlight's shortcut in System Settings or customise this
-    /// binding in Assistant Preferences → Shortcuts. The KeyboardShortcuts library
-    /// only applies this default the first time the app launches, so existing user
-    /// customisations are preserved.
-    static let togglePanel = Self("togglePanel", default: .init(.space, modifiers: [.command]))
+    /// Onboarding validates this binding against enabled macOS symbolic hotkeys.
+    /// If it conflicts or cannot be recorded, the user must choose another
+    /// successful shortcut before entering the full Assistant experience.
+    static let togglePanel = Self("togglePanel", default: .init(.space, modifiers: [.option]))
 
     /// Capture a region of the screen (user selects area via overlay).
     /// Default shortcut: Command+Shift+A.

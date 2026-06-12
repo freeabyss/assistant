@@ -27,6 +27,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Dedicated window that hosts the Assistant MVP clipboard history page.
     private var clipboardWindow: NSWindow?
 
+    /// First-run onboarding window. While visible, full product entry points remain gated.
+    private var onboardingWindow: NSWindow?
+
+    /// Whether the user completed the required first-run onboarding flow.
+    private var isOnboardingCompleted = false
+
     /// Cancellable for observing search state changes.
     private var searchStateCancellable: AnyCancellable?
 
@@ -113,19 +119,49 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Ensure Application Support directory exists
         createApplicationSupportDirectory()
 
+        // Read Assistant onboarding completion before exposing full entry points.
+        isOnboardingCompleted = loadOnboardingCompletionState()
+
         // Keep launch-at-login default aligned with the stored Assistant setting.
         syncLaunchAtLoginPreference()
 
         // Set up status bar item
         setupStatusItem()
 
-        // Start clipboard monitoring
+        if isOnboardingCompleted {
+            startFullExperienceServices()
+        } else {
+            showOnboardingWindow()
+        }
+
+        // Set up Sparkle auto-update (Sparkle handles launch delay + periodic checks internally)
+        updateService.setup()
+
+        // Listen for manual update check requests from MenuBarView
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleCheckForUpdates),
+            name: .checkForUpdates,
+            object: nil
+        )
+
+        NotificationCenter.default.addObserver(self, selector: #selector(handleCommandCaptureRegion), name: .commandCaptureRegion, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleCommandCaptureWindow), name: .commandCaptureWindow, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(handleCommandCaptureFullScreen), name: .commandCaptureFullScreen, object: nil)
+
+        logger.info("Assistant launched successfully")
+    }
+
+    @MainActor
+    private func startFullExperienceServices() {
+        // Start clipboard monitoring only after the user explicitly acknowledges
+        // clipboard history and completes required permissions in Onboarding.
         startClipboardMonitoring()
 
-        // Start data cleanup service (immediate + hourly)
+        // Start data cleanup service (immediate + hourly).
         cleanupService.start()
 
-        // Register global keyboard shortcut for panel toggle
+        // Register global keyboard shortcuts for search and screenshots.
         registerGlobalShortcuts()
 
         // Keep the legacy unified service registered for compatibility, but the
@@ -150,23 +186,63 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             .sink { [weak self] isActive in
                 self?.resizePanelForSearchState(isActive: isActive)
             }
+    }
 
-        // Set up Sparkle auto-update (Sparkle handles launch delay + periodic checks internally)
-        updateService.setup()
+    @MainActor
+    private func showOnboardingWindow() {
+        guard onboardingWindow == nil else {
+            onboardingWindow?.makeKeyAndOrderFront(nil)
+            activateApp()
+            return
+        }
 
-        // Listen for manual update check requests from MenuBarView
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleCheckForUpdates),
-            name: .checkForUpdates,
-            object: nil
+        let settingsService = SettingsService(persistence: .shared)
+        let viewModel = OnboardingViewModel(settingsService: settingsService) { [weak self] in
+            guard let self else { return }
+            self.isOnboardingCompleted = true
+            self.onboardingWindow?.close()
+            self.onboardingWindow = nil
+            self.startFullExperienceServices()
+        }
+        let view = OnboardingView(viewModel: viewModel)
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 680, height: 520),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
         )
+        window.title = L10n.localized("onboarding.welcome.title")
+        window.center()
+        window.contentView = NSHostingView(rootView: view)
+        window.isReleasedWhenClosed = false
+        onboardingWindow = window
+        window.makeKeyAndOrderFront(nil)
+        activateApp()
+    }
 
-        NotificationCenter.default.addObserver(self, selector: #selector(handleCommandCaptureRegion), name: .commandCaptureRegion, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleCommandCaptureWindow), name: .commandCaptureWindow, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(handleCommandCaptureFullScreen), name: .commandCaptureFullScreen, object: nil)
+    private func loadOnboardingCompletionState() -> Bool {
+        let context = PersistenceController.shared.viewContext
+        var completed = false
+        context.performAndWait {
+            let request = CDAppSetting.fetchRequest()
+            request.fetchLimit = 1
+            request.predicate = NSPredicate(format: "key == %@", SettingKey.onboardingCompleted.rawValue)
+            let rawValue = (try? context.fetch(request).first?.value) ?? "false"
+            completed = ["true", "1", "yes", "on"].contains(rawValue.trimmingCharacters(in: .whitespacesAndNewlines).lowercased())
+        }
+        return completed
+    }
 
-        logger.info("Assistant launched successfully")
+    @MainActor
+    private func ensureOnboardingGate() -> Bool {
+        if isOnboardingCompleted { return true }
+        if onboardingWindow == nil {
+            showOnboardingWindow()
+        } else {
+            onboardingWindow?.makeKeyAndOrderFront(nil)
+            activateApp()
+        }
+        return false
     }
 
     func applicationWillTerminate(_ notification: Notification) {
@@ -243,6 +319,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.menu = nil
     }
 
+    @MainActor
     @objc private func openSearchFromMenu() {
         logger.info("Open Search selected from status menu")
         showPanel()
@@ -254,6 +331,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         showClipboardHistoryWindow()
     }
 
+    @MainActor
     @objc private func startScreenshotFromMenu() {
         logger.info("Screenshot selected from status menu")
         performRegionCapture()
@@ -290,7 +368,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: - Panel Management
 
+    @MainActor
     func togglePanel() {
+        guard ensureOnboardingGate() else { return }
         let panelExists = panel != nil
         let panelVisible = panel?.isVisible ?? false
         logger.info("togglePanel called, panel exists: \(panelExists), isVisible: \(panelVisible)")
@@ -301,7 +381,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    @MainActor
     func showPanel() {
+        guard ensureOnboardingGate() else { return }
         logger.info("showPanel called")
         // Always recreate the panel for fresh focus state
         closePanel(animate: false)
@@ -393,6 +475,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     @MainActor
     private func showClipboardHistoryWindow() {
+        guard ensureOnboardingGate() else { return }
         closePanel(animate: false)
 
         if let clipboardWindow {
@@ -530,15 +613,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func registerGlobalShortcuts() {
         KeyboardShortcuts.onKeyUp(for: .togglePanel) { [weak self] in
-            self?.togglePanel()
+            Task { @MainActor in self?.togglePanel() }
         }
 
         KeyboardShortcuts.onKeyUp(for: .captureRegion) { [weak self] in
-            self?.performRegionCapture()
+            Task { @MainActor in self?.performRegionCapture() }
         }
 
         KeyboardShortcuts.onKeyUp(for: .captureWindow) { [weak self] in
-            self?.performWindowCapture()
+            Task { @MainActor in self?.performWindowCapture() }
         }
 
         logger.info("Global shortcuts registered: togglePanel, captureRegion, captureWindow")
@@ -548,7 +631,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Perform a region capture.
     /// Hides the panel first, then shows the overlay, and restores the panel after capture.
+    @MainActor
     private func performRegionCapture() {
+        guard ensureOnboardingGate() else { return }
         logger.info("Region capture triggered by shortcut")
 
         // Hide the panel so it doesn't appear in the screenshot
@@ -600,7 +685,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// Perform a window capture.
     /// Hides the panel first, then captures the window under the cursor.
+    @MainActor
     private func performWindowCapture() {
+        guard ensureOnboardingGate() else { return }
         logger.info("Window capture triggered by shortcut")
 
         // Hide the panel so it doesn't appear in the screenshot
@@ -644,22 +731,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    @MainActor
     @objc private func handleCommandCaptureRegion() {
         closePanel()
         performRegionCapture()
     }
 
+    @MainActor
     @objc private func handleCommandCaptureWindow() {
         closePanel()
         performWindowCapture()
     }
 
+    @MainActor
     @objc private func handleCommandCaptureFullScreen() {
         closePanel()
         performScreenCapture()
     }
 
+    @MainActor
     private func performScreenCapture() {
+        guard ensureOnboardingGate() else { return }
         logger.info("Full screen capture triggered by command")
         let wasPanelVisible = panel?.isVisible ?? false
         if wasPanelVisible { closePanel() }
