@@ -2670,3 +2670,69 @@ US-025 从零构建了完整的截图标注编辑器，替换 US-024 的 Annotat
 - 后续 US-003 应使用 `PersistenceController` 的临时 store 注入能力和 `AssistantFileSystem` 的临时目录能力继续实现 FileResourceStore 与 ClipboardRepository。
 - 旧 `DatabaseManager` / `ContentRepository` / GRDB 代码仍存在，属于历史实现与当前 app 现有依赖；不要在 US-002 范围内删除，避免大规模连锁迁移。后续任务可逐步切换到 Core Data repository。
 - `AppSetting` 这个实体在 Core Data 中名称仍为 `AppSetting`，Swift 类名使用 `CDAppSetting`，以避免与旧 GRDB `AppSetting` struct 冲突。
+
+## 2026-06-12 - Assistant MVP US-003 文件资源存储与剪贴板 Repository
+
+### 完成内容
+1. **FileResourceStoreProtocol 与文件资源存储实现**
+   - 新增 `SnapVault/Database/Repositories/AssistantClipboardRepository.swift`，在不删除旧 GRDB `ContentRepository` 链路的前提下，为 Assistant MVP Core Data 数据层新增 `FileResourceStoreProtocol` / `FileResourceStore`。
+   - 支持写入、读取、删除和存在性检查：图片原图、图片缩略图、RTF、HTML。
+   - 写入路径复用 US-002 的 `AssistantFileSystem`：`Clipboard/Images/{uuid}.png`、`Clipboard/Thumbnails/{uuid}.png`、`Clipboard/RichText/{uuid}.rtf|html`。
+   - 写入采用临时文件 + 原子移动策略；`storageUsage()` 统计 Images / Thumbnails / RichText 三类资源目录。
+
+2. **ClipboardRepositoryProtocol 与 Core Data Repository 实现**
+   - 新增 Assistant MVP `ClipboardRepositoryProtocol` / `ClipboardRepository`，基于 US-002 的 `PersistenceController` 和 `CDClipboardRecord` / `CDClipboardResource` 实体实现。
+   - 支持 `upsert`、`fetch`、`fetchHistory`、`delete`、`clearAll`、`togglePin`、`cleanupExpired`、`storageUsage`。
+   - Repository 对外返回 `ClipboardRecordSnapshot` 和 `ClipboardResourceSnapshot`，不向 UI/Service 暴露 `NSManagedObject`。
+   - `fetchHistory` 支持 query、content type、是否包含置顶过滤；默认排序为置顶优先、更新时间倒序。
+
+3. **内容 hash 策略**
+   - 新增 `ClipboardContentHasher`，覆盖文本、富文本、图片、文件引用：
+     * 文本：统一 CRLF/CR 为 LF，不做大小写折叠。
+     * 富文本：组合 plain text hash、RTF hash、HTML hash，缺失格式数据时使用 `nil` 占位。
+     * 图片：对图片二进制 hash 加 `image:` 类型前缀。
+     * 文件引用：标准化绝对路径排序后拼接，避免多文件复制顺序差异导致重复记录。
+   - `AssistantClipboardEvent` 默认由 payload 自动生成 contentHash，也支持测试/调用方显式传入 hash。
+
+4. **去重与置顶语义**
+   - 重复复制相同内容时通过 contentHash 查找已有记录，只更新 `updatedAt` 和轻量 payload 字段，不新增 Core Data 记录。
+   - 重复复制已置顶记录时保持 `isPinned=true`，只更新时间。
+   - `togglePin` 持久化置顶状态并返回更新后的 snapshot。
+
+5. **资源缺失容错 snapshot**
+   - Snapshot 增加 `ClipboardResourceStatus`，记录缺失资源路径与缺失文件引用，并提供 `failureReason`。
+   - Core Data 记录存在但图片/富文本资源文件缺失时，资源 snapshot 标记 `isMissing=true`，不自动删除记录。
+   - 文件引用历史只保存路径/元信息；原文件被删除或移动时 snapshot 标记缺失文件引用并返回失败原因。
+
+6. **清空历史二次确认所需 service 能力**
+   - 新增 `ClipboardHistoryServiceProtocol` / `ClipboardHistoryService` 和 `ClipboardClearAllConfirmation`。
+   - `clearAllConfirmation()` 提供二次确认模型与“不可撤销”提示；`clearAll(confirmed:)` 未确认时抛 `confirmationRequired`，确认后委托 Repository 清空历史与资源文件。
+
+7. **测试覆盖**
+   - 新增 `SnapVaultTests/AssistantClipboardRepositoryTests.swift`，覆盖 10 个测试：
+     * FileResourceStore 写/读/删/存储占用。
+     * 文本、富文本、图片、文件引用 contentHash 策略。
+     * 文本 upsert 去重只更新时间。
+     * 置顶记录重复复制保持置顶。
+     * 富文本、图片、文件 snapshot 存储。
+     * history query/type/pin 过滤与排序。
+     * 图片资源缺失与文件引用缺失容错。
+     * 过期清理只删除非置顶记录并删除资源文件。
+     * storageUsage 统计。
+     * clearAll 二次确认与资源删除。
+   - 更新 `SnapVault.xcodeproj/project.pbxproj`，将新 Repository 源文件加入 App target，将新测试加入 `SnapVaultTests` target。
+
+### 技术方案核对
+- 已按要求阅读 `.claude/progress.txt`、`.claude/task.json`、`doc/prd.md`、`doc/architecture.md`、`doc/architecture_db.md`、`doc/architecture_api.md`、`doc/test.md`。
+- US-003 所需的文件资源存储、ClipboardRepository、contentHash、资源缺失容错、清空历史确认与测试策略已被现有架构文档覆盖；本次没有发现必须补充的架构缺口，因此未修改 `doc/architecture*.md` / `doc/test.md`。
+- 为避免覆盖其他 Agent/用户遗留修改，本次未修改已有脏文件 `CalculatorSource.swift`、`PinyinHelper.swift`、`doc/prd.md`、`doc/architecture_api.md`、`doc/architecture_db.md`、`.claude/scheduled_tasks.lock`。
+
+### 验证结果
+- `swift test --skip-update`：通过，执行 51 个 XCTest，51 通过、0 失败。
+- `xcodebuild -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug build`：通过，`** BUILD SUCCEEDED **`。
+- `xcodebuild test -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug`：通过，执行 51 个 XCTest，51 通过、0 失败，`** TEST SUCCEEDED **`。
+
+### 留给后续 Agent 的提示
+- 后续 US-004 可基于 `ClipboardRecordSnapshot` / `ClipboardResourceSnapshot` 构建轻量内存搜索索引；不要直接把图片原图、RTF/HTML 原始数据加载进索引。
+- 当前新增的是 Assistant MVP Core Data Repository；旧 `DatabaseManager` / `ContentRepository` / GRDB 仍保留供现有 app 代码使用，后续任务应逐步接入新 Repository，而不是一次性删除旧链路。
+- `ClipboardHistoryService` 已提供清空历史确认所需 service 能力；后续 CommandSource 或管理中心 UI 可直接依赖其 confirmation model。

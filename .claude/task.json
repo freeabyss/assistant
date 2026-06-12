@@ -53,7 +53,7 @@
       "id": "US-003",
       "title": "文件资源存储与剪贴板 Repository",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": ["US-002"],
       "steps": [

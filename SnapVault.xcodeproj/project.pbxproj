@@ -70,6 +70,8 @@
 		A1000100000000000000003F /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003F; };
 		A10001000000000000000040 /* AssistantFileSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000040; };
 		A10001000000000000000041 /* PersistenceControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000041; };
+		A10001000000000000000042 /* AssistantClipboardRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000042; };
+		A10001000000000000000043 /* AssistantClipboardRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000043; };
 		/* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -140,6 +142,8 @@
 		A1000000000000000000003F /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
 		A10000000000000000000040 /* AssistantFileSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantFileSystem.swift; sourceTree = "<group>"; };
 		A10000000000000000000041 /* PersistenceControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceControllerTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000042 /* AssistantClipboardRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantClipboardRepository.swift; sourceTree = "<group>"; };
+		A10000000000000000000043 /* AssistantClipboardRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantClipboardRepositoryTests.swift; sourceTree = "<group>"; };
 		/* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -292,6 +296,7 @@
 				A1000000000000000000003C /* DatabaseManagerTests.swift */,
 				A1000000000000000000003D /* PinyinHelperTests.swift */,
 				A10000000000000000000041 /* PersistenceControllerTests.swift */,
+				A10000000000000000000043 /* AssistantClipboardRepositoryTests.swift */,
 			);
 			path = SnapVaultTests;
 			sourceTree = "<group>";
@@ -408,6 +413,7 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000005 /* ContentRepository.swift */,
+				A10000000000000000000042 /* AssistantClipboardRepository.swift */,
 			);
 			path = Repositories;
 			sourceTree = "<group>";
@@ -595,6 +601,7 @@
 				A1000100000000000000003C /* DatabaseManagerTests.swift in Sources */,
 				A1000100000000000000003D /* PinyinHelperTests.swift in Sources */,
 				A10001000000000000000041 /* PersistenceControllerTests.swift in Sources */,
+				A10001000000000000000043 /* AssistantClipboardRepositoryTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -608,6 +615,7 @@
 				A10001000000000000000004 /* DatabaseManager.swift in Sources */,
 				A1000100000000000000003F /* PersistenceController.swift in Sources */,
 				A10001000000000000000040 /* AssistantFileSystem.swift in Sources */,
+				A10001000000000000000042 /* AssistantClipboardRepository.swift in Sources */,
 				A10001000000000000000005 /* ContentRepository.swift in Sources */,
 				A10001000000000000000006 /* ClipboardItem.swift in Sources */,
 				A10001000000000000000007 /* Tag.swift in Sources */,
