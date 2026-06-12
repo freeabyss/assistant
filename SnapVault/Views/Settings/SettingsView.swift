@@ -352,7 +352,7 @@ struct DataSettingsView: View {
     private func exportJSON() {
         let panel = NSSavePanel()
         panel.title = L10n.localized("settings.savePanel.json")
-        panel.nameFieldStringValue = "snapvault-export.json"
+        panel.nameFieldStringValue = "assistant-export.json"
         panel.allowedContentTypes = [.json]
         panel.canCreateDirectories = true
 
@@ -366,7 +366,7 @@ struct DataSettingsView: View {
     private func exportCSV() {
         let panel = NSSavePanel()
         panel.title = L10n.localized("settings.savePanel.csv")
-        panel.nameFieldStringValue = "snapvault-export.csv"
+        panel.nameFieldStringValue = "assistant-export.csv"
         panel.allowedContentTypes = [.commaSeparatedText]
         panel.canCreateDirectories = true
 
@@ -380,7 +380,7 @@ struct DataSettingsView: View {
     private func exportDatabase() {
         let panel = NSSavePanel()
         panel.title = L10n.localized("settings.savePanel.db")
-        panel.nameFieldStringValue = "snapvault.db"
+        panel.nameFieldStringValue = "assistant.db"
         panel.allowedContentTypes = [.init(filenameExtension: "db")!]
         panel.canCreateDirectories = true
 

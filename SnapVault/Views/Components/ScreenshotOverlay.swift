@@ -2,7 +2,7 @@ import Cocoa
 import os.log
 
 extension Notification.Name {
-    static let screenshotOverlayDidCancel = Notification.Name("com.snapvault.screenshotOverlayDidCancel")
+    static let screenshotOverlayDidCancel = Notification.Name("com.assistant.screenshotOverlayDidCancel")
 }
 
 // MARK: - ScreenshotOverlayViewDelegate

@@ -3,7 +3,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "SnapVault",
+    name: "Assistant",
     platforms: [
         .macOS(.v13)
     ],
@@ -15,7 +15,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/groue/GRDB.swift.git", from: "7.0.0"),
-        .package(url: "https://github.com/sindresorhus/KeyboardShortcuts.git", from: "2.0.0"),
+        .package(url: "https://github.com/sindresorhus/KeyboardShortcuts.git", from: "2.4.0"),
         .package(url: "https://github.com/sparkle-project/Sparkle.git", from: "2.0.0")
     ],
     targets: [
@@ -28,6 +28,7 @@ let package = Package(
             ],
             path: "SnapVault",
             exclude: [
+                "App/SnapVaultApp.swift",
                 "Info.plist",
                 "SnapVault.entitlements",
                 "Resources/Assets.xcassets",

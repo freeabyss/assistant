@@ -296,13 +296,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "OCR extracts text from images for search. Polling interval controls how often SnapVault checks the clipboard for new content."
+            "value": "OCR extracts text from images for search. Polling interval controls how often Assistant checks the clipboard for new content."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "OCR 从图片中提取文字用于搜索。轮询间隔控制 SnapVault 检查剪贴板新内容的频率。"
+            "value": "OCR 从图片中提取文字用于搜索。轮询间隔控制 Assistant 检查剪贴板新内容的频率。"
           }
         }
       }
@@ -466,13 +466,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Heads up: ⌘Space conflicts with macOS Spotlight by default. To use SnapVault's Command Bar, either change Spotlight's shortcut in System Settings → Keyboard → Keyboard Shortcuts → Spotlight, or pick a different shortcut here."
+            "value": "Heads up: ⌘Space conflicts with macOS Spotlight by default. To use Assistant's Command Bar, either change Spotlight's shortcut in System Settings → Keyboard → Keyboard Shortcuts → Spotlight, or pick a different shortcut here."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "注意：⌘空格默认与 macOS Spotlight 冲突。要使用 SnapVault 的命令栏，请在系统设置 → 键盘 → 键盘快捷键 → Spotlight 中修改 Spotlight 的快捷键，或在此处选择其他快捷键。"
+            "value": "注意：⌘空格默认与 macOS Spotlight 冲突。要使用 Assistant 的命令栏，请在系统设置 → 键盘 → 键盘快捷键 → Spotlight 中修改 Spotlight 的快捷键，或在此处选择其他快捷键。"
           }
         }
       }
@@ -942,13 +942,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "SnapVault"
+            "value": "Assistant"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "SnapVault"
+            "value": "Assistant"
           }
         }
       }

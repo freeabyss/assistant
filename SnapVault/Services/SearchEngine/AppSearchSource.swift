@@ -531,5 +531,5 @@ private struct IndexedApp {
 
 extension Notification.Name {
     /// Posted when the application search index is first built.
-    static let appSearchIndexReady = Notification.Name("com.snapvault.appSearchIndexReady")
+    static let appSearchIndexReady = Notification.Name("com.assistant.appSearchIndexReady")
 }

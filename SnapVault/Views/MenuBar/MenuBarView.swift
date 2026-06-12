@@ -4,8 +4,8 @@ import AppKit
 /// Notification posted when the panel is shown via global shortcut,
 /// requesting the search field to receive keyboard focus.
 extension Notification.Name {
-    static let focusSearchField = Notification.Name("SnapVault.focusSearchField")
-    static let checkForUpdates = Notification.Name("SnapVault.checkForUpdates")
+    static let focusSearchField = Notification.Name("Assistant.focusSearchField")
+    static let checkForUpdates = Notification.Name("Assistant.checkForUpdates")
 }
 
 // MARK: - AutoFocusTextField

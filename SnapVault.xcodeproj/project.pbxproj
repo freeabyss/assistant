@@ -61,6 +61,12 @@
 		A10001000000000000000037 /* AnnotationEditorWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000037; };
 		93566319C8B49A482D84E301 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A83119274E3E3D3FA6D9AB0 /* L10n.swift */; };
 		83FEB8F66657416FBC33566D /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 0CE8DD2E740FFABBB9BFE5BD /* Localizable.xcstrings */; };
+		A10001000000000000000038 /* CalculatorSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000038; };
+		A10001000000000000000039 /* SystemCommandSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000039; };
+		A1000100000000000000003A /* UnitConverterSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003A; };
+		A1000100000000000000003B /* CryptoHelperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003B; };
+		A1000100000000000000003C /* DatabaseManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003C; };
+		A1000100000000000000003D /* PinyinHelperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003D; };
 		/* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -90,7 +96,7 @@
 		A10000000000000000000018 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A10000000000000000000019 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1000000000000000000001A /* SnapVault.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SnapVault.entitlements; sourceTree = "<group>"; };
-		A1000000000000000000001B /* SnapVault.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SnapVault.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1000000000000000000001B /* Assistant.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Assistant.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1000000000000000000001C /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
 		A1000000000000000000001D /* DataCleanupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataCleanupService.swift; sourceTree = "<group>"; };
 		A1000000000000000000001E /* KeyboardShortcuts+Names.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "KeyboardShortcuts+Names.swift"; sourceTree = "<group>"; };
@@ -121,10 +127,24 @@
 		A10000000000000000000037 /* AnnotationEditorWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationEditorWindow.swift; sourceTree = "<group>"; };
 		8A83119274E3E3D3FA6D9AB0 /* L10n.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
 		0CE8DD2E740FFABBB9BFE5BD /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		A10000000000000000000038 /* CalculatorSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorSourceTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000039 /* SystemCommandSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemCommandSourceTests.swift; sourceTree = "<group>"; };
+		A1000000000000000000003A /* UnitConverterSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnitConverterSourceTests.swift; sourceTree = "<group>"; };
+		A1000000000000000000003B /* CryptoHelperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoHelperTests.swift; sourceTree = "<group>"; };
+		A1000000000000000000003C /* DatabaseManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManagerTests.swift; sourceTree = "<group>"; };
+		A1000000000000000000003D /* PinyinHelperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinyinHelperTests.swift; sourceTree = "<group>"; };
+		A1000000000000000000003E /* SnapVaultTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnapVaultTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		/* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A10002000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10002000000000000000002 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -137,13 +157,13 @@
 		A10003000000000000000001 /* Root */ = {
 			isa = PBXGroup;
 			children = (
-				A10003000000000000000002 /* SnapVault */,
+				A10003000000000000000002 /* Assistant */,
 				A1000300000000000000000B /* SnapVaultTests */,
 				A1000300000000000000000C /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		A10003000000000000000002 /* SnapVault */ = {
+		A10003000000000000000002 /* Assistant */ = {
 			isa = PBXGroup;
 			children = (
 				A10003000000000000000003 /* App */,
@@ -257,6 +277,12 @@
 		A1000300000000000000000B /* SnapVaultTests */ = {
 			isa = PBXGroup;
 			children = (
+				A10000000000000000000038 /* CalculatorSourceTests.swift */,
+				A10000000000000000000039 /* SystemCommandSourceTests.swift */,
+				A1000000000000000000003A /* UnitConverterSourceTests.swift */,
+				A1000000000000000000003B /* CryptoHelperTests.swift */,
+				A1000000000000000000003C /* DatabaseManagerTests.swift */,
+				A1000000000000000000003D /* PinyinHelperTests.swift */,
 			);
 			path = SnapVaultTests;
 			sourceTree = "<group>";
@@ -264,7 +290,8 @@
 		A1000300000000000000000C /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A1000000000000000000001B /* SnapVault.app */,
+				A1000000000000000000001B /* Assistant.app */,
+				A1000000000000000000003E /* SnapVaultTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -431,10 +458,39 @@
 		};
 /* End PBXGroup section */
 
+/* Begin PBXContainerItemProxy section */
+		A1000B000000000000000002 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10008000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10004000000000000000001;
+			remoteInfo = Assistant;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXNativeTarget section */
-		A10004000000000000000001 /* SnapVault */ = {
+		A10004000000000000000002 /* SnapVaultTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A10006000000000000000001 /* Build configuration list for PBXNativeTarget "SnapVault" */;
+			buildConfigurationList = A10006000000000000000004 /* Build configuration list for PBXNativeTarget "SnapVaultTests" */;
+			buildPhases = (
+				A10005000000000000000003 /* Sources */,
+				A10002000000000000000002 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A1000B000000000000000001 /* PBXTargetDependency */,
+			);
+			name = SnapVaultTests;
+			packageProductDependencies = (
+			);
+			productName = SnapVaultTests;
+			productReference = A1000000000000000000003E /* SnapVaultTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		A10004000000000000000001 /* Assistant */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10006000000000000000001 /* Build configuration list for PBXNativeTarget "Assistant" */;
 			buildPhases = (
 				A10005000000000000000001 /* Sources */,
 				A10002000000000000000001 /* Frameworks */,
@@ -444,17 +500,25 @@
 			);
 			dependencies = (
 			);
-			name = SnapVault;
+			name = Assistant;
 			packageProductDependencies = (
 				A10007000000000000000001 /* GRDB */,
 				A10007000000000000000002 /* KeyboardShortcuts */,
 				A10007000000000000000003 /* Sparkle */,
 			);
-			productName = SnapVault;
-			productReference = A1000000000000000000001B /* SnapVault.app */;
+			productName = Assistant;
+			productReference = A1000000000000000000001B /* Assistant.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
+
+/* Begin PBXTargetDependency section */
+		A1000B000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A10004000000000000000001 /* Assistant */;
+			targetProxy = A1000B000000000000000002 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXProject section */
 		A10008000000000000000001 /* Project object */ = {
@@ -467,9 +531,13 @@
 					A10004000000000000000001 = {
 						CreatedOnToolsVersion = 15.0;
 					};
+					A10004000000000000000002 = {
+						CreatedOnToolsVersion = 15.0;
+						TestTargetID = A10004000000000000000001;
+					};
 				};
 			};
-			buildConfigurationList = A10006000000000000000003 /* Build configuration list for PBXProject "SnapVault" */;
+			buildConfigurationList = A10006000000000000000003 /* Build configuration list for PBXProject "Assistant" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -487,7 +555,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				A10004000000000000000001 /* SnapVault */,
+				A10004000000000000000001 /* Assistant */,
+				A10004000000000000000002 /* SnapVaultTests */,
 			);
 		};
 /* End PBXProject section */
@@ -506,6 +575,19 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		A10005000000000000000003 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10001000000000000000038 /* CalculatorSourceTests.swift in Sources */,
+				A10001000000000000000039 /* SystemCommandSourceTests.swift in Sources */,
+				A1000100000000000000003A /* UnitConverterSourceTests.swift in Sources */,
+				A1000100000000000000003B /* CryptoHelperTests.swift in Sources */,
+				A1000100000000000000003C /* DatabaseManagerTests.swift in Sources */,
+				A1000100000000000000003D /* PinyinHelperTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A10005000000000000000001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -697,8 +779,9 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.snapvault.app;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.assistant.app;
+				PRODUCT_NAME = Assistant;
+				PRODUCT_MODULE_NAME = SnapVault;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
@@ -719,17 +802,58 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.snapvault.app;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.assistant.app;
+				PRODUCT_NAME = Assistant;
+				PRODUCT_MODULE_NAME = SnapVault;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		A1000B000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.assistant.app.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Assistant.app/Contents/MacOS/Assistant";
+			};
+			name = Debug;
+		};
+		A1000B000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.assistant.app.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Assistant.app/Contents/MacOS/Assistant";
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A10006000000000000000001 /* Build configuration list for PBXNativeTarget "SnapVault" */ = {
+		A10006000000000000000001 /* Build configuration list for PBXNativeTarget "Assistant" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A1000A000000000000000003 /* Debug */,
@@ -738,7 +862,16 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A10006000000000000000003 /* Build configuration list for PBXProject "SnapVault" */ = {
+		A10006000000000000000004 /* Build configuration list for PBXNativeTarget "SnapVaultTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1000B000000000000000003 /* Debug */,
+				A1000B000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A10006000000000000000003 /* Build configuration list for PBXProject "Assistant" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A1000A000000000000000001 /* Debug */,

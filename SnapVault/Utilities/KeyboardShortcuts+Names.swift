@@ -1,12 +1,12 @@
 import KeyboardShortcuts
 
 extension KeyboardShortcuts.Name {
-    /// Toggle the SnapVault Command Bar (floating panel) visibility.
+    /// Toggle the Assistant Command Bar (floating panel) visibility.
     /// Default shortcut: Command+Space.
     ///
     /// Note: This conflicts with macOS Spotlight by default. Users are expected to
     /// either disable Spotlight's shortcut in System Settings or customise this
-    /// binding in SnapVault Preferences → Shortcuts. The KeyboardShortcuts library
+    /// binding in Assistant Preferences → Shortcuts. The KeyboardShortcuts library
     /// only applies this default the first time the app launches, so existing user
     /// customisations are preserved.
     static let togglePanel = Self("togglePanel", default: .init(.space, modifiers: [.command]))

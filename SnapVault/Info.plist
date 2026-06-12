@@ -8,11 +8,11 @@
 
     <!-- App metadata -->
     <key>CFBundleName</key>
-    <string>SnapVault</string>
+    <string>Assistant</string>
     <key>CFBundleDisplayName</key>
-    <string>SnapVault</string>
+    <string>Mac Super Assistant</string>
     <key>CFBundleIdentifier</key>
-    <string>com.snapvault.app</string>
+    <string>com.assistant.app</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>CFBundleShortVersionString</key>
@@ -28,11 +28,11 @@
 
     <!-- Screen recording permission description (ScreenCaptureKit) -->
     <key>NSScreenCaptureUsageInfo</key>
-    <string>SnapVault needs screen recording permission to capture screenshots for OCR text recognition.</string>
+    <string>Mac Super Assistant needs screen recording permission to capture screenshots.</string>
 
-    <!-- AppleScript automation: required for system commands (sleep / restart / shutdown / empty trash) -->
+    <!-- AppleScript automation: required for allowed built-in system commands -->
     <key>NSAppleEventsUsageDescription</key>
-    <string>SnapVault uses AppleScript to execute system commands like Sleep, Restart, Shut Down, and Empty Trash from the Command Bar.</string>
+    <string>Mac Super Assistant uses AppleScript only for allowed built-in commands that you explicitly trigger.</string>
 
     <!-- Localization -->
     <key>CFBundleLocalizations</key>
@@ -43,7 +43,7 @@
 
     <!-- Sparkle auto-update configuration -->
     <key>SUFeedURL</key>
-    <string>https://snapvault.app/appcast.xml</string>
+    <string>https://assistant.app/appcast.xml</string>
     <key>SUPublicEDKey</key>
     <string>REPLACE_WITH_YOUR_EDDSA_PUBLIC_KEY</string>
     <key>SUEnableAutomaticChecks</key>

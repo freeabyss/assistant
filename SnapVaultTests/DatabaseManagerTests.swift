@@ -5,9 +5,9 @@ final class DatabaseManagerTests: XCTestCase {
 
     func testDatabaseURL() {
         let url = DatabaseManager.databaseURL()
-        XCTAssertTrue(url.path.hasSuffix("snapvault.db"))
+        XCTAssertTrue(url.path.hasSuffix("assistant.db"))
         XCTAssertTrue(url.path.contains("Application Support"))
-        XCTAssertTrue(url.path.contains("SnapVault"))
+        XCTAssertTrue(url.path.contains("Assistant"))
     }
 
     func testMigratorRegistration() {

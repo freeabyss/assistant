@@ -18,6 +18,7 @@ enum SettingKey {
     static let ocrEnabled = "ocr_enabled"
     static let pollIntervalMs = "poll_interval_ms"
     static let searchProvider = "search_provider"
+    static let launchAtLoginEnabled = "launch_at_login_enabled"
 
     /// Default values for each setting.
     static let defaults: [String: String] = [
@@ -25,6 +26,7 @@ enum SettingKey {
         maxStorageMB: "500",
         ocrEnabled: "1",
         pollIntervalMs: "500",
-        searchProvider: "fts"
+        searchProvider: "fts",
+        launchAtLoginEnabled: "1"
     ]
 }

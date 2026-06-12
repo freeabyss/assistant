@@ -2,6 +2,7 @@ import Cocoa
 import SwiftUI
 import KeyboardShortcuts
 import Combine
+import ServiceManagement
 import os.log
 
 /// A borderless floating panel that can become key window (for text input).
@@ -14,8 +15,11 @@ class FloatingSearchPanel: NSPanel {
 class AppDelegate: NSObject, NSApplicationDelegate {
     private let logger = Logger.app
 
-    /// Status bar item showing the clipboard icon.
+    /// Status bar item showing the Assistant icon.
     private var statusItem: NSStatusItem!
+
+    /// Menu shown from the status bar item.
+    private var statusMenu: NSMenu!
 
     /// Floating panel that hosts the main SwiftUI view.
     private var panel: NSPanel?
@@ -85,7 +89,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var screenshotToolbar: ScreenshotToolbarController!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        logger.info("SnapVault launching")
+        logger.info("Assistant launching")
 
         // Initialize database
         do {
@@ -97,6 +101,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Ensure Application Support directory exists
         createApplicationSupportDirectory()
+
+        // Keep launch-at-login default aligned with the stored Assistant setting.
+        syncLaunchAtLoginPreference()
 
         // Set up status bar item
         setupStatusItem()
@@ -151,11 +158,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil
         )
 
-        logger.info("SnapVault launched successfully")
+        logger.info("Assistant launched successfully")
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        logger.info("SnapVault terminating")
+        logger.info("Assistant terminating")
         cleanupService.stop()
         clipboardMonitor.stop()
         monitorTask?.cancel()
@@ -170,18 +177,106 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func setupStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
+        statusMenu = makeStatusMenu()
 
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "clipboard", accessibilityDescription: "SnapVault")
+            button.image = NSImage(systemSymbolName: "sparkles", accessibilityDescription: "Mac Super Assistant")
             button.image?.isTemplate = true
             button.action = #selector(statusItemClicked(_:))
             button.target = self
         }
     }
 
+    private func makeStatusMenu() -> NSMenu {
+        let menu = NSMenu(title: "Mac Super Assistant")
+        menu.autoenablesItems = true
+
+        let openSearch = NSMenuItem(title: "Open Search", action: #selector(openSearchFromMenu), keyEquivalent: "")
+        openSearch.image = NSImage(systemSymbolName: "magnifyingglass", accessibilityDescription: nil)
+        openSearch.target = self
+        menu.addItem(openSearch)
+
+        let clipboard = NSMenuItem(title: "Clipboard", action: #selector(openClipboardFromMenu), keyEquivalent: "")
+        clipboard.image = NSImage(systemSymbolName: "clipboard", accessibilityDescription: nil)
+        clipboard.target = self
+        menu.addItem(clipboard)
+
+        let screenshot = NSMenuItem(title: "Screenshot", action: #selector(startScreenshotFromMenu), keyEquivalent: "")
+        screenshot.image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: nil)
+        screenshot.target = self
+        menu.addItem(screenshot)
+
+        menu.addItem(.separator())
+
+        let settings = NSMenuItem(title: "Settings…", action: #selector(openSettingsFromMenu), keyEquivalent: ",")
+        settings.image = NSImage(systemSymbolName: "gearshape", accessibilityDescription: nil)
+        settings.target = self
+        menu.addItem(settings)
+
+        let about = NSMenuItem(title: "About Mac Super Assistant", action: #selector(openAboutFromMenu), keyEquivalent: "")
+        about.image = NSImage(systemSymbolName: "info.circle", accessibilityDescription: nil)
+        about.target = self
+        menu.addItem(about)
+
+        menu.addItem(.separator())
+
+        let quit = NSMenuItem(title: "Quit", action: #selector(quitFromMenu), keyEquivalent: "q")
+        quit.image = NSImage(systemSymbolName: "power", accessibilityDescription: nil)
+        quit.target = self
+        menu.addItem(quit)
+
+        return menu
+    }
+
     @objc private func statusItemClicked(_ sender: NSStatusBarButton) {
-        logger.info("Status bar button clicked")
-        togglePanel()
+        logger.info("Status bar menu opened")
+        statusItem.menu = statusMenu
+        sender.performClick(nil)
+        statusItem.menu = nil
+    }
+
+    @objc private func openSearchFromMenu() {
+        logger.info("Open Search selected from status menu")
+        showPanel()
+    }
+
+    @objc private func openClipboardFromMenu() {
+        logger.info("Clipboard selected from status menu")
+        showPanel()
+    }
+
+    @objc private func startScreenshotFromMenu() {
+        logger.info("Screenshot selected from status menu")
+        performRegionCapture()
+    }
+
+    @objc private func openSettingsFromMenu() {
+        logger.info("Settings selected from status menu")
+        NSApp.sendAction(Selector("showSettingsWindow:"), to: nil, from: nil)
+        if #available(macOS 14.0, *) {
+            NSApp.activate()
+        } else {
+            NSApp.activate(ignoringOtherApps: true)
+        }
+    }
+
+    @objc private func openAboutFromMenu() {
+        logger.info("About selected from status menu")
+        NSApp.orderFrontStandardAboutPanel(options: [
+            .applicationName: "Mac Super Assistant",
+            .applicationVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.0",
+            .version: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
+        ])
+        if #available(macOS 14.0, *) {
+            NSApp.activate()
+        } else {
+            NSApp.activate(ignoringOtherApps: true)
+        }
+    }
+
+    @objc private func quitFromMenu() {
+        logger.info("Quit selected from status menu")
+        NSApp.terminate(nil)
     }
 
     // MARK: - Panel Management
@@ -535,10 +630,34 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             return
         }
-        let appDir = appSupport.appendingPathComponent("SnapVault")
+        let appDir = appSupport.appendingPathComponent("Assistant")
         if !fileManager.fileExists(atPath: appDir.path) {
             try? fileManager.createDirectory(at: appDir, withIntermediateDirectories: true)
             logger.debug("Created Application Support directory at \(appDir.path, privacy: .public)")
+        }
+    }
+
+    private func syncLaunchAtLoginPreference() {
+        let repository = ContentRepository()
+        let shouldEnable: Bool
+
+        do {
+            if let stored = try repository.readSetting(key: SettingKey.launchAtLoginEnabled) {
+                shouldEnable = stored == "1"
+            } else {
+                shouldEnable = true
+                try repository.updateSetting(key: SettingKey.launchAtLoginEnabled, value: "1")
+            }
+
+            if shouldEnable, SMAppService.mainApp.status != .enabled {
+                try SMAppService.mainApp.register()
+                logger.info("Launch at login registered from Assistant default setting")
+            } else if !shouldEnable, SMAppService.mainApp.status == .enabled {
+                try SMAppService.mainApp.unregister()
+                logger.info("Launch at login unregistered from Assistant user setting")
+            }
+        } catch {
+            logger.error("Failed to sync launch-at-login preference: \(error.localizedDescription, privacy: .public)")
         }
     }
 }

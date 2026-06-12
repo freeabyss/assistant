@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  SnapVault Appcast Feed
+  Assistant Appcast Feed
   ======================
-  This is a template appcast.xml for Sparkle auto-updates.
+  This is a template appcast.xml for Sparkle update checks.
 
   To publish a real update:
   1. Generate an EdDSA key pair using Sparkle's `generate_keys` tool:
@@ -13,19 +13,19 @@
   3. Build the .zip or .dmg archive of your new release.
 
   4. Sign the archive:
-     ./bin/sign_update path/to/SnapVault.zip
+     ./bin/sign_update path/to/Assistant.zip
 
   5. Copy the signature output and fill in the `sparkle:edSignature` attribute.
 
   6. Update the <enclosure> url, version, shortVersionString, and length.
 
   7. Host this file at the SUFeedURL configured in Info.plist
-     (default: https://snapvault.app/appcast.xml)
+     (default: https://assistant.app/appcast.xml)
 -->
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
     <channel>
-        <title>SnapVault</title>
-        <link>https://snapvault.app/appcast.xml</link>
+        <title>Mac Super Assistant</title>
+        <link>https://assistant.app/appcast.xml</link>
         <description>Most recent changes with links to updates.</description>
         <language>en</language>
 
@@ -34,19 +34,17 @@
             <description><![CDATA[
                 <h3>Initial Release</h3>
                 <ul>
-                    <li>Clipboard monitoring and auto-capture</li>
-                    <li>Multi-type content rendering (text, RTF, images, files)</li>
-                    <li>Full-text search with Spotlight integration</li>
-                    <li>OCR text recognition for images</li>
-                    <li>Pin and data management</li>
-                    <li>Global keyboard shortcuts</li>
-                    <li>Customizable preferences</li>
+                    <li>Menu bar Assistant shell</li>
+                    <li>Unified search entry</li>
+                    <li>Clipboard history</li>
+                    <li>Screenshot tools</li>
+                    <li>Built-in safe commands</li>
                 </ul>
             ]]></description>
             <pubDate><!-- Thu, 05 Jun 2026 00:00:00 +0000 --></pubDate>
             <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
             <enclosure
-                url="https://snapvault.app/releases/SnapVault-0.1.0.zip"
+                url="https://assistant.app/releases/Assistant-0.1.0.zip"
                 sparkle:version="1"
                 sparkle:shortVersionString="0.1.0"
                 sparkle:edSignature="REPLACE_WITH_EDDSA_SIGNATURE"

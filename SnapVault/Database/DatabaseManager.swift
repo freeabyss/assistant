@@ -42,10 +42,10 @@ final class DatabaseManager {
     // MARK: - Database Location
 
     /// Returns the URL for the SQLite database file.
-    /// Location: ~/Library/Application Support/SnapVault/snapvault.db
+    /// Location: ~/Library/Application Support/Assistant/assistant.db
     static func databaseURL() -> URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        return appSupport.appendingPathComponent("SnapVault").appendingPathComponent("snapvault.db")
+        return appSupport.appendingPathComponent("Assistant").appendingPathComponent("assistant.db")
     }
 
     // MARK: - Migrations
@@ -137,7 +137,8 @@ final class DatabaseManager {
                 ("max_storage_mb", "500"),
                 ("ocr_enabled", "1"),
                 ("poll_interval_ms", "500"),
-                ("search_provider", "fts")
+                ("search_provider", "fts"),
+                ("launch_at_login_enabled", "1")
             ]
             for (key, value) in defaultSettings {
                 try db.execute(
@@ -159,6 +160,16 @@ final class DatabaseManager {
                 index: "idx_clipboard_items_is_favorite",
                 on: "clipboard_items",
                 columns: ["is_favorite"]
+            )
+        }
+
+        // v3: Assistant app shell defaults (US-001)
+        // Keep launch-at-login enabled by default for existing databases while
+        // preserving later user changes through SettingsView.
+        migrator.registerMigration("v3_assistant_app_shell_settings") { db in
+            try db.execute(
+                sql: "INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)",
+                arguments: ["launch_at_login_enabled", "1"]
             )
         }
 

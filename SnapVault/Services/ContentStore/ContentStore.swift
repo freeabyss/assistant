@@ -4,7 +4,7 @@ import os.log
 /// Notification posted when a new clipboard item is saved.
 /// Observers (e.g. ClipboardListViewModel) should call `refresh()` in response.
 extension Notification.Name {
-    static let clipboardItemSaved = Notification.Name("com.snapvault.clipboardItemSaved")
+    static let clipboardItemSaved = Notification.Name("com.assistant.clipboardItemSaved")
 }
 
 /// High-level content store that coordinates between the clipboard monitor,

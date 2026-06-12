@@ -2,7 +2,7 @@ import SwiftUI
 import os.log
 
 @main
-struct SnapVaultApp: App {
+struct AssistantApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     @StateObject private var appState = AppState()

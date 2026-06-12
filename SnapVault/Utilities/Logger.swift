@@ -7,10 +7,10 @@ import os.log
 ///   let logger = Logger.database
 ///   logger.info("Database ready")
 ///
-/// View logs in Console.app by filtering on subsystem "com.snapvault.app".
+/// View logs in Console.app by filtering on subsystem "com.assistant.app".
 extension Logger {
-    /// The subsystem identifier shared by all SnapVault loggers.
-    private static let subsystem = "com.snapvault.app"
+    /// The subsystem identifier shared by all Assistant loggers.
+    private static let subsystem = "com.assistant.app"
 
     // MARK: - Categories
 

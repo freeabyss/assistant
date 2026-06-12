@@ -5,7 +5,7 @@ import ServiceManagement
 
 /// Notification posted when settings change, so services can react.
 extension Notification.Name {
-    static let settingsDidChange = Notification.Name("com.snapvault.settingsDidChange")
+    static let settingsDidChange = Notification.Name("com.assistant.settingsDidChange")
 }
 
 /// ViewModel for the preferences settings view.
@@ -24,7 +24,7 @@ final class SettingsViewModel: ObservableObject {
     @Published var maxStorageMB: Int = 500
     @Published var ocrEnabled: Bool = true
     @Published var pollInterval: Int = 500
-    @Published var launchAtLogin: Bool = false
+    @Published var launchAtLogin: Bool = true
 
     /// Current language preference (persisted to UserDefaults AppleLanguages).
     @Published var selectedLanguage: String = {
@@ -94,8 +94,13 @@ final class SettingsViewModel: ObservableObject {
                 pollInterval = intVal
             }
 
-            // Launch at login state from SMAppService
-            launchAtLogin = SMAppService.mainApp.status == .enabled
+            // Launch-at-login is default-on for Assistant; the persisted setting
+            // is the user preference and SMAppService is the current system state.
+            if let val = settings[SettingKey.launchAtLoginEnabled] {
+                launchAtLogin = val == "1"
+            } else {
+                launchAtLogin = true
+            }
 
             logger.info("Settings loaded from database")
         } catch {
@@ -112,6 +117,7 @@ final class SettingsViewModel: ObservableObject {
             try repository.updateSetting(key: SettingKey.maxStorageMB, value: String(maxStorageMB))
             try repository.updateSetting(key: SettingKey.ocrEnabled, value: ocrEnabled ? "1" : "0")
             try repository.updateSetting(key: SettingKey.pollIntervalMs, value: String(pollInterval))
+            try repository.updateSetting(key: SettingKey.launchAtLoginEnabled, value: launchAtLogin ? "1" : "0")
 
             // Launch at login
             try setLaunchAtLogin(launchAtLogin)
@@ -135,7 +141,7 @@ final class SettingsViewModel: ObservableObject {
         maxStorageMB = 500
         ocrEnabled = true
         pollInterval = 500
-        launchAtLogin = false
+        launchAtLogin = true
     }
 
     // MARK: - Launch at Login
