@@ -81,22 +81,22 @@ final class SettingsViewModel: ObservableObject {
         do {
             let settings = try repository.readAllSettings()
 
-            if let val = settings[SettingKey.retentionDays], let intVal = Int(val) {
+            if let val = settings[LegacySettingKey.retentionDays], let intVal = Int(val) {
                 retentionDays = intVal
             }
-            if let val = settings[SettingKey.maxStorageMB], let intVal = Int(val) {
+            if let val = settings[LegacySettingKey.maxStorageMB], let intVal = Int(val) {
                 maxStorageMB = intVal
             }
-            if let val = settings[SettingKey.ocrEnabled] {
+            if let val = settings[LegacySettingKey.ocrEnabled] {
                 ocrEnabled = val == "1"
             }
-            if let val = settings[SettingKey.pollIntervalMs], let intVal = Int(val) {
+            if let val = settings[LegacySettingKey.pollIntervalMs], let intVal = Int(val) {
                 pollInterval = intVal
             }
 
             // Launch-at-login is default-on for Assistant; the persisted setting
             // is the user preference and SMAppService is the current system state.
-            if let val = settings[SettingKey.launchAtLoginEnabled] {
+            if let val = settings[LegacySettingKey.launchAtLoginEnabled] {
                 launchAtLogin = val == "1"
             } else {
                 launchAtLogin = true
@@ -113,11 +113,11 @@ final class SettingsViewModel: ObservableObject {
     /// Save all current settings to the database and notify services.
     func save() async {
         do {
-            try repository.updateSetting(key: SettingKey.retentionDays, value: String(retentionDays))
-            try repository.updateSetting(key: SettingKey.maxStorageMB, value: String(maxStorageMB))
-            try repository.updateSetting(key: SettingKey.ocrEnabled, value: ocrEnabled ? "1" : "0")
-            try repository.updateSetting(key: SettingKey.pollIntervalMs, value: String(pollInterval))
-            try repository.updateSetting(key: SettingKey.launchAtLoginEnabled, value: launchAtLogin ? "1" : "0")
+            try repository.updateSetting(key: LegacySettingKey.retentionDays, value: String(retentionDays))
+            try repository.updateSetting(key: LegacySettingKey.maxStorageMB, value: String(maxStorageMB))
+            try repository.updateSetting(key: LegacySettingKey.ocrEnabled, value: ocrEnabled ? "1" : "0")
+            try repository.updateSetting(key: LegacySettingKey.pollIntervalMs, value: String(pollInterval))
+            try repository.updateSetting(key: LegacySettingKey.launchAtLoginEnabled, value: launchAtLogin ? "1" : "0")
 
             // Launch at login
             try setLaunchAtLogin(launchAtLogin)

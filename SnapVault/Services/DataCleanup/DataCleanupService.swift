@@ -58,11 +58,11 @@ final class DataCleanupService {
 
         do {
             // Read settings from database
-            let retentionDaysStr = try repository.readSetting(key: SettingKey.retentionDays)
-            let maxStorageMBStr = try repository.readSetting(key: SettingKey.maxStorageMB)
+            let retentionDaysStr = try repository.readSetting(key: LegacySettingKey.retentionDays)
+            let maxStorageMBStr = try repository.readSetting(key: LegacySettingKey.maxStorageMB)
 
-            let retentionDays = Int(retentionDaysStr ?? SettingKey.defaults[SettingKey.retentionDays]!) ?? 30
-            let maxStorageMB = Int(maxStorageMBStr ?? SettingKey.defaults[SettingKey.maxStorageMB]!) ?? 500
+            let retentionDays = Int(retentionDaysStr ?? LegacySettingKey.defaults[LegacySettingKey.retentionDays]!) ?? 30
+            let maxStorageMB = Int(maxStorageMBStr ?? LegacySettingKey.defaults[LegacySettingKey.maxStorageMB]!) ?? 500
 
             // Run combined cleanup (expiry + storage limit)
             let deleted = try repository.cleanup(retentionDays: retentionDays, maxStorageMB: maxStorageMB)

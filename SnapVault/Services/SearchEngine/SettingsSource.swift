@@ -13,12 +13,23 @@ struct SettingsSearchRoute: Identifiable, Hashable {
 final class SettingsSource: SearchSource {
     let id = SearchSourceID.settings
     let displayName = "Settings"
-    let isEnabledInSearch: Bool
+
+    private let staticIsEnabledInSearch: Bool
+    private let settingsService: SettingsServiceProtocol?
+
+    var isEnabledInSearch: Bool {
+        staticIsEnabledInSearch
+    }
 
     let routes: [SettingsSearchRoute]
 
-    init(isEnabledInSearch: Bool = true, routes: [SettingsSearchRoute] = SettingsSource.defaultRoutes) {
-        self.isEnabledInSearch = isEnabledInSearch
+    init(
+        isEnabledInSearch: Bool = true,
+        settingsService: SettingsServiceProtocol? = nil,
+        routes: [SettingsSearchRoute] = SettingsSource.defaultRoutes
+    ) {
+        self.staticIsEnabledInSearch = isEnabledInSearch
+        self.settingsService = settingsService
         self.routes = routes
     }
 
@@ -29,6 +40,7 @@ final class SettingsSource: SearchSource {
     func search(query: String) async -> [SearchResult] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return [] }
+        guard await resolvedIsEnabledInSearch() else { return [] }
 
         return routes.compactMap { route -> (SettingsSearchRoute, SearchTextMatcher.MatchKind)? in
             let candidate = SearchTextCandidate(
@@ -61,14 +73,19 @@ final class SettingsSource: SearchSource {
         }
     }
 
+    private func resolvedIsEnabledInSearch() async -> Bool {
+        guard let settingsService else { return staticIsEnabledInSearch }
+        return (try? await settingsService.value(for: .settingsSourceEnabled, as: Bool.self)) ?? true
+    }
+
     static let defaultRoutes: [SettingsSearchRoute] = [
-        .make(.settings, title: "设置", english: "Settings", aliases: ["偏好设置", "preferences", "prefs"], icon: "gearshape"),
-        .make(.permissions, title: "权限", english: "Permissions", aliases: ["授权", "privacy", "screen recording", "accessibility"], icon: "lock.shield"),
-        .make(.clipboardHistory, title: "剪贴板历史", english: "Clipboard History", aliases: ["剪贴板", "clipboard", "history"], icon: "clipboard"),
-        .make(.searchSources, title: "搜索源设置", english: "Search Sources", aliases: ["搜索来源", "provider", "sources"], icon: "magnifyingglass"),
-        .make(.hotkey, title: "快捷键设置", english: "Hotkey Settings", aliases: ["快捷键", "shortcut", "keyboard"], icon: "keyboard"),
-        .make(.screenshot, title: "截图设置", english: "Screenshot Settings", aliases: ["截图", "screen capture", "capture"], icon: "camera.viewfinder"),
-        .make(.about, title: "关于", english: "About", aliases: ["版本", "隐私政策", "about", "privacy", "license"], icon: "info.circle")
+        .make(.settings, title: "设置", english: "Settings", aliases: ["偏好设置", "preferences", "prefs", "配置", "configuration"], icon: "gearshape"),
+        .make(.permissions, title: "权限", english: "Permissions", aliases: ["授权", "privacy", "screen recording", "accessibility", "系统权限", "隐私"], icon: "lock.shield"),
+        .make(.clipboardHistory, title: "剪贴板历史", english: "Clipboard History", aliases: ["剪贴板", "clipboard", "history", "剪贴板记录", "clipboard records"], icon: "clipboard"),
+        .make(.searchSources, title: "搜索源设置", english: "Search Sources", aliases: ["搜索来源", "provider", "providers", "sources", "show in search", "搜索源开关"], icon: "magnifyingglass"),
+        .make(.hotkey, title: "快捷键设置", english: "Hotkey Settings", aliases: ["快捷键", "shortcut", "shortcuts", "keyboard", "hotkey"], icon: "keyboard"),
+        .make(.screenshot, title: "截图设置", english: "Screenshot Settings", aliases: ["截图", "screen capture", "capture", "保存目录", "save directory", "screenshots"], icon: "camera.viewfinder"),
+        .make(.about, title: "关于", english: "About", aliases: ["版本", "隐私政策", "about", "privacy", "license", "许可证"], icon: "info.circle")
     ]
 }
 

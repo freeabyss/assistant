@@ -678,11 +678,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let shouldEnable: Bool
 
         do {
-            if let stored = try repository.readSetting(key: SettingKey.launchAtLoginEnabled) {
+            if let stored = try repository.readSetting(key: LegacySettingKey.launchAtLoginEnabled) {
                 shouldEnable = stored == "1"
             } else {
                 shouldEnable = true
-                try repository.updateSetting(key: SettingKey.launchAtLoginEnabled, value: "1")
+                try repository.updateSetting(key: LegacySettingKey.launchAtLoginEnabled, value: "1")
             }
 
             if shouldEnable, SMAppService.mainApp.status != .enabled {

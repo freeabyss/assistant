@@ -3093,3 +3093,39 @@ US-025 从零构建了完整的截图标注编辑器，替换 US-024 的 Annotat
 - US-013 剪贴板历史页面 UI 应优先读取 `ClipboardIndexQueryService` / `ClipboardRepository` 新链路，而不是旧 GRDB `ContentRepository`。
 - 旧 `ClipboardListViewModel`、`ContentStore`、`ClipboardSearchSource` 仍在历史兼容路径中使用 GRDB/FTS5；本次未删除，避免 UI 迁移超出 US-012 范围。
 - 截图复制进入历史在当前 UI 中仍走旧 `ContentStore.processScreenshot`；US-016 迁移截图复制时应复用本次 `ClipboardService` 或写入系统剪贴板后由 `ClipboardMonitor` 统一捕获。
+
+
+## 2026-06-12 - US-010 SettingsSource 与设置服务
+
+### 完成内容
+1. **SettingsServiceProtocol 与 Core Data AppSetting 持久化**
+   - 在 `SnapVault/Models/AppSetting.swift` 中补齐 Assistant MVP 的 `SettingKey`、`ClipboardRetention`、`LanguageMode`、`SettingsServiceProtocol` 和 `SettingsService`。
+   - `SettingsService` 基于 US-002 的 `CDAppSetting` / `PersistenceController` 读写设置，支持默认值懒初始化、类型化读取、写入、重置和原始字符串读取。
+   - 保留旧 GRDB `AppSetting`，并将旧键迁移为 `LegacySettingKey`，避免当前仍未迁移的旧服务与 Assistant MVP Core Data 设置键混淆。
+
+2. **US-010 设置项默认值与读写范围**
+   - 搜索源展示开关默认全开：App、Clipboard、Command、Calculator、Settings 均默认参与搜索展示。
+   - 功能启用/停用开关仅保留剪贴板功能开关（另有开机启动属于 App 行为设置，不是搜索 Provider 功能开关）。
+   - 语言选项限制为 `system` / `zh-Hans` / `en`，默认 `system`（跟随系统）。
+   - 支持截图保存目录 `~/Pictures/Screenshots`、剪贴板保留时间 `7d/30d/90d/forever`、开机启动等设置读写。
+
+3. **SettingsSource 搜索入口**
+   - `SettingsSource` 保持页面级和具体设置区块入口：设置、权限、剪贴板历史、搜索源设置、快捷键设置、截图设置、关于。
+   - 增强中英文别名，覆盖搜索源开关、快捷键、截图保存目录、权限、隐私等查询。
+   - `SettingsSource` 可注入 `SettingsServiceProtocol`，根据 `search.source.settings.enabled` 控制自身是否展示；默认启用。
+   - 搜索结果只返回 `.openSettings(route)` 主动作，`secondaryActions` 为空，不支持在搜索结果中直接切换设置开关。
+
+4. **测试覆盖**
+   - 新增 `SnapVaultTests/SettingsServiceTests.swift` 覆盖默认值、持久化、重置、语言选项、截图保存目录、剪贴板保留时间、开机启动和“仅剪贴板拥有功能启用/停用开关”。
+   - 扩展 `SnapVaultTests/SettingsSourceTests.swift` 覆盖 7 个 SettingsRoute、不开关直切、服务开关隐藏 SettingsSource。
+   - 更新 Xcode project，把 `SettingsServiceTests.swift` 加入测试 target。
+
+### 验证结果
+- `swift test --skip-update`：通过，执行 101 个 XCTest，101 通过、0 失败。
+- `xcodebuild -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug build`：通过，`** BUILD SUCCEEDED **`。
+- `xcodebuild test -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug`：通过，执行 96 个 XCTest，96 通过、0 失败，`** TEST SUCCEEDED **`。
+
+### 留给后续 Agent 的提示
+- US-010 只提供设置服务、SettingsSource 入口和测试级设置读写能力；未实现 US-015 管理中心 UI。
+- 旧 `SettingsViewModel` 仍使用 GRDB legacy 设置键，后续迁移 UI 时应改为注入 `SettingsServiceProtocol`，但不要把旧 `LegacySettingKey` 当作 Assistant MVP 新设置键。
+- `SettingsSource` 搜索结果必须继续只打开页面/区块；搜索结果直接切换设置开关属于后续扩展，不在 MVP 当前范围。

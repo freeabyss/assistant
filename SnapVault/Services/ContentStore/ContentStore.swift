@@ -177,7 +177,7 @@ final class ContentStore {
         }
         do {
             return try dbQueue.read { db in
-                if let setting = try AppSetting.fetchOne(db, key: SettingKey.ocrEnabled) {
+                if let setting = try AppSetting.fetchOne(db, key: LegacySettingKey.ocrEnabled) {
                     return setting.value == "1"
                 }
                 return true // Default to enabled

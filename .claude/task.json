@@ -193,7 +193,7 @@
       "id": "US-010",
       "title": "SettingsSource 与设置服务",
       "priority": "medium",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": [
         "US-006"
