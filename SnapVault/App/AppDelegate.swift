@@ -274,39 +274,39 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func makeStatusMenu() -> NSMenu {
-        let menu = NSMenu(title: "Mac Super Assistant")
+        let menu = NSMenu(title: L10n.localized("menubar.appTitle"))
         menu.autoenablesItems = true
 
-        let openSearch = NSMenuItem(title: "Open Search", action: #selector(openSearchFromMenu), keyEquivalent: "")
+        let openSearch = NSMenuItem(title: L10n.localized("menubar.openSearch"), action: #selector(openSearchFromMenu), keyEquivalent: "")
         openSearch.image = NSImage(systemSymbolName: "magnifyingglass", accessibilityDescription: nil)
         openSearch.target = self
         menu.addItem(openSearch)
 
-        let clipboard = NSMenuItem(title: "Clipboard", action: #selector(openClipboardFromMenu), keyEquivalent: "")
+        let clipboard = NSMenuItem(title: L10n.localized("menubar.clipboard"), action: #selector(openClipboardFromMenu), keyEquivalent: "")
         clipboard.image = NSImage(systemSymbolName: "clipboard", accessibilityDescription: nil)
         clipboard.target = self
         menu.addItem(clipboard)
 
-        let screenshot = NSMenuItem(title: "Screenshot", action: #selector(startScreenshotFromMenu), keyEquivalent: "")
+        let screenshot = NSMenuItem(title: L10n.localized("menubar.screenshot"), action: #selector(startScreenshotFromMenu), keyEquivalent: "")
         screenshot.image = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: nil)
         screenshot.target = self
         menu.addItem(screenshot)
 
         menu.addItem(.separator())
 
-        let settings = NSMenuItem(title: "Settings…", action: #selector(openSettingsFromMenu), keyEquivalent: ",")
+        let settings = NSMenuItem(title: L10n.localized("menubar.settings"), action: #selector(openSettingsFromMenu), keyEquivalent: ",")
         settings.image = NSImage(systemSymbolName: "gearshape", accessibilityDescription: nil)
         settings.target = self
         menu.addItem(settings)
 
-        let about = NSMenuItem(title: "About Mac Super Assistant", action: #selector(openAboutFromMenu), keyEquivalent: "")
+        let about = NSMenuItem(title: L10n.localized("menubar.about"), action: #selector(openAboutFromMenu), keyEquivalent: "")
         about.image = NSImage(systemSymbolName: "info.circle", accessibilityDescription: nil)
         about.target = self
         menu.addItem(about)
 
         menu.addItem(.separator())
 
-        let quit = NSMenuItem(title: "Quit", action: #selector(quitFromMenu), keyEquivalent: "q")
+        let quit = NSMenuItem(title: L10n.localized("menubar.quit"), action: #selector(quitFromMenu), keyEquivalent: "q")
         quit.image = NSImage(systemSymbolName: "power", accessibilityDescription: nil)
         quit.target = self
         menu.addItem(quit)

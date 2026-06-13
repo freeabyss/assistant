@@ -63,6 +63,7 @@ final class SettingsViewModel: ObservableObject {
     private let permissionService: PermissionServiceProtocol
     private let launchAtLoginService: LaunchAtLoginServiceProtocol
     private let notificationCenter: NotificationCenter
+    private let userDefaults: UserDefaults
     private let logger = Logger.app
 
     @Published var selectedPage: ManagementCenterPage = .overview
@@ -123,13 +124,15 @@ final class SettingsViewModel: ObservableObject {
         blacklistRepository: SearchBlacklistRepositoryProtocol = SearchBlacklistRepository(persistence: .shared),
         permissionService: PermissionServiceProtocol = PermissionService(),
         launchAtLoginService: LaunchAtLoginServiceProtocol = LaunchAtLoginService(),
-        notificationCenter: NotificationCenter = .default
+        notificationCenter: NotificationCenter = .default,
+        userDefaults: UserDefaults = .standard
     ) {
         self.settingsService = settingsService
         self.blacklistRepository = blacklistRepository
         self.permissionService = permissionService
         self.launchAtLoginService = launchAtLoginService
         self.notificationCenter = notificationCenter
+        self.userDefaults = userDefaults
     }
 
     func load() async {
@@ -315,11 +318,11 @@ final class SettingsViewModel: ObservableObject {
     private func applyLanguagePreference() {
         switch languageMode {
         case .followSystem:
-            UserDefaults.standard.removeObject(forKey: "AppleLanguages")
+            userDefaults.removeObject(forKey: "AppleLanguages")
         case .simplifiedChinese:
-            UserDefaults.standard.set(["zh-Hans"], forKey: "AppleLanguages")
+            userDefaults.set(["zh-Hans"], forKey: "AppleLanguages")
         case .english:
-            UserDefaults.standard.set(["en"], forKey: "AppleLanguages")
+            userDefaults.set(["en"], forKey: "AppleLanguages")
         }
         showLanguageRestartAlert = true
     }

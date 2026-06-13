@@ -68,6 +68,43 @@ final class SettingsSourceTests: XCTestCase {
         })
     }
 
+    @MainActor
+    func testManagementCenterLanguageSelectionWritesAppleLanguagesAndShowsRestartPrompt() async throws {
+        let suiteName = "AssistantUS019LanguageTests-\(UUID().uuidString)"
+        guard let userDefaults = UserDefaults(suiteName: suiteName) else {
+            XCTFail("Expected suite-scoped UserDefaults")
+            return
+        }
+        defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+
+        let settings = InMemoryManagementSettingsService()
+        let viewModel = SettingsViewModel(
+            settingsService: settings,
+            blacklistRepository: EmptyBlacklistRepository(),
+            permissionService: StaticPermissionService(),
+            launchAtLoginService: NoopLaunchAtLoginService(),
+            notificationCenter: NotificationCenter(),
+            userDefaults: userDefaults
+        )
+
+        viewModel.languageMode = .simplifiedChinese
+        await viewModel.saveSettings()
+        XCTAssertEqual(userDefaults.array(forKey: "AppleLanguages") as? [String], ["zh-Hans"])
+        XCTAssertTrue(viewModel.showLanguageRestartAlert)
+
+        viewModel.showLanguageRestartAlert = false
+        viewModel.languageMode = .english
+        await viewModel.saveSettings()
+        XCTAssertEqual(userDefaults.array(forKey: "AppleLanguages") as? [String], ["en"])
+        XCTAssertTrue(viewModel.showLanguageRestartAlert)
+
+        viewModel.showLanguageRestartAlert = false
+        viewModel.languageMode = .followSystem
+        await viewModel.saveSettings()
+        XCTAssertNil(userDefaults.persistentDomain(forName: suiteName)?["AppleLanguages"])
+        XCTAssertTrue(viewModel.showLanguageRestartAlert)
+    }
+
     func testSettingsSourceCanBeHiddenByPersistentSearchSourceSwitch() async throws {
         try makeTemporarySettingsService()
         try await settingsService.set(false, for: .settingsSourceEnabled)
@@ -90,4 +127,72 @@ final class SettingsSourceTests: XCTestCase {
         try persistence.load()
         settingsService = SettingsService(persistence: persistence)
     }
+}
+
+private actor InMemoryManagementSettingsService: SettingsServiceProtocol {
+    private var values = AssistantSettingDefaults.values
+
+    func value<T: Decodable>(for key: SettingKey, as type: T.Type) async throws -> T {
+        let raw = try await stringValue(for: key)
+        if type == Bool.self, let value = (["true", "1", "yes", "on"].contains(raw.lowercased())) as? T { return value }
+        if type == String.self, let value = raw as? T { return value }
+        if type == URL.self, let value = URL(fileURLWithPath: (raw as NSString).expandingTildeInPath) as? T { return value }
+        if type == ClipboardRetention.self, let value = ClipboardRetention(rawValue: raw) as? T { return value }
+        if type == LanguageMode.self, let value = LanguageMode(rawValue: raw) as? T { return value }
+        return try JSONDecoder().decode(type, from: Data(raw.utf8))
+    }
+
+    func set<T: Encodable>(_ value: T, for key: SettingKey) async throws {
+        switch value {
+        case let bool as Bool:
+            values[key.rawValue] = bool ? "true" : "false"
+        case let string as String:
+            values[key.rawValue] = string
+        case let url as URL:
+            values[key.rawValue] = url.path
+        case let retention as ClipboardRetention:
+            values[key.rawValue] = retention.rawValue
+        case let language as LanguageMode:
+            values[key.rawValue] = language.rawValue
+        default:
+            let data = try JSONEncoder().encode(value)
+            values[key.rawValue] = String(data: data, encoding: .utf8)
+        }
+    }
+
+    func reset(key: SettingKey) async throws {
+        values[key.rawValue] = AssistantSettingDefaults.values[key.rawValue]
+    }
+
+    func stringValue(for key: SettingKey) async throws -> String {
+        values[key.rawValue] ?? ""
+    }
+}
+
+private final class EmptyBlacklistRepository: SearchBlacklistRepositoryProtocol {
+    func add(_ draft: SearchBlacklistDraft) async throws -> SearchBlacklistItemSnapshot {
+        SearchBlacklistItemSnapshot(id: UUID(), resultID: draft.resultID, sourceID: draft.sourceID, title: draft.title, resultType: draft.resultType, createdAt: Date())
+    }
+
+    func add(result: SearchResult) async throws -> SearchBlacklistItemSnapshot {
+        try await add(SearchBlacklistDraft(result: result))
+    }
+
+    func list() async throws -> [SearchBlacklistItemSnapshot] { [] }
+    func remove(id: UUID) async throws {}
+    func remove(sourceID: SearchSourceID, resultID: SearchResultID) async throws {}
+    func contains(sourceID: SearchSourceID, resultID: SearchResultID) async -> Bool { false }
+}
+
+private final class StaticPermissionService: PermissionServiceProtocol {
+    func status(for permission: PermissionKind) -> PermissionStatus { .authorized }
+    func openSystemSettings(for permission: PermissionKind) {}
+    func refreshStatuses() async -> [PermissionKind: PermissionStatus] {
+        Dictionary(uniqueKeysWithValues: PermissionKind.allCases.map { ($0, .authorized) })
+    }
+}
+
+private final class NoopLaunchAtLoginService: LaunchAtLoginServiceProtocol {
+    func isEnabled() -> Bool { true }
+    func setEnabled(_ enabled: Bool) throws {}
 }

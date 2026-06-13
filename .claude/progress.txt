@@ -3435,3 +3435,51 @@ US-025 从零构建了完整的截图标注编辑器，替换 US-024 的 Annotat
 - US-018 已满足关于页、隐私政策、反馈邮件和检查更新 MVP 范围；不要在后续任务中把检查更新回退为自动下载/安装流程，除非另有明确任务。
 - 当前默认发布链接使用 GitHub 项目页/Release 页，反馈邮箱为 `feedback@assistant.app`；US-020 官网素材任务可进一步确认最终官网、隐私政策 URL、第三方许可页面和反馈邮箱。
 - 当前工作区仍存在本次未触碰/未提交的用户或其他任务改动：`doc/prd.md`、`doc/architecture_db.md`、`.claude/scheduled_tasks.lock`，后续不要误提交。
+
+
+## 2026-06-13 - Assistant MVP US-019 中英文国际化与语言切换
+
+### 任务状态
+- US-019 已完成，`.claude/task.json` 中 `US-019.passes=true`、`blocked=false`。
+- 本次只处理中英文国际化与语言切换；未处理 US-020 官网素材、US-021 测试基线或 US-022 集成验收。
+
+### 完成内容
+1. **本地化资源结构核对与补齐**
+   - 复核现有 `SnapVault/Resources/Localizable.xcstrings` String Catalog，确认项目使用统一 `L10n.localized(...)` 入口，且资源包含 `en` 与 `zh-Hans` 两套文案。
+   - 新增菜单栏菜单项本地化键：App 标题、打开搜索、剪贴板、截图、设置、关于、退出。
+   - 将 `AppDelegate.makeStatusMenu()` 中的可见菜单文案从硬编码英文切换为 `L10n.localized`，使菜单栏入口随系统/用户语言配置显示中英文。
+
+2. **语言设置与重启生效提示**
+   - 复核 `SettingsService` 的 `language.mode` 默认值为 `system`，枚举仅允许 `system` / `zh-Hans` / `en`，符合“跟随系统、简体中文、English”。
+   - `SettingsViewModel` 保存语言设置后继续写入 `AppleLanguages` 覆盖；由于运行时完整切换复杂，保留并验证“重启应用后生效”提示。
+   - 为 `SettingsViewModel` 注入 `UserDefaults`，便于测试语言覆盖写入和跟随系统移除覆盖，不影响默认生产路径 `.standard`。
+
+3. **核心 UI / Onboarding / 权限 / 隐私 / 错误 / 关于页文案验证**
+   - 通过脚本验证 `Localizable.xcstrings` 中 472 个 String Catalog 条目均包含 `en` 和 `zh-Hans` 值。
+   - 复核核心页面：搜索面板、剪贴板历史、Onboarding 七步流程、权限页、管理中心设置、隐私政策、关于页、反馈邮件、截图预览/错误提示均已使用 String Catalog 中英文文案。
+   - 未修改 `doc/prd.md` 与 `doc/architecture_db.md` 的既有用户/其他任务脏改动，也未提交 `.claude/scheduled_tasks.lock`。
+
+4. **双语搜索验证**
+   - 扩展 `SystemCommandSourceTests`，明确验证中文界面下输入英文命令 `capture window` 可命中窗口截图，英文界面下输入中文命令 `窗口截图` 也可命中同一内置命令。
+   - 保持命令中英文名、别名、拼音和首字母搜索与当前界面语言解耦。
+
+5. **自动化测试补充**
+   - `SettingsServiceTests` 增加语言 raw value 持久化验证：`system` / `zh-Hans` / `en`。
+   - `OnboardingViewModelTests` 验证完成首次引导不会改变默认语言，仍为跟随系统。
+   - `SettingsSourceTests` 增加管理中心语言选择测试：简体中文写入 `AppleLanguages=["zh-Hans"]`、English 写入 `["en"]`、跟随系统移除持久化覆盖，并都显示重启提示。
+
+### 技术方案核对
+- 已按要求阅读 `.claude/progress.txt`、`.claude/task.json`、`doc/prd.md`、`doc/architecture.md`、`doc/architecture_db.md`、`doc/architecture_api.md`、`doc/test.md`。
+- 现有文档已覆盖 US-019 所需方案：PRD FR-UI-28~33、architecture.md 第 15 节语言选项、architecture_api.md `SettingKey.languageMode` / `LanguageMode`、doc/test.md L10N-001~004。
+- 本次无需补充 PRD/架构/测试文档；按要求未覆盖或提交既有无关脏文件 `doc/prd.md`、`doc/architecture_db.md`、`.claude/scheduled_tasks.lock`。
+
+### 验证结果
+- `python3` String Catalog 校验：通过，472 个本地化条目均包含 English 与简体中文值。
+- `swift test --skip-update --filter SettingsSourceTests/testManagementCenterLanguageSelectionWritesAppleLanguagesAndShowsRestartPrompt`：通过。
+- `swift test --skip-update`：通过，执行 122 个 XCTest，122 通过、0 失败。
+- SwiftPM 测试期间仍有既有 Swift 6 Sendable warning（`SettingsService` / 测试 mock 泛型 `T.Type`）和 `--skip-update` deprecation warning；未造成失败。
+
+### 留给后续 Agent 的提示
+- 语言切换采用 MVP 允许的“重启后生效”策略；不要在无明确任务时改成运行时热切换。
+- US-020 可进一步确认最终官网、隐私政策 URL、反馈邮箱和第三方许可页面；US-019 不处理官网素材。
+- 当前工作区仍存在本次未触碰/未提交的用户或其他任务改动：`doc/prd.md`、`doc/architecture_db.md`、`.claude/scheduled_tasks.lock`，后续不要误提交。

@@ -70,6 +70,7 @@ final class OnboardingViewModelTests: XCTestCase {
         let clipboardEnabled = try await settings.value(for: .clipboardEnabled, as: Bool.self)
         let searchHotkey = try await settings.stringValue(for: .searchHotkey)
         let launchSetting = try await settings.value(for: .launchAtLoginEnabled, as: Bool.self)
+        let languageMode = try await settings.value(for: .languageMode, as: LanguageMode.self)
 
         XCTAssertTrue(didComplete)
         XCTAssertTrue(onboardingCompleted)
@@ -77,6 +78,7 @@ final class OnboardingViewModelTests: XCTestCase {
         XCTAssertEqual(searchHotkey, "option+space")
         XCTAssertTrue(launchSetting)
         XCTAssertTrue(launchAtLogin.enabled)
+        XCTAssertEqual(languageMode, .followSystem)
     }
 
     func testPermissionSettingsAndRefreshAreDelegated() async throws {

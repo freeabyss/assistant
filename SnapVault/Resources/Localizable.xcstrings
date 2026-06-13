@@ -7905,6 +7905,125 @@
           }
         }
       }
+    },
+    "menubar.appTitle": {
+      "comment": "Menu bar menu title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac Super Assistant"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac Super Assistant"
+          }
+        }
+      }
+    },
+    "menubar.openSearch": {
+      "comment": "Menu bar item: open search",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Search"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开搜索"
+          }
+        }
+      }
+    },
+    "menubar.clipboard": {
+      "comment": "Menu bar item: clipboard history",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clipboard"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剪贴板"
+          }
+        }
+      }
+    },
+    "menubar.screenshot": {
+      "comment": "Menu bar item: screenshot",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screenshot"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "截图"
+          }
+        }
+      }
+    },
+    "menubar.settings": {
+      "comment": "Menu bar item: settings",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置…"
+          }
+        }
+      }
+    },
+    "menubar.about": {
+      "comment": "Menu bar item: about",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About Mac Super Assistant"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关于 Mac Super Assistant"
+          }
+        }
+      }
+    },
+    "menubar.quit": {
+      "comment": "Menu bar item: quit",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quit"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "退出"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

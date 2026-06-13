@@ -58,6 +58,27 @@ final class SystemCommandSourceTests: XCTestCase {
         XCTAssertTrue(initials.containsCommand(.openDownloads))
     }
 
+    func testBilingualCommandSearchDoesNotDependOnInterfaceLanguage() async {
+        let source = SystemCommandSource()
+        let savedLanguages = UserDefaults.standard.array(forKey: "AppleLanguages")
+        defer {
+            if let savedLanguages {
+                UserDefaults.standard.set(savedLanguages, forKey: "AppleLanguages")
+            } else {
+                UserDefaults.standard.removeObject(forKey: "AppleLanguages")
+            }
+        }
+
+        UserDefaults.standard.set(["zh-Hans"], forKey: "AppleLanguages")
+        let englishQueryInChineseUI = await source.search(query: "capture window")
+
+        UserDefaults.standard.set(["en"], forKey: "AppleLanguages")
+        let chineseQueryInEnglishUI = await source.search(query: "窗口截图")
+
+        XCTAssertTrue(englishQueryInChineseUI.containsCommand(.captureWindow))
+        XCTAssertTrue(chineseQueryInEnglishUI.containsCommand(.captureWindow))
+    }
+
     func testConfirmationFlagsMatchMVPRequirements() {
         let source = SystemCommandSource()
         let confirmationRequired = Set(source.commands.filter(\.requiresConfirmation).map(\.id))

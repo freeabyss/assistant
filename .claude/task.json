@@ -386,7 +386,7 @@
       "id": "US-019",
       "title": "中英文国际化与语言切换",
       "priority": "medium",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": [
         "US-011",

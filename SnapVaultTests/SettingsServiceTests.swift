@@ -104,4 +104,18 @@ final class SettingsServiceTests: XCTestCase {
         let reset = try await service.value(for: .settingsSourceEnabled, as: Bool.self)
         XCTAssertTrue(reset)
     }
+
+    func testLanguageModePersistsRawValuesRequiredForAppLanguageOverride() async throws {
+        try await service.set(LanguageMode.followSystem, for: .languageMode)
+        let followSystemRaw = try await service.stringValue(for: .languageMode)
+        XCTAssertEqual(followSystemRaw, "system")
+
+        try await service.set(LanguageMode.simplifiedChinese, for: .languageMode)
+        let simplifiedChineseRaw = try await service.stringValue(for: .languageMode)
+        XCTAssertEqual(simplifiedChineseRaw, "zh-Hans")
+
+        try await service.set(LanguageMode.english, for: .languageMode)
+        let englishRaw = try await service.stringValue(for: .languageMode)
+        XCTAssertEqual(englishRaw, "en")
+    }
 }
