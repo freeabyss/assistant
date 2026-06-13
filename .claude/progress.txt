@@ -3350,3 +3350,44 @@ US-025 从零构建了完整的截图标注编辑器，替换 US-024 的 Annotat
 - 复制进入历史依赖后台 `ClipboardMonitor` 轮询系统剪贴板；真实手动验收时需确认 Onboarding 已完成且剪贴板记录开启。
 - 保存截图不会写入剪贴板历史，这是 US-016 明确要求；如后续增加截图历史，需要另行设计。
 - 当前工作区仍存在本次未触碰/未提交的用户或其他任务改动：`doc/architecture_db.md`、`doc/prd.md`、`.claude/scheduled_tasks.lock`，后续不要误提交。
+
+
+## 2026-06-13 - US-017 截图轻量标注工具
+
+### 完成内容
+1. **标注模型与渲染**
+   - 重构 `SnapVault/Views/Annotation/AnnotationShape.swift`，实现符合 Assistant MVP US-017 的 `AnnotationTool`、`AnnotationColor`、`AnnotationLineWidth`、`AnnotationTextSize`、`AnnotationStyle`、`AnnotationShape`。
+   - 支持矩形框、箭头、文字、马赛克四类标注；标注坐标使用截图原始图像坐标，导出时按原图尺寸 1:1 渲染。
+   - 实现 `AnnotationRenderer` 和 `AnnotationFlattener`，复制/保存前将截图与标注扁平化为 PNG。
+
+2. **标注编辑器与交互**
+   - 重构 `AnnotationCanvasState` / `AnnotationCanvasView`，支持绘制矩形、箭头、马赛克，文字工具通过点击位置弹出输入框添加文字。
+   - 实现轻量撤销/重做栈，工具栏按钮根据可用状态启用/禁用。
+   - 重构 `AnnotationToolbar`，提供 MVP 预设：颜色红/黄/蓝/绿/白/黑，线宽细/中/粗，文字大小小/中/大；未加入完整颜色选择器、字体选择器或透明度设置。
+
+3. **接入 US-016 截图预览流程**
+   - 修改 `ScreenshotToolbarController`，将原先“标注即将推出”提示替换为真实标注编辑器入口。
+   - 从截图预览点击“标注”会打开 `AnnotationEditorWindow`；取消返回原预览；复制/保存会使用标注后的 PNG，并复用 US-016 的系统剪贴板写入和 `~/Pictures/Screenshots` 保存路径/命名逻辑。
+   - 复制标注图仍写入系统剪贴板（由既有剪贴板监听进入历史），保存标注图不额外写入剪贴板历史。
+
+4. **本地化与测试**
+   - 补充标注颜色、线宽、文字大小和编辑提示的中英文 String Catalog 文案。
+   - 新增 `SnapVaultTests/AnnotationTests.swift`，覆盖 US-017 预设清单、`AnnotationShape` Codable 往返、标注扁平化 PNG 输出。
+   - 更新 `SnapVault.xcodeproj/project.pbxproj`，确保 Xcode 测试目标包含 AnnotationTests。
+
+### 验证结果
+- `swift test --skip-update`：通过，执行 117 个 XCTest，117 通过、0 失败。
+- `xcodebuild -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug build`：通过，`** BUILD SUCCEEDED **`。
+- `xcodebuild test -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug`：通过，执行 112 个 XCTest，112 通过、0 失败，`** TEST SUCCEEDED **`。
+- Xcode 测试期间系统输出 `com.apple.linkd.autoShortcut` 连接噪声，但不影响测试结果，所有 XCTest 均通过。
+
+### 技术决策记录
+1. 标注编辑器保持在截图预览流程之后的独立窗口中，避免在 US-016 预览内叠加过多状态，同时仍由 `ScreenshotToolbarController` 统一处理复制/保存输出。
+2. 撤销/重做使用轻量 shape 栈而非 AppKit `UndoManager`，便于 SwiftUI 按钮状态和单元测试验证。
+3. 马赛克使用 Core Image `CIPixellate` 渲染选区，失败时回退半透明灰块，保证 UI 有可见反馈。
+4. 文本工具只提供系统字体和小/中/大字号预设，符合 MVP 不做完整字体选择器的范围限制。
+
+### 留给后续 Agent 的提示
+- US-018+ 不需要修改截图标注核心；后续若做关于/隐私/发布资料，可仅描述截图和标注本地处理。
+- 当前工作区开始前已有无关改动：`doc/prd.md`、`doc/architecture_db.md`、`.claude/scheduled_tasks.lock`，本任务未依赖也不应提交这些无关改动。
+- 如果后续要做手动验收，重点跑 `SHOT-004` ~ `SHOT-009`：标注四工具、预设、撤销/重做、复制进入历史、保存不进历史、ESC/取消行为。

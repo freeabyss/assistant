@@ -2,70 +2,48 @@ import Cocoa
 import SwiftUI
 import os.log
 
-// MARK: - Annotation Editor Window
-
-/// Full window for editing a screenshot with arrows, rectangles, mosaic
-/// blocks, and text labels. Opened from `ScreenshotToolbarController`'s
-/// Annotate button.
-///
-/// Architecture:
-/// - `NSWindowController` hosts a SwiftUI root that stacks the top toolbar,
-///   the `AnnotationCanvasView`, and the bottom toolbar.
-/// - `AnnotationCanvasState` is the single source of truth — owned by the
-///   window controller and observed by both toolbars and the canvas.
-/// - `⌘S` saves the annotated image back to the database (via callback)
-///   and optionally to disk (via `NSSavePanel`).
-/// - `⌘C` copies the flattened result to the pasteboard.
-/// - `⌘Z`/`⌘⇧Z` route through the canvas's `UndoManager` (the NSView is
-///   first responder, so the standard edit menu items drive it).
-/// - Text tool: click → `NSAlert` with text field → commit shape.
-///
-/// Window sizing: show the image at its native pixel size, capped at 80%
-/// of the main screen's visible area. The canvas scales with the window if
-/// the user resizes it.
 @MainActor
 final class AnnotationEditorWindow: NSWindowController, NSWindowDelegate {
-
     private let logger = Logger.screenshot
     private let state: AnnotationCanvasState
+    private let originalDate: Date
+    private let onCopy: (Data) throws -> Void
+    private let onSave: (Data, Date) throws -> URL
+    private let onComplete: (AnnotationEditorCompletion) -> Void
 
-    /// Database id of the screenshot row (used on save to overwrite).
-    private let itemId: Int64
-
-    /// Repository injected from outside for DB writes.
-    private let repository = ContentRepository()
-
-    /// Called on Save so the toolbar can update the OCR cache.
-    var onSaved: ((_ newImageData: Data) -> Void)?
-
-    // MARK: - Init
-
-    init(image: NSImage, itemId: Int64) {
-        self.itemId = itemId
+    init(
+        image: NSImage,
+        captureDate: Date,
+        onCopy: @escaping (Data) throws -> Void,
+        onSave: @escaping (Data, Date) throws -> URL,
+        onComplete: @escaping (AnnotationEditorCompletion) -> Void
+    ) {
         self.state = AnnotationCanvasState(image: image)
+        self.originalDate = captureDate
+        self.onCopy = onCopy
+        self.onSave = onSave
+        self.onComplete = onComplete
         super.init(window: nil)
     }
 
-    required init?(coder: NSCoder) { fatalError("init(coder:) not implemented") }
-
-    // MARK: - Present
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     func present() {
         let root = AnnotationEditorRootView(
             state: state,
-            onUndo: { [weak self] in self?.state.undoManager.undo() },
-            onRedo: { [weak self] in self?.state.undoManager.redo() },
-            onSave: { [weak self] in self?.save() },
-            onCopy: { [weak self] in self?.copyToClipboard() },
+            onUndo: { [weak self] in self?.undo() },
+            onRedo: { [weak self] in self?.redo() },
             onCancel: { [weak self] in self?.cancel() },
+            onCopy: { [weak self] in self?.copyAnnotatedImage() },
+            onSave: { [weak self] in self?.saveAnnotatedImage() },
             onRequestTextInput: { [weak self] point, completion in
                 self?.requestTextInput(at: point, completion: completion)
             }
         )
 
-        let window = NSWindow(
+        let window = AnnotationEditorPanel(
             contentRect: computeWindowRect(),
-            styleMask: [.titled, .closable, .resizable, .miniaturizable],
+            styleMask: [.titled, .closable, .resizable, .miniaturizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
@@ -73,43 +51,64 @@ final class AnnotationEditorWindow: NSWindowController, NSWindowDelegate {
         window.contentViewController = NSHostingController(rootView: root)
         window.delegate = self
         window.isReleasedWhenClosed = false
+        window.onEscape = { [weak self] in self?.cancel() }
         window.center()
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
-
         self.window = window
     }
 
-    // MARK: - Window sizing
-
-    /// Compute initial frame: native image size, capped at 80% of the
-    /// main screen's visible area. Chrome (toolbars) adds ~90pt height.
     private func computeWindowRect() -> NSRect {
-        let img = state.sourceImage
-        let imgW = img.size.width
-        let imgH = img.size.height
-
         guard let screen = NSScreen.main else {
-            return NSRect(x: 100, y: 100, width: imgW, height: imgH + 90)
+            return NSRect(x: 100, y: 100, width: 900, height: 650)
         }
         let visible = screen.visibleFrame
-        let maxW = visible.width * 0.8
-        let maxH = visible.height * 0.8
-        let chromeH: CGFloat = 90   // top toolbar + bottom toolbar + titlebar
-
-        let scale = min(1.0, min(maxW / imgW, (maxH - chromeH) / imgH))
-        let winW = imgW * scale
-        let winH = imgH * scale + chromeH
-
-        return NSRect(
-            x: visible.midX - winW / 2,
-            y: visible.midY - winH / 2,
-            width: winW,
-            height: winH
-        )
+        let maxW = min(1100, visible.width * 0.86)
+        let maxH = min(820, visible.height * 0.86)
+        let imageSize = state.imageSize
+        let chromeHeight: CGFloat = 118
+        let scale = min(maxW / max(imageSize.width, 1), (maxH - chromeHeight) / max(imageSize.height, 1), 1)
+        let width = max(680, min(maxW, imageSize.width * scale + 40))
+        let height = max(480, min(maxH, imageSize.height * scale + chromeHeight))
+        return NSRect(x: visible.midX - width / 2, y: visible.midY - height / 2, width: width, height: height)
     }
 
-    // MARK: - Text input (NSAlert)
+    private func undo() {
+        state.undo()
+    }
+
+    private func redo() {
+        state.redo()
+    }
+
+    private func cancel() {
+        onComplete(.cancelled)
+        window?.close()
+    }
+
+    private func copyAnnotatedImage() {
+        do {
+            let png = try state.renderedPNGData()
+            try onCopy(png)
+            onComplete(.copied)
+            window?.close()
+        } catch {
+            logger.error("Annotated copy failed: \(error.localizedDescription, privacy: .public)")
+            onComplete(.failed(error.localizedDescription))
+        }
+    }
+
+    private func saveAnnotatedImage() {
+        do {
+            let png = try state.renderedPNGData()
+            let url = try onSave(png, originalDate)
+            onComplete(.saved(url))
+            window?.close()
+        } catch {
+            logger.error("Annotated save failed: \(error.localizedDescription, privacy: .public)")
+            onComplete(.failed(error.localizedDescription))
+        }
+    }
 
     private func requestTextInput(at point: CGPoint, completion: @escaping (String?) -> Void) {
         let alert = NSAlert()
@@ -119,108 +118,49 @@ final class AnnotationEditorWindow: NSWindowController, NSWindowDelegate {
         alert.addButton(withTitle: L10n.localized("annotation.textInput.add"))
         alert.addButton(withTitle: L10n.localized("annotation.textInput.cancel"))
 
-        let textField = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
+        let textField = NSTextField(frame: NSRect(x: 0, y: 0, width: 320, height: 24))
         textField.placeholderString = L10n.localized("annotation.textInput.placeholder")
         textField.bezelStyle = .roundedBezel
         alert.accessoryView = textField
 
-        guard let window = window else { completion(nil); return }
-
+        guard let window else {
+            completion(nil)
+            return
+        }
         alert.beginSheetModal(for: window) { response in
-            if response == .alertFirstButtonReturn {
-                completion(textField.stringValue)
-            } else {
-                completion(nil)
-            }
+            completion(response == .alertFirstButtonReturn ? textField.stringValue : nil)
         }
     }
 
-    // MARK: - Save (to DB + optional to file)
+    func windowWillClose(_ notification: Notification) {}
+}
 
-    private func save() {
-        let flat = AnnotationFlattener.flatten(image: state.sourceImage, shapes: state.shapes)
-        guard let png = AnnotationFlattener.pngData(from: flat) else {
-            logger.error("Failed to convert annotated image to PNG")
-            return
+enum AnnotationEditorCompletion {
+    case copied
+    case saved(URL)
+    case cancelled
+    case failed(String)
+}
+
+private final class AnnotationEditorPanel: NSWindow {
+    var onEscape: (() -> Void)?
+
+    override func keyDown(with event: NSEvent) {
+        if event.keyCode == 53 {
+            onEscape?()
+        } else {
+            super.keyDown(with: event)
         }
-
-        // Write back to DB.
-        do {
-            try repository.updateImageData(id: itemId, imageData: png)
-            // Reset OCR text so the next preview/OCR button re-recognises the
-            // annotated version (text overlaid on screenshot changes content).
-            try? repository.updateOCRText(id: itemId, ocrText: "")
-            logger.info("Annotated image saved to DB for item id=\(self.itemId)")
-            NotificationCenter.default.post(name: .clipboardItemSaved, object: nil)
-        } catch {
-            logger.error("Failed to save annotated image to DB: \(error.localizedDescription, privacy: .public)")
-        }
-
-        // Also offer a NSSavePanel for explicit file save.
-        let panel = NSSavePanel()
-        panel.title = L10n.localized("annotation.savePanel.title")
-        panel.allowedContentTypes = [.png]
-        panel.canCreateDirectories = true
-        let fmt = DateFormatter()
-        fmt.dateFormat = "yyyy-MM-dd HH.mm.ss"
-        panel.nameFieldStringValue = L10n.localized("annotation.savePanel.filename", fmt.string(from: Date()))
-        panel.begin { [weak self] resp in
-            guard resp == .OK, let url = panel.url else { return }
-            do {
-                try png.write(to: url)
-                self?.logger.info("Saved annotated screenshot to \(url.path, privacy: .public)")
-            } catch {
-                self?.logger.error("File save failed: \(error.localizedDescription, privacy: .public)")
-            }
-        }
-
-        onSaved?(png)
-        window?.close()
-    }
-
-    // MARK: - Copy to Clipboard
-
-    private func copyToClipboard() {
-        let flat = AnnotationFlattener.flatten(image: state.sourceImage, shapes: state.shapes)
-        guard let png = AnnotationFlattener.pngData(from: flat) else {
-            logger.error("Failed to convert annotated image to PNG")
-            return
-        }
-        let pb = NSPasteboard.general
-        pb.clearContents()
-        // Write both TIFF (AppKit native) and PNG (widely supported).
-        if let tiff = flat.tiffRepresentation {
-            pb.setData(tiff, forType: .tiff)
-        }
-        pb.setData(png, forType: NSPasteboard.PasteboardType("public.png"))
-        logger.info("Annotated image copied to pasteboard")
-        window?.close()
-    }
-
-    // MARK: - Cancel
-
-    private func cancel() {
-        window?.close()
-    }
-
-    // MARK: - NSWindowDelegate
-
-    func windowWillClose(_ notification: Notification) {
-        // Clean up the undo manager so its stacks don't leak.
-        state.undoManager.removeAllActions()
     }
 }
 
-// MARK: - SwiftUI Root View
-
 private struct AnnotationEditorRootView: View {
     @ObservedObject var state: AnnotationCanvasState
-
     let onUndo: () -> Void
     let onRedo: () -> Void
-    let onSave: () -> Void
-    let onCopy: () -> Void
     let onCancel: () -> Void
+    let onCopy: () -> Void
+    let onSave: () -> Void
     let onRequestTextInput: (CGPoint, @escaping (String?) -> Void) -> Void
 
     var body: some View {
@@ -230,7 +170,7 @@ private struct AnnotationEditorRootView: View {
             AnnotationCanvasView(state: state, onRequestTextInput: onRequestTextInput)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             Divider()
-            AnnotationBottomToolbar(onSave: onSave, onCopy: onCopy, onCancel: onCancel)
+            AnnotationBottomToolbar(onCancel: onCancel, onCopy: onCopy, onSave: onSave)
         }
     }
 }

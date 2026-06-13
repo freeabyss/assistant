@@ -1,130 +1,170 @@
 import Cocoa
 import CoreImage
 
-// MARK: - Annotation Shape Model
+// MARK: - Annotation Model
 
-/// A single vector mark drawn on top of the screenshot inside
-/// `AnnotationCanvasView`. Each case stores everything the renderer needs
-/// to draw itself in `drawRect`; no extra state lives in the view.
-///
-/// Design choices:
-/// - Coordinates are in the *image's own coordinate space* (origin at the
-///   image bottom-left, in pixels). The canvas view scales / translates
-///   to fit its bounds, so the shape buffer remains resolution-independent
-///   regardless of window resizes.
-/// - `mosaic` carries an `intensity` (CIPixellate `scale`) per shape so
-///   each mosaic block can have its own granularity if a future tool
-///   wants per-shape intensity. Default we use 8.0 (see `defaultIntensity`).
-/// - Colours / fonts are kept as `NSColor` / `NSFont` (not `CGColor`)
-///   because the SwiftUI toolbar already converts user choices to AppKit
-///   types — staying in AppKit avoids back-and-forth conversion.
-enum AnnotationShape {
-    case arrow(start: CGPoint, end: CGPoint, color: NSColor, width: CGFloat)
-    case rectangle(rect: CGRect, color: NSColor, width: CGFloat)
-    case mosaic(rect: CGRect, intensity: CGFloat)
-    case text(point: CGPoint, content: String, color: NSColor, font: NSFont)
-}
-
-extension AnnotationShape {
-    /// Default mosaic block size (CIPixellate `scale`). 8pt strikes a
-    /// balance between visibly hiding text and not turning the area into
-    /// a single colour blob.
-    static let defaultMosaicIntensity: CGFloat = 8.0
-
-    /// Default arrow head: 15pt sides at 30 degrees from the shaft.
-    static let arrowHeadLength: CGFloat = 15
-    static let arrowHeadAngle: CGFloat = .pi / 6   // 30°
-
-    /// Default text font for the simple Alert-input text tool.
-    static let defaultTextFont: NSFont = .systemFont(ofSize: 18, weight: .semibold)
-}
-
-// MARK: - Tool Selection
-
-/// User-facing tool selection. Drives `mouseDown/Dragged/Up` interpretation
-/// inside `AnnotationCanvasView`.
-enum AnnotationTool: String, CaseIterable, Identifiable {
-    case arrow
+/// Screenshot annotation tool set for Assistant MVP US-017.
+enum AnnotationTool: String, Codable, CaseIterable, Identifiable {
     case rectangle
-    case mosaic
+    case arrow
     case text
+    case mosaic
 
     var id: String { rawValue }
 
     var displayName: String {
         switch self {
-        case .arrow:     return L10n.localized("annotation.tool.arrow")
         case .rectangle: return L10n.localized("annotation.tool.rectangle")
-        case .mosaic:    return L10n.localized("annotation.tool.mosaic")
-        case .text:      return L10n.localized("annotation.tool.text")
+        case .arrow: return L10n.localized("annotation.tool.arrow")
+        case .text: return L10n.localized("annotation.tool.text")
+        case .mosaic: return L10n.localized("annotation.tool.mosaic")
         }
     }
 
     var systemImage: String {
         switch self {
-        case .arrow:     return "arrow.up.right"
         case .rectangle: return "rectangle"
-        case .mosaic:    return "square.grid.3x3.square"
-        case .text:      return "textformat"
+        case .arrow: return "arrow.up.right"
+        case .text: return "textformat"
+        case .mosaic: return "square.grid.3x3.square"
         }
     }
 }
 
-// MARK: - Palette
+enum AnnotationColor: String, Codable, CaseIterable, Identifiable {
+    case red, yellow, blue, green, white, black
 
-/// Fixed colour palette (matches PRD: red/orange/yellow/green/blue/black).
-/// Returning `NSColor` lets the canvas use them directly without conversion.
-enum AnnotationPalette {
-    static let colors: [NSColor] = [
-        .systemRed,
-        .systemOrange,
-        .systemYellow,
-        .systemGreen,
-        .systemBlue,
-        .black
-    ]
+    var id: String { rawValue }
 
-    static let defaultColor: NSColor = .systemRed
-    static let defaultLineWidth: CGFloat = 4.0
-    static let minLineWidth: CGFloat = 2.0
-    static let maxLineWidth: CGFloat = 8.0
+    var nsColor: NSColor {
+        switch self {
+        case .red: return .systemRed
+        case .yellow: return .systemYellow
+        case .blue: return .systemBlue
+        case .green: return .systemGreen
+        case .white: return .white
+        case .black: return .black
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .red: return L10n.localized("annotation.color.red")
+        case .yellow: return L10n.localized("annotation.color.yellow")
+        case .blue: return L10n.localized("annotation.color.blue")
+        case .green: return L10n.localized("annotation.color.green")
+        case .white: return L10n.localized("annotation.color.white")
+        case .black: return L10n.localized("annotation.color.black")
+        }
+    }
 }
 
-// MARK: - Drawing Helpers
+enum AnnotationLineWidth: String, Codable, CaseIterable, Identifiable {
+    case thin, medium, thick
 
-/// Common path-construction helpers shared between the live canvas
-/// drawing and the off-screen "flatten to PNG" routine. Centralising
-/// them keeps WYSIWYG between editor view and exported image.
+    var id: String { rawValue }
+
+    var points: CGFloat {
+        switch self {
+        case .thin: return 2
+        case .medium: return 4
+        case .thick: return 8
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .thin: return L10n.localized("annotation.lineWidth.thin")
+        case .medium: return L10n.localized("annotation.lineWidth.medium")
+        case .thick: return L10n.localized("annotation.lineWidth.thick")
+        }
+    }
+}
+
+enum AnnotationTextSize: String, Codable, CaseIterable, Identifiable {
+    case small, medium, large
+
+    var id: String { rawValue }
+
+    var points: CGFloat {
+        switch self {
+        case .small: return 18
+        case .medium: return 28
+        case .large: return 42
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .small: return L10n.localized("annotation.textSize.small")
+        case .medium: return L10n.localized("annotation.textSize.medium")
+        case .large: return L10n.localized("annotation.textSize.large")
+        }
+    }
+}
+
+struct AnnotationStyle: Hashable, Codable {
+    var color: AnnotationColor = .red
+    var lineWidth: AnnotationLineWidth = .medium
+    var textSize: AnnotationTextSize = .medium
+}
+
+struct AnnotationShape: Identifiable, Hashable, Codable {
+    var id: UUID = UUID()
+    var tool: AnnotationTool
+    var startPoint: CGPoint
+    var endPoint: CGPoint?
+    var text: String?
+    var style: AnnotationStyle
+
+    var rect: CGRect {
+        let end = endPoint ?? startPoint
+        return CGRect(
+            x: min(startPoint.x, end.x),
+            y: min(startPoint.y, end.y),
+            width: abs(startPoint.x - end.x),
+            height: abs(startPoint.y - end.y)
+        ).standardized
+    }
+}
+
+// MARK: - Rendering
+
 enum AnnotationRenderer {
+    private static let arrowHeadLength: CGFloat = 18
+    private static let arrowHeadAngle: CGFloat = .pi / 6
+    private static let mosaicScale: CGFloat = 10
 
-    /// Draw all shapes into the *current* `NSGraphicsContext`, assuming
-    /// the coordinate space is already aligned to the image origin
-    /// (image bottom-left at (0,0), 1pt == 1px).
-    static func drawShapes(_ shapes: [AnnotationShape], sourceImage: NSImage?) {
+    static func draw(_ shapes: [AnnotationShape], sourceImage: NSImage?) {
         for shape in shapes {
-            switch shape {
-            case .arrow(let start, let end, let color, let width):
-                drawArrow(from: start, to: end, color: color, width: width)
-            case .rectangle(let rect, let color, let width):
-                drawRectangle(rect: rect, color: color, width: width)
-            case .mosaic(let rect, let intensity):
-                drawMosaic(rect: rect, intensity: intensity, sourceImage: sourceImage)
-            case .text(let point, let content, let color, let font):
-                drawText(point: point, content: content, color: color, font: font)
+            switch shape.tool {
+            case .rectangle:
+                drawRectangle(shape)
+            case .arrow:
+                drawArrow(shape)
+            case .text:
+                drawText(shape)
+            case .mosaic:
+                drawMosaic(shape, sourceImage: sourceImage)
             }
         }
     }
 
-    // MARK: Arrow
+    private static func drawRectangle(_ shape: AnnotationShape) {
+        let path = NSBezierPath(rect: shape.rect)
+        path.lineWidth = shape.style.lineWidth.points
+        shape.style.color.nsColor.setStroke()
+        path.stroke()
+    }
 
-    /// Solid line from `start` to `end` plus a 30° triangle head at `end`.
-    /// We compute the two head edges by rotating the unit vector
-    /// (start - end) by ±`arrowHeadAngle` and scaling to `arrowHeadLength`.
-    static func drawArrow(from start: CGPoint, to end: CGPoint, color: NSColor, width: CGFloat) {
+    private static func drawArrow(_ shape: AnnotationShape) {
+        guard let end = shape.endPoint else { return }
+        let start = shape.startPoint
+        let color = shape.style.color.nsColor
+        let width = shape.style.lineWidth.points
         color.setStroke()
         color.setFill()
 
-        // Shaft.
         let shaft = NSBezierPath()
         shaft.lineWidth = width
         shaft.lineCapStyle = .round
@@ -132,97 +172,79 @@ enum AnnotationRenderer {
         shaft.line(to: end)
         shaft.stroke()
 
-        // Head — degenerate when start == end; bail to avoid NaN.
         let dx = start.x - end.x
         let dy = start.y - end.y
-        let length = (dx * dx + dy * dy).squareRoot()
-        guard length > 0.001 else { return }
-
+        let length = max((dx * dx + dy * dy).squareRoot(), 0.001)
         let ux = dx / length
         let uy = dy / length
-        let cosA = cos(AnnotationShape.arrowHeadAngle)
-        let sinA = sin(AnnotationShape.arrowHeadAngle)
-        let head = AnnotationShape.arrowHeadLength
-
-        // Rotate (ux, uy) by ±arrowHeadAngle to get the two side directions,
-        // then march `head` pts away from `end`.
-        let leftX = end.x + head * (ux * cosA - uy * sinA)
-        let leftY = end.y + head * (ux * sinA + uy * cosA)
-        let rightX = end.x + head * (ux * cosA + uy * sinA)
-        let rightY = end.y + head * (-ux * sinA + uy * cosA)
+        let cosA = cos(arrowHeadAngle)
+        let sinA = sin(arrowHeadAngle)
+        let head = arrowHeadLength + width
+        let left = CGPoint(x: end.x + head * (ux * cosA - uy * sinA), y: end.y + head * (ux * sinA + uy * cosA))
+        let right = CGPoint(x: end.x + head * (ux * cosA + uy * sinA), y: end.y + head * (-ux * sinA + uy * cosA))
 
         let headPath = NSBezierPath()
         headPath.move(to: end)
-        headPath.line(to: CGPoint(x: leftX, y: leftY))
-        headPath.line(to: CGPoint(x: rightX, y: rightY))
+        headPath.line(to: left)
+        headPath.line(to: right)
         headPath.close()
         headPath.fill()
     }
 
-    // MARK: Rectangle
-
-    static func drawRectangle(rect: CGRect, color: NSColor, width: CGFloat) {
-        let path = NSBezierPath(rect: rect.standardized)
-        path.lineWidth = width
-        color.setStroke()
-        path.stroke()
-    }
-
-    // MARK: Mosaic
-
-    /// Pixelate the source image region and stamp it back. We render via
-    /// `CIPixellate` for fidelity (vs. naive averaging), then composite
-    /// the result inside the rect's bounds only — keeping cost ~O(rect).
-    static func drawMosaic(rect: CGRect, intensity: CGFloat, sourceImage: NSImage?) {
-        let target = rect.standardized
-        guard target.width > 0, target.height > 0 else { return }
-        guard let image = sourceImage else {
-            // Fall back to a grey block so the user still sees feedback.
-            NSColor.gray.withAlphaComponent(0.6).setFill()
-            target.fill()
-            return
-        }
-
-        // Convert NSImage to CIImage. We grab a CGImage proposal so the
-        // CI pipeline runs in absolute pixel space, matching our canvas.
-        var imgRect = NSRect(origin: .zero, size: image.size)
-        guard let cg = image.cgImage(forProposedRect: &imgRect, context: nil, hints: nil) else {
-            NSColor.gray.withAlphaComponent(0.6).setFill()
-            target.fill()
-            return
-        }
-        let ciInput = CIImage(cgImage: cg)
-
-        // Clamp the pixelate centre to the rect's centre so the block
-        // grid aligns with the user-selected region.
-        let pix = CIFilter(name: "CIPixellate")
-        pix?.setValue(ciInput, forKey: kCIInputImageKey)
-        pix?.setValue(max(intensity, 1.0), forKey: kCIInputScaleKey)
-        pix?.setValue(CIVector(x: target.midX, y: target.midY), forKey: kCIInputCenterKey)
-        guard let output = pix?.outputImage else { return }
-
-        let ctx = CIContext(options: nil)
-        // Crop to the requested rect — CIPixellate returns an infinite extent.
-        guard let cgOut = ctx.createCGImage(output, from: target) else { return }
-        guard let gctx = NSGraphicsContext.current?.cgContext else { return }
-        gctx.saveGState()
-        gctx.draw(cgOut, in: target)
-        gctx.restoreGState()
-    }
-
-    // MARK: Text
-
-    static func drawText(point: CGPoint, content: String, color: NSColor, font: NSFont) {
-        let attrs: [NSAttributedString.Key: Any] = [
-            .font: font,
-            .foregroundColor: color
+    private static func drawText(_ shape: AnnotationShape) {
+        guard let text = shape.text, !text.isEmpty else { return }
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: shape.style.textSize.points, weight: .semibold),
+            .foregroundColor: shape.style.color.nsColor,
+            .strokeColor: NSColor.black.withAlphaComponent(shape.style.color == .black ? 0 : 0.35),
+            .strokeWidth: -2.0
         ]
-        let str = NSAttributedString(string: content, attributes: attrs)
-        let size = str.size()
-        // Anchor at the bottom-left of the glyph run, matching where the
-        // user clicked. Future versions can offer centre-anchored text.
-        str.draw(at: point)
-        // Suppress unused warning for `size` — kept for future hit-testing.
-        _ = size
+        NSAttributedString(string: text, attributes: attributes).draw(at: shape.startPoint)
+    }
+
+    private static func drawMosaic(_ shape: AnnotationShape, sourceImage: NSImage?) {
+        let target = shape.rect
+        guard target.width > 1, target.height > 1 else { return }
+        guard let image = sourceImage else {
+            NSColor.gray.withAlphaComponent(0.65).setFill()
+            target.fill()
+            return
+        }
+        var proposed = NSRect(origin: .zero, size: image.size)
+        guard let cgImage = image.cgImage(forProposedRect: &proposed, context: nil, hints: nil) else {
+            NSColor.gray.withAlphaComponent(0.65).setFill()
+            target.fill()
+            return
+        }
+
+        let input = CIImage(cgImage: cgImage)
+        guard let filter = CIFilter(name: "CIPixellate") else { return }
+        filter.setValue(input, forKey: kCIInputImageKey)
+        filter.setValue(mosaicScale, forKey: kCIInputScaleKey)
+        filter.setValue(CIVector(x: target.midX, y: target.midY), forKey: kCIInputCenterKey)
+        guard let output = filter.outputImage else { return }
+        let context = CIContext(options: nil)
+        guard let cgOutput = context.createCGImage(output, from: target),
+              let graphics = NSGraphicsContext.current?.cgContext else { return }
+        graphics.saveGState()
+        graphics.draw(cgOutput, in: target)
+        graphics.restoreGState()
+    }
+}
+
+enum AnnotationFlattener {
+    static func flatten(image: NSImage, shapes: [AnnotationShape]) -> NSImage {
+        let output = NSImage(size: image.size)
+        output.lockFocus()
+        image.draw(in: NSRect(origin: .zero, size: image.size), from: .zero, operation: .copy, fraction: 1)
+        AnnotationRenderer.draw(shapes, sourceImage: image)
+        output.unlockFocus()
+        return output
+    }
+
+    static func pngData(from image: NSImage) -> Data? {
+        guard let tiff = image.tiffRepresentation,
+              let rep = NSBitmapImageRep(data: tiff) else { return nil }
+        return rep.representation(using: .png, properties: [:])
     }
 }

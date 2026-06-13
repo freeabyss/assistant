@@ -31,6 +31,7 @@ final class ScreenshotToolbarController {
     private let logger = Logger.screenshot
 
     private var window: ScreenshotPreviewWindow?
+    private var annotationWindow: AnnotationEditorWindow?
     private var overlayCancelObserver: NSObjectProtocol?
     private var toastWorkItem: DispatchWorkItem?
 
@@ -94,6 +95,8 @@ final class ScreenshotToolbarController {
     private func dismiss(reason: DismissReason) {
         toastWorkItem?.cancel()
         toastWorkItem = nil
+        annotationWindow?.close()
+        annotationWindow = nil
         if let window {
             window.orderOut(nil)
             logger.debug("Screenshot preview dismissed (reason: \(String(describing: reason)))")
@@ -148,12 +151,52 @@ final class ScreenshotToolbarController {
                 viewModel.showToast(L10n.localized("screenshot.toast.saveFailed", error.localizedDescription))
             }
         case .annotate:
-            // US-017 owns the annotation editor. US-016 exposes the toolbar entry
-            // without implementing annotation tools or mutating the screenshot.
-            viewModel.showToast(L10n.localized("screenshot.toast.annotateSoon"))
+            presentAnnotationEditor(result: result, viewModel: viewModel)
         case .cancel, .dismiss:
             dismiss(reason: action == .cancel ? .cancel : .userEscape)
         }
+    }
+
+    private func presentAnnotationEditor(result: ScreenshotResult, viewModel: ScreenshotPreviewViewModel) {
+        guard let image = NSImage(data: result.imageData) else {
+            viewModel.showToast(L10n.localized("screenshot.preview.unavailable"))
+            return
+        }
+        window?.orderOut(nil)
+        let editor = AnnotationEditorWindow(
+            image: image,
+            captureDate: result.captureDate,
+            onCopy: { [weak self] pngData in
+                try self?.copyToPasteboard(pngData)
+            },
+            onSave: { [weak self] pngData, date in
+                guard let self else { throw SnapVaultError.screenshotFailed(reason: L10n.localized("error.serviceDeallocated")) }
+                return try self.savePNG(pngData, date: date)
+            },
+            onComplete: { [weak self, weak viewModel] completion in
+                Task { @MainActor in
+                    guard let self else { return }
+                    self.annotationWindow = nil
+                    switch completion {
+                    case .copied:
+                        viewModel?.showToast(L10n.localized("screenshot.toast.copied"))
+                        self.dismiss(reason: .action)
+                    case .saved(let url):
+                        viewModel?.showToast(L10n.localized("screenshot.toast.saved", url.deletingLastPathComponent().path))
+                        self.dismiss(reason: .action)
+                    case .cancelled:
+                        self.window?.makeKeyAndOrderFront(nil)
+                        NSApp.activate(ignoringOtherApps: true)
+                    case .failed(let message):
+                        self.window?.makeKeyAndOrderFront(nil)
+                        viewModel?.showToast(message)
+                    }
+                }
+            }
+        )
+        annotationWindow = editor
+        editor.present()
+        logger.info("Screenshot annotation editor opened")
     }
 
     private func copyToPasteboard(_ pngData: Data) throws {

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D01700000000000000000001 /* AnnotationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D01700000000000000000002 /* AnnotationTests.swift */; };
 			B01200000000000000000001 /* ClipboardMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01200000000000000000002 /* ClipboardMonitorTests.swift */; };
 			B01300000000000000000001 /* ClipboardListViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01300000000000000000002 /* ClipboardListViewModelTests.swift */; };
 		A10001000000000000000001 /* SnapVaultApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001; };
@@ -99,6 +100,7 @@
 	/* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		D01700000000000000000002 /* AnnotationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationTests.swift; sourceTree = "<group>"; };
 			B01200000000000000000002 /* ClipboardMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardMonitorTests.swift; sourceTree = "<group>"; };
 			B01300000000000000000002 /* ClipboardListViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardListViewModelTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000001 /* SnapVaultApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapVaultApp.swift; sourceTree = "<group>"; };
@@ -339,6 +341,7 @@
 		A1000300000000000000000B /* SnapVaultTests */ = {
 			isa = PBXGroup;
 			children = (
+				D01700000000000000000002 /* AnnotationTests.swift */,
 					C0140000000000000000000C /* OnboardingViewModelTests.swift */,
 				A10000000000000000000038 /* CalculatorSourceTests.swift */,
 				A10000000000000000000039 /* SystemCommandSourceTests.swift */,
@@ -700,6 +703,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D01700000000000000000001 /* AnnotationTests.swift in Sources */,
 				C0140000000000000000000B /* OnboardingViewModelTests.swift in Sources */,
 				A10001000000000000000038 /* CalculatorSourceTests.swift in Sources */,
 				A10001000000000000000039 /* SystemCommandSourceTests.swift in Sources */,

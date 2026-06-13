@@ -346,7 +346,7 @@
       "id": "US-017",
       "title": "截图轻量标注工具",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": [
         "US-016"
