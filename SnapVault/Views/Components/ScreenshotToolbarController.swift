@@ -4,555 +4,343 @@ import os.log
 
 // MARK: - Toolbar Action
 
-/// Actions a user can trigger from the screenshot toolbar.
+/// Actions a user can trigger from the US-016 screenshot preview toolbar.
 enum ScreenshotToolbarAction {
-    case ocr
     case copy
     case save
     case annotate
-    case discard
-    case dismiss     // ESC or 5s auto-dismiss (no destructive action)
-}
-
-// MARK: - Non-Activating Panel
-
-/// A floating utility panel that never becomes key/main, so the user's
-/// underlying app keeps focus. Required for the post-capture toolbar — if
-/// it grabbed focus, ESC and quick clicks in the previous window would
-/// behave unexpectedly.
-final class NonActivatingPanel: NSPanel {
-    override var canBecomeKey: Bool { false }
-    override var canBecomeMain: Bool { false }
+    case cancel
+    case dismiss
 }
 
 // MARK: - ScreenshotToolbarController
 
-/// Pops a small, non-activating SwiftUI toolbar next to a freshly captured
-/// screenshot. Provides explicit user-driven actions (OCR / Copy / Save /
-/// Annotate / Discard) and self-dismisses after 5s of inactivity or on ESC.
+/// Presents a screenshot preview with a compact floating toolbar.
 ///
-/// Design notes:
-/// - Single instance (held by `AppDelegate`); calling `show(...)` while a
-///   previous panel is open dismisses the old one first.
-/// - Positioning: bottom-centre of the main screen's visible area. Choosing
-///   a fixed screen-relative location keeps the toolbar predictable when
-///   the captured region itself was tiny or off-screen; PRD does not pin a
-///   precise anchor, but bottom-centre matches CleanShot X / Shottr's
-///   default and never collides with the menu bar.
-/// - Auto-close timer: 5s after every `resetIdleTimer()`. Mouse-hover on
-///   the panel pauses the timer (see `ScreenshotToolbarView.onHover`);
-///   moving out restarts it.
-/// - Item lifecycle: AppDelegate stores the screenshot into ContentStore
-///   *before* showing the toolbar so the toolbar holds the canonical
-///   `itemId` (Int64). Discard => repository.delete; Copy/Save read the
-///   image from the in-memory `imageData` passed in; OCR routes through
-///   ContentStore.recognizeOCR(itemId:) which also writes the text back
-///   for FTS5 search.
+/// US-016 scope is intentionally narrow:
+/// - capture result is previewed in-memory;
+/// - Copy writes PNG/TIFF data to the system pasteboard, allowing the normal
+///   clipboard monitor to persist it into history;
+/// - Save writes PNG directly to ~/Pictures/Screenshots with the required
+///   timestamp name and does not touch the pasteboard/history;
+/// - Annotate is an entry point reserved for US-017 and does not implement
+///   annotation tools here;
+/// - Cancel/ESC discards the in-memory screenshot and closes the preview.
 @MainActor
 final class ScreenshotToolbarController {
     private let logger = Logger.screenshot
 
-    private var panel: NonActivatingPanel?
-    private var idleTimer: Timer?
+    private var window: ScreenshotPreviewWindow?
     private var overlayCancelObserver: NSObjectProtocol?
-    private weak var ocrWindow: NSWindow?
+    private var toastWorkItem: DispatchWorkItem?
 
-    /// Dependencies injected by AppDelegate.
-    private let contentStore: ContentStore
-    private let repository = ContentRepository()
-
-    init(contentStore: ContentStore) {
-        self.contentStore = contentStore
+    init() {
         overlayCancelObserver = NotificationCenter.default.addObserver(
             forName: .screenshotOverlayDidCancel,
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.dismiss(reason: .userEscape)
+            Task { @MainActor in
+                self?.dismiss(reason: .userEscape)
+            }
         }
     }
 
     deinit {
-        idleTimer?.invalidate()
+        toastWorkItem?.cancel()
         if let overlayCancelObserver {
             NotificationCenter.default.removeObserver(overlayCancelObserver)
         }
     }
 
-    // MARK: - Show / Dismiss
-
-    /// Show the toolbar for a newly captured screenshot.
-    ///
-    /// - Parameters:
-    ///   - itemId: Database id of the saved screenshot row (already persisted).
-    ///   - imageData: The PNG bytes (used for Copy / Save / re-OCR fallback).
-    ///   - sourceType: Capture source, for naming the saved PNG file.
-    func show(itemId: Int64, imageData: Data, sourceType: CaptureSource, anchorRect: NSRect? = nil) {
+    func show(result: ScreenshotResult) {
         dismiss(reason: .superseded)
 
-        let view = ScreenshotToolbarView(
+        let viewModel = ScreenshotPreviewViewModel(result: result)
+        let view = ScreenshotPreviewView(
+            viewModel: viewModel,
             onAction: { [weak self] action in
-                self?.handle(action: action, itemId: itemId, imageData: imageData, sourceType: sourceType)
-            },
-            onHoverChange: { [weak self] isHovering in
-                if isHovering {
-                    self?.cancelIdleTimer()
-                } else {
-                    self?.resetIdleTimer()
-                }
-            },
-            onEscape: { [weak self] in
-                self?.dismiss(reason: .userEscape)
+                self?.handle(action: action, result: result, viewModel: viewModel)
             }
         )
 
-        let hosting = NSHostingController(rootView: view)
-        // Match the SwiftUI intrinsic size (see ScreenshotToolbarView.size).
-        let panelSize = ScreenshotToolbarView.size
-
-        guard let screen = NSScreen.main else {
-            logger.error("No main screen available for toolbar")
-            return
-        }
-
-        let visible = screen.visibleFrame
-        let origin: NSPoint
-        if let anchorRect {
-            let x = min(max(anchorRect.midX - panelSize.width / 2, visible.minX + 8), visible.maxX - panelSize.width - 8)
-            let preferredY = anchorRect.minY - panelSize.height - 8
-            let y = preferredY >= visible.minY + 8
-                ? preferredY
-                : min(anchorRect.maxY + 8, visible.maxY - panelSize.height - 8)
-            origin = NSPoint(x: x, y: y)
-        } else {
-            origin = NSPoint(
-                x: visible.midX - panelSize.width / 2,
-                y: visible.minY + 64                          // 64pt above the Dock / screen bottom
-            )
-        }
-
-        let panel = NonActivatingPanel(
-            contentRect: NSRect(origin: origin, size: panelSize),
-            styleMask: [.borderless, .nonactivatingPanel, .utilityWindow],
+        let window = ScreenshotPreviewWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 780, height: 560),
+            styleMask: [.borderless, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
-        panel.isFloatingPanel = true
-        panel.level = anchorRect == nil ? .floating : NSWindow.Level(rawValue: NSWindow.Level.screenSaver.rawValue + 1)
-        panel.hidesOnDeactivate = false
-        panel.becomesKeyOnlyIfNeeded = true
-        panel.isOpaque = false
-        panel.backgroundColor = .clear
-        panel.hasShadow = true
-        panel.animationBehavior = .utilityWindow
-        panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
-        panel.contentViewController = hosting
-
-        panel.contentView?.wantsLayer = true
-        panel.contentView?.layer?.cornerRadius = 10
-        panel.contentView?.layer?.masksToBounds = true
-
-        panel.orderFrontRegardless()                       // never steals focus
-        self.panel = panel
-
-        resetIdleTimer()
-        logger.info("Screenshot toolbar shown for item id=\(itemId)")
+        window.isOpaque = false
+        window.backgroundColor = .clear
+        window.hasShadow = true
+        window.level = .floating
+        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        window.isReleasedWhenClosed = false
+        window.onEscape = { [weak self] in
+            self?.dismiss(reason: .userEscape)
+        }
+        window.contentView = NSHostingView(rootView: view)
+        position(window: window, for: result)
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        self.window = window
+        logger.info("Screenshot preview shown for \(result.width)x\(result.height) capture")
     }
 
-    /// Reasons the toolbar may be dismissed (used for logging only).
     private enum DismissReason {
-        case userEscape, timeout, action, discard, superseded
+        case userEscape, action, cancel, superseded
     }
 
     private func dismiss(reason: DismissReason) {
-        cancelIdleTimer()
-        if let panel = panel {
-            panel.orderOut(nil)
-            logger.debug("Toolbar dismissed (reason: \(String(describing: reason)))")
+        toastWorkItem?.cancel()
+        toastWorkItem = nil
+        if let window {
+            window.orderOut(nil)
+            logger.debug("Screenshot preview dismissed (reason: \(String(describing: reason)))")
         }
-        panel = nil
+        window = nil
     }
 
-    // MARK: - Idle Timer
-
-    private func resetIdleTimer() {
-        cancelIdleTimer()
-        idleTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false) { [weak self] _ in
-            Task { @MainActor in
-                self?.dismiss(reason: .timeout)
-            }
+    private func position(window: NSWindow, for result: ScreenshotResult) {
+        guard let screen = NSScreen.main else {
+            window.center()
+            return
         }
+        let visible = screen.visibleFrame
+        let maxWidth = min(860, visible.width - 80)
+        let maxHeight = min(640, visible.height - 80)
+        let imageAspect = result.height > 0 ? CGFloat(result.width) / CGFloat(result.height) : 1
+        let chromeHeight: CGFloat = 112
+        let targetImageHeight = min(maxHeight - chromeHeight, max(240, maxWidth / max(imageAspect, 0.1)))
+        let targetWidth = min(maxWidth, max(520, targetImageHeight * imageAspect + 64))
+        let targetHeight = min(maxHeight, targetImageHeight + chromeHeight)
+        let frame = NSRect(
+            x: visible.midX - targetWidth / 2,
+            y: visible.midY - targetHeight / 2,
+            width: targetWidth,
+            height: targetHeight
+        )
+        window.setFrame(frame, display: true)
     }
 
-    private func cancelIdleTimer() {
-        idleTimer?.invalidate()
-        idleTimer = nil
-    }
-
-    // MARK: - Action Handling
-
-    private func handle(
-        action: ScreenshotToolbarAction,
-        itemId: Int64,
-        imageData: Data,
-        sourceType: CaptureSource
-    ) {
-        // Any interaction restarts the idle timer; destructive ones close the panel.
-        resetIdleTimer()
-
+    private func handle(action: ScreenshotToolbarAction, result: ScreenshotResult, viewModel: ScreenshotPreviewViewModel) {
         switch action {
-        case .ocr:
-            performOCR(itemId: itemId, imageData: imageData)
         case .copy:
-            performCopy(itemId: itemId, imageData: imageData)
-            dismiss(reason: .action)
+            do {
+                try copyToPasteboard(result.imageData)
+                viewModel.showToast(L10n.localized("screenshot.toast.copied"))
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { [weak self] in
+                    self?.dismiss(reason: .action)
+                }
+            } catch {
+                logger.error("Screenshot copy failed: \(error.localizedDescription, privacy: .public)")
+                viewModel.showToast(L10n.localized("screenshot.toast.copyFailed", error.localizedDescription))
+            }
         case .save:
-            performSave(imageData: imageData)
-            dismiss(reason: .action)
+            do {
+                let url = try savePNG(result.imageData, date: result.captureDate)
+                viewModel.showToast(L10n.localized("screenshot.toast.saved", url.deletingLastPathComponent().path))
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+                    self?.dismiss(reason: .action)
+                }
+            } catch {
+                logger.error("Screenshot save failed: \(error.localizedDescription, privacy: .public)")
+                viewModel.showToast(L10n.localized("screenshot.toast.saveFailed", error.localizedDescription))
+            }
         case .annotate:
-            performAnnotate(itemId: itemId, imageData: imageData)
-            dismiss(reason: .action)
-        case .discard:
-            performDiscard(itemId: itemId)
-            dismiss(reason: .discard)
-        case .dismiss:
-            dismiss(reason: .userEscape)
+            // US-017 owns the annotation editor. US-016 exposes the toolbar entry
+            // without implementing annotation tools or mutating the screenshot.
+            viewModel.showToast(L10n.localized("screenshot.toast.annotateSoon"))
+        case .cancel, .dismiss:
+            dismiss(reason: action == .cancel ? .cancel : .userEscape)
         }
     }
 
-    // MARK: - Actions
-
-    private func performCopy(itemId: Int64, imageData: Data) {
-        let pb = NSPasteboard.general
-        pb.clearContents()
-        // Write image (.tiff) so paste-targets that prefer image data get the bitmap.
-        if let nsImage = NSImage(data: imageData), let tiff = nsImage.tiffRepresentation {
-            pb.setData(tiff, forType: .tiff)
+    private func copyToPasteboard(_ pngData: Data) throws {
+        guard let image = NSImage(data: pngData), let tiff = image.tiffRepresentation else {
+            throw SnapVaultError.screenshotFailed(reason: L10n.localized("error.pngConversionFailed"))
         }
-        // Write OCR text alongside, if we already recognised it. We do NOT block
-        // the user here on a slow Vision pass — copy is the fast path.
-        if let item = try? repository.fetch(id: itemId), let text = item.ocrText, !text.isEmpty {
-            pb.setString(text, forType: .string)
-        }
-        logger.info("Copied screenshot to pasteboard (item id=\(itemId))")
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setData(pngData, forType: .png)
+        pasteboard.setData(tiff, forType: .tiff)
+        logger.info("Screenshot copied to system pasteboard")
     }
 
-    private func performSave(imageData: Data) {
-        let panel = NSSavePanel()
-        panel.title = L10n.localized("screenshot.savePanel.title")
-        panel.allowedContentTypes = [.png]
-        panel.canCreateDirectories = true
-        panel.isExtensionHidden = false
+    @discardableResult
+    private func savePNG(_ pngData: Data, date: Date) throws -> URL {
+        let fileManager = FileManager.default
+        let pictures = fileManager.urls(for: .picturesDirectory, in: .userDomainMask).first
+            ?? fileManager.homeDirectoryForCurrentUser.appendingPathComponent("Pictures", isDirectory: true)
+        let directory = pictures.appendingPathComponent("Screenshots", isDirectory: true)
+        try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
 
         let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd HH.mm.ss"
-        panel.nameFieldStringValue = L10n.localized("screenshot.savePanel.filename", formatter.string(from: Date()))
+        var url = directory.appendingPathComponent("Screenshot \(formatter.string(from: date)).png")
+        if fileManager.fileExists(atPath: url.path) {
+            url = uniqueURL(baseURL: url)
+        }
+        try pngData.write(to: url, options: .atomic)
+        logger.info("Screenshot saved to \(url.path, privacy: .public)")
+        return url
+    }
 
-        // Run modally relative to the floating panel so the save dialog
-        // attaches to the foreground app's window stack.
-        NSApp.activate(ignoringOtherApps: true)
-        panel.begin { [weak self] response in
-            guard response == .OK, let url = panel.url else { return }
-            do {
-                try imageData.write(to: url)
-                self?.logger.info("Saved screenshot to \(url.path, privacy: .public)")
-            } catch {
-                self?.logger.error("Save failed: \(error.localizedDescription, privacy: .public)")
+    private func uniqueURL(baseURL: URL) -> URL {
+        let directory = baseURL.deletingLastPathComponent()
+        let basename = baseURL.deletingPathExtension().lastPathComponent
+        let ext = baseURL.pathExtension
+        for index in 2...999 {
+            let candidate = directory.appendingPathComponent("\(basename) \(index).\(ext)")
+            if !FileManager.default.fileExists(atPath: candidate.path) {
+                return candidate
             }
         }
-    }
-
-    private func performDiscard(itemId: Int64) {
-        do {
-            try repository.delete(id: itemId)
-            NotificationCenter.default.post(name: .clipboardItemSaved, object: nil)
-            logger.info("Discarded screenshot item id=\(itemId)")
-        } catch {
-            logger.error("Discard failed for id=\(itemId): \(error.localizedDescription, privacy: .public)")
-        }
-    }
-
-    // MARK: - OCR
-
-    private func performOCR(itemId: Int64, imageData _: Data) {
-        // If we already have non-empty OCR text in the DB, show it instantly.
-        if let item = try? repository.fetch(id: itemId), let text = item.ocrText, !text.isEmpty {
-            presentOCRWindow(text: text, lineCount: countLines(text), confidence: nil)
-            return
-        }
-
-        // Otherwise show a progress-only window first, then fill it in async.
-        let progressWindow = makeOCRWindow(initial: .loading)
-        self.ocrWindow = progressWindow
-        progressWindow.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
-
-        Task { [weak self] in
-            guard let self else { return }
-            do {
-                let result = try await self.contentStore.recognizeOCR(itemId: itemId)
-                await MainActor.run {
-                    self.updateOCRWindow(
-                        progressWindow,
-                        text: result.text.isEmpty ? L10n.localized("screenshot.ocr.noText") : result.text,
-                        lineCount: self.countLines(result.text),
-                        confidence: result.text.isEmpty ? nil : result.confidence
-                    )
-                }
-            } catch {
-                self.logger.error("On-demand OCR failed: \(error.localizedDescription, privacy: .public)")
-                await MainActor.run {
-                    self.updateOCRWindow(progressWindow, text: L10n.localized("screenshot.ocr.failed", error.localizedDescription), lineCount: 0, confidence: nil)
-                }
-            }
-        }
-    }
-
-    fileprivate enum OCRWindowState {
-        case loading
-        case result(text: String, lineCount: Int, confidence: Float?)
-    }
-
-    private func makeOCRWindow(initial state: OCRWindowState) -> NSWindow {
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 520, height: 420),
-            styleMask: [.titled, .closable, .resizable],
-            backing: .buffered,
-            defer: false
-        )
-        window.title = L10n.localized("screenshot.ocr.window.title")
-        window.isReleasedWhenClosed = false
-        window.center()
-
-        let viewModel = OCRResultViewModel(state: state)
-        let host = NSHostingController(rootView: OCRResultView(viewModel: viewModel))
-        window.contentViewController = host
-
-        // Hold onto the VM via associated object so the closure-based update
-        // survives. Simpler than subclassing NSWindow.
-        objc_setAssociatedObject(window, &OCRWindowVMKey, viewModel, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-        return window
-    }
-
-    private func presentOCRWindow(text: String, lineCount: Int, confidence: Float?) {
-        let window = makeOCRWindow(initial: .result(text: text, lineCount: lineCount, confidence: confidence))
-        self.ocrWindow = window
-        window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
-    }
-
-    private func updateOCRWindow(_ window: NSWindow, text: String, lineCount: Int, confidence: Float?) {
-        guard let vm = objc_getAssociatedObject(window, &OCRWindowVMKey) as? OCRResultViewModel else { return }
-        vm.update(state: .result(text: text, lineCount: lineCount, confidence: confidence))
-    }
-
-    private func countLines(_ s: String) -> Int {
-        if s.isEmpty { return 0 }
-        return s.split(whereSeparator: \.isNewline).count
-    }
-
-    // MARK: - Transient Toast (Annotate stub)
-
-    // Removed: showTransientToast was the US-024 placeholder for Annotate.
-    // US-025 replaced it with performAnnotate below.
-
-    // MARK: - Annotation Editor
-
-    /// Open the full annotation editor window for this screenshot.
-    private func performAnnotate(itemId: Int64, imageData: Data) {
-        guard let nsImage = NSImage(data: imageData) else {
-            logger.error("Cannot open annotation editor: invalid image data")
-            return
-        }
-        let editor = AnnotationEditorWindow(image: nsImage, itemId: itemId)
-        editor.present()
-        logger.info("Annotation editor opened for item id=\(itemId)")
+        return baseURL
     }
 }
 
-// Associated-object key for OCRResultViewModel storage on NSWindow.
-private var OCRWindowVMKey: UInt8 = 0
+// MARK: - Preview Window
 
-// MARK: - OCR Result Window (SwiftUI)
+final class ScreenshotPreviewWindow: NSPanel {
+    var onEscape: (() -> Void)?
+
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+
+    override func keyDown(with event: NSEvent) {
+        if event.keyCode == 53 {
+            onEscape?()
+        } else {
+            super.keyDown(with: event)
+        }
+    }
+}
+
+// MARK: - Preview View Model
 
 @MainActor
-final class OCRResultViewModel: ObservableObject {
-    @Published fileprivate var state: ScreenshotToolbarController.OCRWindowState
+final class ScreenshotPreviewViewModel: ObservableObject {
+    let result: ScreenshotResult
+    @Published var toastMessage: String?
 
-    fileprivate init(state: ScreenshotToolbarController.OCRWindowState) {
-        self.state = state
+    init(result: ScreenshotResult) {
+        self.result = result
     }
 
-    fileprivate func update(state: ScreenshotToolbarController.OCRWindowState) {
-        self.state = state
-    }
-}
-
-// Re-export the nested type so SwiftUI in this file can reach it.
-extension ScreenshotToolbarController {
-    fileprivate typealias _OCRState = OCRWindowState
-}
-
-private struct OCRResultView: View {
-    @ObservedObject var viewModel: OCRResultViewModel
-    @State private var editableText: String = ""
-    @State private var toastVisible: Bool = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            switch viewModel.state {
-            case .loading:
-                VStack {
-                    Spacer()
-                    ProgressView(L10n.localized("screenshot.ocr.progress"))
-                        .progressViewStyle(.circular)
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            case .result(let text, let lineCount, let confidence):
-                // Stats bar
-                HStack(spacing: 12) {
-                    Label(L10n.localized("screenshot.ocr.lines", lineCount), systemImage: "text.alignleft")
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary)
-                    if let c = confidence {
-                        Label(L10n.localized("screenshot.ocr.confidence", c * 100), systemImage: "checkmark.seal")
-                            .font(.system(size: 11))
-                            .foregroundColor(.secondary)
-                    }
-                    Spacer()
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(Color(NSColor.controlBackgroundColor))
-
-                Divider()
-
-                // Editable text area
-                TextEditor(text: $editableText)
-                    .font(.system(size: 13))
-                    .padding(8)
-                    .onAppear { editableText = text }
-                    .onChange(of: viewModel.state) { _ in
-                        if case .result(let t, _, _) = viewModel.state {
-                            editableText = t
-                        }
-                    }
-
-                Divider()
-
-                // Action bar
-                HStack {
-                    Spacer()
-                    Button(L10n.localized("screenshot.ocr.close")) {
-                        NSApp.keyWindow?.close()
-                    }
-                    .keyboardShortcut(.cancelAction)
-                    Button(L10n.localized("screenshot.ocr.copyAll")) {
-                        let pb = NSPasteboard.general
-                        pb.clearContents()
-                        pb.setString(editableText, forType: .string)
-                        withAnimation { toastVisible = true }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
-                            withAnimation { toastVisible = false }
-                        }
-                    }
-                    .keyboardShortcut(.defaultAction)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+    func showToast(_ message: String) {
+        toastMessage = message
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) { [weak self] in
+            if self?.toastMessage == message {
+                self?.toastMessage = nil
             }
         }
-        .frame(minWidth: 480, minHeight: 360)
-        .overlay(alignment: .bottom) {
-            if toastVisible {
-                Text(L10n.localized("screenshot.ocr.copied"))
+    }
+}
+
+// MARK: - SwiftUI Preview
+
+private struct ScreenshotPreviewView: View {
+    @ObservedObject var viewModel: ScreenshotPreviewViewModel
+    let onAction: (ScreenshotToolbarAction) -> Void
+
+    private var image: NSImage? {
+        NSImage(data: viewModel.result.imageData)
+    }
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            VStack(spacing: 0) {
+                previewHeader
+                Divider().opacity(0.35)
+                ZStack {
+                    Color.black.opacity(0.82)
+                    if let image {
+                        Image(nsImage: image)
+                            .resizable()
+                            .interpolation(.high)
+                            .scaledToFit()
+                            .padding(24)
+                    } else {
+                        Label(L10n.localized("screenshot.preview.unavailable"), systemImage: "exclamationmark.triangle")
+                            .foregroundColor(.white)
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                Divider().opacity(0.35)
+                toolbar
+            }
+            .background(
+                VisualEffectBlur(material: .hudWindow, blendingMode: .behindWindow)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(Color.white.opacity(0.12), lineWidth: 0.75)
+            )
+
+            if let toast = viewModel.toastMessage {
+                Text(toast)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
                     .padding(.horizontal, 14)
-                    .padding(.vertical, 6)
-                    .background(Color.black.opacity(0.78))
-                    .cornerRadius(8)
-                    .padding(.bottom, 60)
+                    .padding(.vertical, 8)
+                    .background(Color.black.opacity(0.82))
+                    .cornerRadius(10)
+                    .padding(.bottom, 76)
                     .transition(.opacity)
             }
         }
+        .frame(minWidth: 520, minHeight: 380)
     }
-}
 
-// Required so onChange(of:) can compare; the enum has associated values
-// so we hand-roll Equatable here.
-extension ScreenshotToolbarController.OCRWindowState: Equatable {
-    static func == (lhs: ScreenshotToolbarController.OCRWindowState, rhs: ScreenshotToolbarController.OCRWindowState) -> Bool {
-        switch (lhs, rhs) {
-        case (.loading, .loading): return true
-        case let (.result(t1, l1, c1), .result(t2, l2, c2)):
-            return t1 == t2 && l1 == l2 && c1 == c2
-        default: return false
+    private var previewHeader: some View {
+        HStack(spacing: 10) {
+            Image(systemName: iconName(for: viewModel.result.sourceType))
+                .font(.system(size: 15, weight: .semibold))
+            Text(L10n.localized("screenshot.preview.title"))
+                .font(.system(size: 13, weight: .semibold))
+            Text("\(viewModel.result.width) × \(viewModel.result.height)")
+                .font(.system(size: 12, weight: .regular, design: .monospaced))
+                .foregroundColor(.secondary)
+            Spacer()
+            Text(L10n.localized("screenshot.preview.escHint"))
+                .font(.system(size: 11))
+                .foregroundColor(.secondary)
         }
+        .padding(.horizontal, 16)
+        .frame(height: 42)
     }
-}
 
-// MARK: - Toolbar SwiftUI View
-
-struct ScreenshotToolbarView: View {
-    /// Compact pill: 5 buttons × ~52pt + chrome.
-    static let size = NSSize(width: 320, height: 52)
-
-    let onAction: (ScreenshotToolbarAction) -> Void
-    let onHoverChange: (Bool) -> Void
-    let onEscape: () -> Void
-
-    @State private var isHovering: Bool = false
-
-    var body: some View {
-        HStack(spacing: 4) {
-            ToolbarButton(
-                systemName: "textformat",
-                label: L10n.localized("screenshot.toolbar.ocr"),
-                tint: .accentColor
-            ) { onAction(.ocr) }
-
-            ToolbarButton(
-                systemName: "doc.on.doc",
-                label: L10n.localized("screenshot.toolbar.copy")
-            ) { onAction(.copy) }
-
-            ToolbarButton(
-                systemName: "square.and.arrow.down",
-                label: L10n.localized("screenshot.toolbar.save")
-            ) { onAction(.save) }
-
-            ToolbarButton(
-                systemName: "pencil",
-                label: L10n.localized("screenshot.toolbar.annotate")
-            ) { onAction(.annotate) }
-
-            ToolbarButton(
-                systemName: "xmark",
-                label: L10n.localized("screenshot.toolbar.discard"),
-                tint: .red
-            ) { onAction(.discard) }
+    private var toolbar: some View {
+        HStack(spacing: 8) {
+            ToolbarButton(systemName: "doc.on.doc", label: L10n.localized("screenshot.toolbar.copy")) {
+                onAction(.copy)
+            }
+            ToolbarButton(systemName: "square.and.arrow.down", label: L10n.localized("screenshot.toolbar.save")) {
+                onAction(.save)
+            }
+            ToolbarButton(systemName: "pencil", label: L10n.localized("screenshot.toolbar.annotate")) {
+                onAction(.annotate)
+            }
+            ToolbarButton(systemName: "xmark", label: L10n.localized("screenshot.toolbar.cancel"), tint: .red) {
+                onAction(.cancel)
+            }
         }
-        .padding(.horizontal, 8)
-        .frame(width: Self.size.width, height: Self.size.height)
-        .background(
-            VisualEffectBlur(material: .hudWindow, blendingMode: .behindWindow)
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(Color.white.opacity(0.08), lineWidth: 0.5)
-        )
-        .onHover { hovering in
-            isHovering = hovering
-            onHoverChange(hovering)
+        .padding(.horizontal, 12)
+        .frame(height: 62)
+        .background(Color.black.opacity(0.16))
+    }
+
+    private func iconName(for source: CaptureSource) -> String {
+        switch source {
+        case .region: return "crop"
+        case .window: return "macwindow"
+        case .screen: return "rectangle.inset.filled"
         }
-        .background(
-            KeyCatcher(onEscape: onEscape)
-                .frame(width: 0, height: 0)
-        )
     }
 }
 
@@ -560,37 +348,33 @@ private struct ToolbarButton: View {
     let systemName: String
     let label: String
     var tint: Color? = nil
-    var disabled: Bool = false
-    var disabledHint: String? = nil
     let action: () -> Void
 
-    @State private var hovering: Bool = false
+    @State private var hovering = false
 
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 2) {
+            VStack(spacing: 3) {
                 Image(systemName: systemName)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 15, weight: .medium))
                 Text(label)
                     .font(.system(size: 10, weight: .regular))
             }
-            .foregroundColor(disabled ? .secondary : (tint ?? .primary))
-            .frame(width: 56, height: 40)
+            .foregroundColor(tint ?? .primary)
+            .frame(width: 72, height: 46)
             .background(
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(hovering && !disabled ? Color.primary.opacity(0.12) : Color.clear)
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(hovering ? Color.primary.opacity(0.12) : Color.clear)
             )
         }
         .buttonStyle(.plain)
-        .disabled(disabled)
-        .help(disabled ? (disabledHint ?? label) : label)
+        .help(label)
         .onHover { hovering = $0 }
     }
 }
 
 // MARK: - Visual Effect Helper
 
-/// Wrap `NSVisualEffectView` so the toolbar gets the standard macOS HUD blur.
 private struct VisualEffectBlur: NSViewRepresentable {
     let material: NSVisualEffectView.Material
     let blendingMode: NSVisualEffectView.BlendingMode
@@ -606,53 +390,5 @@ private struct VisualEffectBlur: NSViewRepresentable {
     func updateNSView(_ view: NSVisualEffectView, context: Context) {
         view.material = material
         view.blendingMode = blendingMode
-    }
-}
-
-// MARK: - Key Catcher (ESC)
-
-/// Invisible NSView that listens for the ESC key. Sits inside the SwiftUI
-/// view so we don't have to subclass the panel. Uses `flagsChanged` /
-/// `keyDown` via a NSEvent local monitor — the panel itself doesn't become
-/// key, so the responder chain can't deliver keystrokes natively.
-private struct KeyCatcher: NSViewRepresentable {
-    let onEscape: () -> Void
-
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        context.coordinator.install(onEscape: onEscape)
-        return view
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {}
-
-    static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
-        coordinator.uninstall()
-    }
-
-    func makeCoordinator() -> Coordinator { Coordinator() }
-
-    final class Coordinator {
-        private var monitor: Any?
-
-        func install(onEscape: @escaping () -> Void) {
-            uninstall()
-            monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-                if event.keyCode == 53 {     // ESC
-                    onEscape()
-                    return nil
-                }
-                return event
-            }
-        }
-
-        func uninstall() {
-            if let m = monitor {
-                NSEvent.removeMonitor(m)
-                monitor = nil
-            }
-        }
-
-        deinit { uninstall() }
     }
 }

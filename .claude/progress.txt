@@ -3301,3 +3301,52 @@ US-025 从零构建了完整的截图标注编辑器，替换 US-024 的 Annotat
 - US-015 已满足管理中心 4 页、设置持久化与运行时同步、黑名单管理、权限重新检测和中英文文案要求。
 - 关于页发布级材料、隐私政策、反馈邮件、检查更新落地仍属于 US-018；本任务只将 about 路由导向管理中心设置页，未实现 US-018 范围。
 - 截图捕获/预览/保存/标注仍按 US-016/US-017 继续，不要把本任务中的截图保存目录 UI 误认为截图流程已完成。
+
+
+## 2026-06-13 - Assistant MVP US-016 截图捕获、预览工具栏与保存/复制
+
+### 完成内容
+1. **截图捕获流程对齐 US-016**
+   - 保持区域截图、全屏截图、窗口截图三种模式可触发。
+   - 移除 AppDelegate 中截图完成后先写入旧 ContentStore/旧剪贴板历史的行为，截图结果现在先以内存态进入预览。
+   - 复制动作写入系统剪贴板 PNG/TIFF，由现有 `ClipboardMonitor` + `ClipboardService` 链路监听后进入 Assistant MVP Core Data 剪贴板历史；保存动作不触碰剪贴板，因此不会额外进入历史。
+   - 去掉截图服务的 macOS 14 门槛，当前 `ScreenshotService` 使用 macOS 13 可用的 ScreenCaptureKit 窗口枚举 + CoreGraphics 捕获路径。
+
+2. **截图预览与浮动工具栏**
+   - 重写 `ScreenshotToolbarController` 为截图预览窗口：显示截图预览、尺寸信息和底部浮动工具栏。
+   - 工具栏严格包含复制、保存、标注、取消；不再显示 US-016 范围外的 OCR 按钮，也不提供抽象“完成”按钮。
+   - ESC 在预览窗口中取消并关闭截图流程；取消按钮同样丢弃当前内存截图。
+   - 标注按钮作为 US-017 入口保留，仅显示“标注工具将在下一步实现”的轻提示，不实现标注编辑能力。
+
+3. **保存/复制行为**
+   - 复制：将截图 PNG 和 TIFF 写入 `NSPasteboard.general`，触发普通图片剪贴板记录链路。
+   - 保存：自动创建 `~/Pictures/Screenshots`，按 `Screenshot yyyy-MM-dd HH.mm.ss.png` 命名并以 PNG 原子写入；若同秒文件名冲突，追加序号避免覆盖。
+   - 保存成功/失败、复制成功/失败均显示轻提示；保存成功提示包含保存目录。
+
+4. **权限缺失提示**
+   - 截图触发前使用 `PermissionService` 检查屏幕录制权限。
+   - 权限缺失时弹出明确提示，并提供“打开系统设置”和“取消”。
+
+5. **截图捕获修正**
+   - 窗口截图的 `CGWindowListCreateImage` 改为 `.optionIncludingWindow`，避免误捕获目标窗口上方内容。
+   - 区域截图裁剪时移除 `NSScreen.main!` 强制解包，缺少主屏时返回截图失败错误。
+
+### 修改文件清单
+- `SnapVault/App/AppDelegate.swift`
+- `SnapVault/Views/Components/ScreenshotToolbarController.swift`
+- `SnapVault/Services/ScreenshotService/ScreenshotService.swift`
+- `SnapVault/Resources/Localizable.xcstrings`
+- `.claude/task.json`
+- `.claude/progress.txt`
+
+### 验证结果
+- `swift test --skip-update`：通过，执行 114 个 XCTest，0 失败。仍有既有 Swift 6 Sendable 警告（`SettingsService` 泛型 `T.Type`），非本任务新增失败。
+- `xcodebuild -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug build`：通过，`** BUILD SUCCEEDED **`。
+- `xcodebuild test -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug`：通过，执行 109 个 XCTest，0 失败，`** TEST SUCCEEDED **`。
+- `git diff --check`（本任务相关文件）：通过，无空白错误。
+
+### 后续 Agent 提示
+- US-017 才实现真正的标注编辑器、标注渲染、撤销/重做和标注后复制/保存；本次只保留标注入口和提示，避免越界。
+- 复制进入历史依赖后台 `ClipboardMonitor` 轮询系统剪贴板；真实手动验收时需确认 Onboarding 已完成且剪贴板记录开启。
+- 保存截图不会写入剪贴板历史，这是 US-016 明确要求；如后续增加截图历史，需要另行设计。
+- 当前工作区仍存在本次未触碰/未提交的用户或其他任务改动：`doc/architecture_db.md`、`doc/prd.md`、`.claude/scheduled_tasks.lock`，后续不要误提交。

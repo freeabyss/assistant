@@ -322,7 +322,7 @@
       "id": "US-016",
       "title": "截图捕获、预览工具栏与保存/复制",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": [
         "US-001",

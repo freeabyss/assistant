@@ -192,7 +192,7 @@ final class ScreenshotService: ScreenshotServiceProtocol {
         // Capture the window using CGWindowListCreateImage
         guard let cgImage = CGWindowListCreateImage(
             .null,
-            .optionOnScreenAboveWindow,
+            .optionIncludingWindow,
             CGWindowID(windowID),
             .bestResolution
         ) else {
@@ -260,8 +260,11 @@ final class ScreenshotService: ScreenshotServiceProtocol {
 
         // Convert AppKit coordinates (bottom-left origin) to CG coordinates (top-left origin).
         // CGDisplayCreateImage returns the image in the display's native coordinate system.
+        guard let screen = NSScreen.main else {
+            throw SnapVaultError.screenshotFailed(reason: L10n.localized("error.noMainScreen"))
+        }
         let displayHeight = CGFloat(fullImage.height)
-        let scaleFactor = CGFloat(fullImage.width) / NSScreen.main!.frame.width
+        let scaleFactor = CGFloat(fullImage.width) / screen.frame.width
 
         let cgRect = CGRect(
             x: rect.origin.x * scaleFactor,

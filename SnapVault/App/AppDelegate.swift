@@ -44,9 +44,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Clipboard polling monitor for the Assistant MVP Core Data clipboard chain.
     private let clipboardMonitor = ClipboardMonitor()
 
-    /// Content store that persists screenshots through the legacy screenshot path until US-016 migrates it.
-    private let contentStore = ContentStore()
-
     /// Assistant MVP clipboard resource store, repository, index, and service.
     private let assistantClipboardIndex = InMemorySearchIndex()
     private lazy var assistantResourceStore = FileResourceStore(fileSystem: PersistenceController.shared.fileSystem)
@@ -84,15 +81,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Assistant MVP search panel view model.
     private var searchPanelViewModel: SearchPanelViewModel!
 
-    /// Screenshot service for region and window capture (macOS 14+).
-    private lazy var screenshotService: ScreenshotServiceProtocol? = {
-        if #available(macOS 14.0, *) {
-            return ScreenshotService()
-        }
-        return nil
-    }()
+    /// Screenshot service for region, full-screen, and window capture.
+    private let screenshotService: ScreenshotServiceProtocol = ScreenshotService()
 
-    /// Post-capture floating toolbar (OCR / Copy / Save / Annotate / Discard).
+    /// Post-capture preview and floating toolbar.
     /// Created lazily on main actor in `applicationDidFinishLaunching`.
     private var screenshotToolbar: ScreenshotToolbarController!
 
@@ -186,10 +178,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Create the Assistant MVP search panel view model (must be on main actor).
         searchPanelViewModel = makeSearchPanelViewModel()
 
-        // Screenshot post-capture toolbar (US-024). Constructed on main actor
-        // so the @MainActor-annotated controller is happy; needs the shared
-        // ContentStore so OCR re-recognition writes back to the same DB.
-        screenshotToolbar = ScreenshotToolbarController(contentStore: contentStore)
+        // Screenshot post-capture preview and toolbar (US-016).
+        screenshotToolbar = ScreenshotToolbarController()
 
         // Observe search state to resize panel dynamically.
         searchStateCancellable = searchPanelViewModel.$query
@@ -647,6 +637,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func performRegionCapture() {
         guard ensureOnboardingGate() else { return }
         logger.info("Region capture triggered by shortcut")
+        guard ensureScreenRecordingPermission() else { return }
 
         // Hide the panel so it doesn't appear in the screenshot
         let wasPanelVisible = panel?.isVisible ?? false
@@ -657,26 +648,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         Task {
             var shouldRestorePanel = wasPanelVisible
             do {
-                guard let screenshotService else {
-                    logger.warning("Screenshot service not available (requires macOS 14+)")
-                    return
-                }
                 let result = try await screenshotService.captureRegion()
-                // Persist first so the toolbar has a stable itemId for Discard/OCR;
-                // ContentStore.processScreenshot is idempotent on duplicate hashes
-                // and returns the existing/new row id (US-024).
-                let itemId = try await contentStore.processScreenshot(result)
                 await MainActor.run { [weak self] in
-                    self?.screenshotToolbar.show(
-                        itemId: itemId,
-                        imageData: result.imageData,
-                        sourceType: result.sourceType,
-                        anchorRect: result.selectionRect
-                    )
+                    self?.screenshotToolbar.show(result: result)
                 }
-                // Keep the app panel hidden because the screenshot overlay remains active.
+                // Keep the app panel hidden while the screenshot preview is active.
                 shouldRestorePanel = false
-                logger.info("Region capture completed and saved, toolbar shown")
+                logger.info("Region capture completed, preview toolbar shown")
             } catch {
                 // Don't log user cancellation as an error
                 if case SnapVaultError.screenshotFailed(let reason) = error, reason == SnapVaultError.userCancelledReason {
@@ -701,6 +679,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func performWindowCapture() {
         guard ensureOnboardingGate() else { return }
         logger.info("Window capture triggered by shortcut")
+        guard ensureScreenRecordingPermission() else { return }
 
         // Hide the panel so it doesn't appear in the screenshot
         let wasPanelVisible = panel?.isVisible ?? false
@@ -709,22 +688,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         Task {
+            var shouldRestorePanel = wasPanelVisible
             do {
-                guard let screenshotService else {
-                    logger.warning("Screenshot service not available (requires macOS 14+)")
-                    return
-                }
                 let result = try await screenshotService.captureWindow()
-                let itemId = try await contentStore.processScreenshot(result)
                 await MainActor.run { [weak self] in
-                    self?.screenshotToolbar.show(
-                        itemId: itemId,
-                        imageData: result.imageData,
-                        sourceType: result.sourceType,
-                        anchorRect: result.selectionRect
-                    )
+                    self?.screenshotToolbar.show(result: result)
                 }
-                logger.info("Window capture completed and saved, toolbar shown")
+                shouldRestorePanel = false
+                logger.info("Window capture completed, preview toolbar shown")
             } catch {
                 // Don't log user cancellation as an error
                 if case SnapVaultError.screenshotFailed(let reason) = error, reason == SnapVaultError.userCancelledReason {
@@ -734,8 +705,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
 
-            // Restore panel if it was visible before
-            if wasPanelVisible {
+            if shouldRestorePanel {
                 DispatchQueue.main.async { [weak self] in
                     self?.showPanel()
                 }
@@ -765,28 +735,51 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private func performScreenCapture() {
         guard ensureOnboardingGate() else { return }
         logger.info("Full screen capture triggered by command")
+        guard ensureScreenRecordingPermission() else { return }
         let wasPanelVisible = panel?.isVisible ?? false
         if wasPanelVisible { closePanel() }
         Task {
+            var shouldRestorePanel = wasPanelVisible
             do {
-                guard let screenshotService else {
-                    logger.warning("Screenshot service not available (requires macOS 14+)")
-                    return
-                }
                 let result = try await screenshotService.captureScreen()
-                let itemId = try await contentStore.processScreenshot(result)
                 await MainActor.run { [weak self] in
-                    self?.screenshotToolbar.show(
-                        itemId: itemId,
-                        imageData: result.imageData,
-                        sourceType: result.sourceType,
-                        anchorRect: result.selectionRect
-                    )
+                    self?.screenshotToolbar.show(result: result)
                 }
+                shouldRestorePanel = false
+                logger.info("Full screen capture completed, preview toolbar shown")
             } catch {
-                logger.error("Full screen capture failed: \(error.localizedDescription, privacy: .public)")
+                if case SnapVaultError.screenshotFailed(let reason) = error, reason == SnapVaultError.userCancelledReason {
+                    logger.debug("Full screen capture cancelled")
+                } else {
+                    logger.error("Full screen capture failed: \(error.localizedDescription, privacy: .public)")
+                }
+            }
+
+            if shouldRestorePanel {
+                DispatchQueue.main.async { [weak self] in
+                    self?.showPanel()
+                }
             }
         }
+    }
+
+    @MainActor
+    private func ensureScreenRecordingPermission() -> Bool {
+        let permissionService = PermissionService()
+        guard permissionService.status(for: .screenRecording).isAuthorized else {
+            let alert = NSAlert()
+            alert.alertStyle = .warning
+            alert.messageText = L10n.localized("screenshot.permission.title")
+            alert.informativeText = L10n.localized("screenshot.permission.message")
+            alert.addButton(withTitle: L10n.localized("screenshot.permission.openSettings"))
+            alert.addButton(withTitle: L10n.localized("screenshot.permission.cancel"))
+            let response = alert.runModal()
+            if response == .alertFirstButtonReturn {
+                permissionService.openSystemSettings(for: .screenRecording)
+            }
+            return false
+        }
+        return true
     }
 
     // MARK: - Clipboard Monitoring

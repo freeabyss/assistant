@@ -1804,18 +1804,18 @@
       }
     },
     "screenshot.toolbar.discard": {
-      "comment": "Discard button in screenshot toolbar",
+      "comment": "Legacy discard label; US-016 uses Cancel for the screenshot flow",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Discard"
+            "value": "Cancel"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "丢弃"
+            "value": "取消"
           }
         }
       }
@@ -6695,6 +6695,227 @@
           "stringUnit": {
             "state": "translated",
             "value": "管理中心错误"
+          }
+        }
+      }
+    },
+    "screenshot.toolbar.cancel": {
+      "comment": "Cancel button in screenshot toolbar",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消"
+          }
+        }
+      }
+    },
+    "screenshot.preview.title": {
+      "comment": "Title in screenshot preview",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screenshot Preview"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "截图预览"
+          }
+        }
+      }
+    },
+    "screenshot.preview.escHint": {
+      "comment": "ESC hint in screenshot preview",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Press Esc to cancel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按 Esc 取消"
+          }
+        }
+      }
+    },
+    "screenshot.preview.unavailable": {
+      "comment": "Fallback when screenshot preview image cannot be decoded",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview unavailable"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法预览"
+          }
+        }
+      }
+    },
+    "screenshot.toast.copied": {
+      "comment": "Toast after copying screenshot",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copied to clipboard"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已复制到剪贴板"
+          }
+        }
+      }
+    },
+    "screenshot.toast.copyFailed": {
+      "comment": "Toast when screenshot copy fails. %@ is the error reason.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy failed: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制失败：%@"
+          }
+        }
+      }
+    },
+    "screenshot.toast.saved": {
+      "comment": "Toast after saving screenshot. %@ is the save directory.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved to %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已保存到 %@"
+          }
+        }
+      }
+    },
+    "screenshot.toast.saveFailed": {
+      "comment": "Toast when screenshot save fails. %@ is the error reason.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save failed: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存失败：%@"
+          }
+        }
+      }
+    },
+    "screenshot.toast.annotateSoon": {
+      "comment": "Toast for annotation entry before US-017 implementation",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annotation tools are coming next"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "标注工具将在下一步实现"
+          }
+        }
+      }
+    },
+    "screenshot.permission.title": {
+      "comment": "Screen Recording permission missing alert title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen Recording permission required"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要屏幕录制权限"
+          }
+        }
+      }
+    },
+    "screenshot.permission.message": {
+      "comment": "Screen Recording permission missing alert body",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistant needs Screen Recording permission to capture screenshots. Grant it in System Settings, then try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assistant 需要屏幕录制权限才能截图。请在系统设置中授权后重试。"
+          }
+        }
+      }
+    },
+    "screenshot.permission.openSettings": {
+      "comment": "Open System Settings button for screen recording permission alert",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open System Settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开系统设置"
+          }
+        }
+      }
+    },
+    "screenshot.permission.cancel": {
+      "comment": "Cancel button for screen recording permission alert",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消"
           }
         }
       }
