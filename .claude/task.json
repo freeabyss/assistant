@@ -427,7 +427,7 @@
       "id": "US-021",
       "title": "测试基线与自动化验收",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": [
         "US-002",
