@@ -72,7 +72,7 @@ enum ReleaseLinks {
     static let homepageURL = URL(string: "https://github.com/abyss/assistant")!
     static let privacyPolicyURL = URL(string: "https://github.com/abyss/assistant/blob/main/PRIVACY.md")!
     static let releasesURL = URL(string: "https://github.com/abyss/assistant/releases")!
-    static let thirdPartyLicensesURL = URL(string: "https://github.com/abyss/assistant/blob/main/Package.swift")!
+    static let thirdPartyLicensesURL = URL(string: "https://github.com/abyss/assistant/blob/main/THIRD_PARTY_NOTICES.md")!
     static let feedbackEmail = "feedback@assistant.app"
 }
 

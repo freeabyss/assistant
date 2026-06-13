@@ -2,6 +2,52 @@ import XCTest
 @testable import SnapVault
 
 final class ReleaseInfoServiceTests: XCTestCase {
+    func testReleaseLinksAreCanonicalProjectHomepageAssets() {
+        let info = BundleAboutInfoProvider(bundle: .main).info
+
+        XCTAssertEqual(info.homepageURL.absoluteString, "https://github.com/abyss/assistant")
+        XCTAssertEqual(info.privacyPolicyURL.absoluteString, "https://github.com/abyss/assistant/blob/main/PRIVACY.md")
+        XCTAssertEqual(info.releasesURL.absoluteString, "https://github.com/abyss/assistant/releases")
+        XCTAssertEqual(info.thirdPartyLicensesURL.absoluteString, "https://github.com/abyss/assistant/blob/main/THIRD_PARTY_NOTICES.md")
+        XCTAssertEqual(info.feedbackEmail, "feedback@assistant.app")
+    }
+
+    func testProjectHomepageContainsUS020ProductPageMaterialAndScopeGuards() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let readme = try String(contentsOf: root.appendingPathComponent("README.md"), encoding: .utf8)
+        let privacy = try String(contentsOf: root.appendingPathComponent("PRIVACY.md"), encoding: .utf8)
+        let changelog = try String(contentsOf: root.appendingPathComponent("CHANGELOG.md"), encoding: .utf8)
+        let notices = try String(contentsOf: root.appendingPathComponent("THIRD_PARTY_NOTICES.md"), encoding: .utf8)
+
+        for required in [
+            "Product name",
+            "Slogan",
+            "Core features",
+            "Screenshots / demo GIF",
+            "Download the latest public beta",
+            "Version history",
+            "Privacy policy",
+            "feedback@assistant.app",
+            "FAQ",
+            "Screen Recording",
+            "Accessibility",
+            "https://github.com/abyss/assistant/releases"
+        ] {
+            XCTAssertTrue(readme.contains(required), "README.md should contain \\(required)")
+        }
+
+        for excluded in ["account", "payment", "subscriptions", "Mac App Store"] {
+            XCTAssertTrue(readme.localizedCaseInsensitiveContains(excluded), "README.md should explicitly guard MVP scope for \\(excluded)")
+        }
+
+        XCTAssertTrue(privacy.contains("does not upload clipboard history"))
+        XCTAssertTrue(privacy.contains("Feedback is user-initiated email only"))
+        XCTAssertTrue(changelog.contains("0.1.0-mvp"))
+        XCTAssertTrue(notices.contains("GitHub Releases"))
+    }
+
     func testFeedbackEmailIncludesVersionSystemSummaryAndUserDescription() throws {
         let service = FeedbackEmailService(recipient: "support@example.com")
         let url = try service.makeFeedbackEmail(context: FeedbackContext(

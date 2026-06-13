@@ -409,7 +409,7 @@
       "id": "US-020",
       "title": "官网/项目主页最小产品页素材与链接",
       "priority": "low",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": [
         "US-018"

@@ -41,13 +41,13 @@
         <string>zh-Hans</string>
     </array>
 
-    <!-- Sparkle auto-update configuration -->
+    <!-- Sparkle legacy configuration retained for future release channels; MVP update checks open GitHub Releases manually. -->
     <key>SUFeedURL</key>
-    <string>https://assistant.app/appcast.xml</string>
+    <string>https://raw.githubusercontent.com/abyss/assistant/main/SnapVault/Resources/appcast.xml</string>
     <key>SUPublicEDKey</key>
     <string>REPLACE_WITH_YOUR_EDDSA_PUBLIC_KEY</string>
     <key>SUEnableAutomaticChecks</key>
-    <true/>
+    <false/>
     <key>SUScheduledCheckInterval</key>
     <integer>86400</integer>
 </dict>

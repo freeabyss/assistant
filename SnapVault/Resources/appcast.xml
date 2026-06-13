@@ -19,14 +19,14 @@
 
   6. Update the <enclosure> url, version, shortVersionString, and length.
 
-  7. Host this file at the SUFeedURL configured in Info.plist
-     (default: https://assistant.app/appcast.xml)
+  7. Host this file at the SUFeedURL configured in Info.plist.
+     MVP user-facing update checks open GitHub Releases instead of this appcast.
 -->
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
     <channel>
         <title>Mac Super Assistant</title>
-        <link>https://assistant.app/appcast.xml</link>
-        <description>Most recent changes with links to updates.</description>
+        <link>https://github.com/abyss/assistant/releases</link>
+        <description>Most recent changes with links to manual GitHub Releases downloads.</description>
         <language>en</language>
 
         <item>
@@ -44,7 +44,7 @@
             <pubDate><!-- Thu, 05 Jun 2026 00:00:00 +0000 --></pubDate>
             <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
             <enclosure
-                url="https://assistant.app/releases/Assistant-0.1.0.zip"
+                url="https://github.com/abyss/assistant/releases/download/v0.1.0/Assistant-0.1.0.zip"
                 sparkle:version="1"
                 sparkle:shortVersionString="0.1.0"
                 sparkle:edSignature="REPLACE_WITH_EDDSA_SIGNATURE"

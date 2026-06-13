@@ -20,22 +20,22 @@ struct UpdateInfo {
     let isCritical: Bool
 }
 
-/// Auto-update service powered by Sparkle 2.x.
+/// Update service for the MVP release flow.
 ///
 /// Responsibilities:
-/// - Creates and owns an `SPUStandardUpdaterController` (which manages the `SPUUpdater` lifecycle).
-/// - Implements `SPUUpdaterDelegate` to react to update events.
-/// - Exposes `checkNow()` for manual update checks triggered by the user.
+/// - Creates and owns an `SPUStandardUpdaterController` only for future-compatible Sparkle setup.
+/// - Implements `SPUUpdaterDelegate` to react to any Sparkle events if the legacy feed is enabled later.
+/// - Exposes `checkNow()` for the MVP user-facing update action, which opens GitHub Releases manually.
 ///
-/// Automatic checks:
-/// - Sparkle's built-in scheduler handles "check on launch (with delay)" and
-///   periodic checks based on `SUScheduledCheckInterval` in Info.plist (default 86400s = 24h).
-/// - No custom timer is needed; Sparkle manages this internally.
+/// MVP update policy:
+/// - User-facing update checks open the project download page / GitHub Releases.
+/// - The MVP does not auto-download, auto-install, or restart to update.
+/// - Sparkle automatic checks are disabled in Info.plist for the MVP.
 ///
-/// Info.plist keys required:
+/// Info.plist keys retained for future release channels:
 /// - `SUFeedURL` – URL to the appcast.xml feed
 /// - `SUPublicEDKey` – EdDSA public key for verifying update signatures
-/// - `SUEnableAutomaticChecks` – true
+/// - `SUEnableAutomaticChecks` – false for MVP
 /// - `SUScheduledCheckInterval` – 86400 (seconds)
 final class UpdateService: NSObject, UpdateServiceProtocol, SPUUpdaterDelegate {
     private let logger = Logger.update
@@ -76,7 +76,7 @@ final class UpdateService: NSObject, UpdateServiceProtocol, SPUUpdaterDelegate {
             }
             .store(in: &cancellables)
 
-        logger.info("Sparkle updater controller initialized (automatic checks enabled)")
+        logger.info("Sparkle updater controller initialized (automatic checks disabled for MVP)")
     }
 
     /// Combine cancellables for KVO subscriptions.
