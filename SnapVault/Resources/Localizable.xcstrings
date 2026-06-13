@@ -7174,6 +7174,737 @@
           }
         }
       }
+    },
+    "management.page.about": {
+      "comment": "Sidebar page title for About",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关于"
+          }
+        }
+      }
+    },
+    "about.title": {
+      "comment": "About page title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关于"
+          }
+        }
+      }
+    },
+    "about.subtitle": {
+      "comment": "About page subtitle",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Release information, privacy, feedback, and updates."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "发布信息、隐私政策、反馈与更新。"
+          }
+        }
+      }
+    },
+    "about.product.section": {
+      "comment": "About product section title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Product"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "产品"
+          }
+        }
+      }
+    },
+    "about.version": {
+      "comment": "About version format",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version %@ (%@)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "版本 %@ (%@)"
+          }
+        }
+      }
+    },
+    "about.description": {
+      "comment": "About product description",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac Super Assistant is a local-first macOS efficiency center for search, clipboard history, screenshots, commands, and settings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac Super Assistant 是本地优先的 macOS 效率中心，聚合搜索、剪贴板历史、截图、命令和设置。"
+          }
+        }
+      }
+    },
+    "about.links.section": {
+      "comment": "About links section title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Links and actions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "链接与操作"
+          }
+        }
+      }
+    },
+    "about.homepage": {
+      "comment": "Homepage link title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Homepage / Project page"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "官网 / 项目主页"
+          }
+        }
+      }
+    },
+    "about.privacyPolicy": {
+      "comment": "Privacy policy action title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy Policy"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隐私政策"
+          }
+        }
+      }
+    },
+    "about.checkUpdates": {
+      "comment": "Check updates action title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check for Updates"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "检查更新"
+          }
+        }
+      }
+    },
+    "about.feedback": {
+      "comment": "Feedback action title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send Feedback by Email"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "通过邮件反馈"
+          }
+        }
+      }
+    },
+    "about.thirdPartyLicenses": {
+      "comment": "Third party licenses link title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Third-Party Licenses"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "第三方许可"
+          }
+        }
+      }
+    },
+    "about.release.section": {
+      "comment": "Release notes section title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Release commitments"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "发布承诺"
+          }
+        }
+      }
+    },
+    "about.release.privacy": {
+      "comment": "About privacy commitment",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clipboard history and screenshots stay on this Mac unless you explicitly export or send something yourself."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剪贴板历史和截图保留在本机，除非你主动导出或发送。"
+          }
+        }
+      }
+    },
+    "about.release.update": {
+      "comment": "About update commitment",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check for Updates opens the GitHub Releases page for manual download; the MVP does not auto-download, auto-install, or restart to update."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "检查更新会打开 GitHub Releases 页面供你手动下载；MVP 不会自动下载、自动安装或重启更新。"
+          }
+        }
+      }
+    },
+    "about.release.feedback": {
+      "comment": "About feedback commitment",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feedback is user-initiated email only. The app shows the data scope first and never sends diagnostics silently."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "反馈仅由用户主动通过邮件触发。应用会先展示数据范围，绝不静默发送诊断信息。"
+          }
+        }
+      }
+    },
+    "about.copyright.section": {
+      "comment": "Copyright section title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copyright"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "版权"
+          }
+        }
+      }
+    },
+    "privacy.title": {
+      "comment": "Privacy policy title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy Policy"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隐私政策"
+          }
+        }
+      }
+    },
+    "privacy.local.title": {
+      "comment": "Privacy local first title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local-first data handling"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本地优先的数据处理"
+          }
+        }
+      }
+    },
+    "privacy.local.body": {
+      "comment": "Privacy local first body",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac Super Assistant does not upload, sync, or use your clipboard history, screenshots, settings, usage records, or feedback text to train models. There is no account system or cloud sync in the MVP."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac Super Assistant 不会上传、同步剪贴板历史、截图、设置、使用记录或反馈文本，也不会用这些数据训练模型。MVP 不包含账号系统或云同步。"
+          }
+        }
+      }
+    },
+    "privacy.clipboard.title": {
+      "comment": "Privacy clipboard title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clipboard history"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剪贴板历史"
+          }
+        }
+      }
+    },
+    "privacy.clipboard.body": {
+      "comment": "Privacy clipboard body",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clipboard history is stored locally in Application Support. Text metadata is stored in the local database; image and rich-text resources are stored as local files. File clipboard entries save references and paths only, not file contents. You can pause recording in Settings and clear history from the Clipboard History page."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剪贴板历史保存在本机 Application Support 中。文本元数据保存在本地数据库；图片和富文本资源保存在本地文件。文件剪贴板项只保存引用和路径，不复制文件内容。你可以在设置中暂停记录，并在剪贴板历史页清空历史。"
+          }
+        }
+      }
+    },
+    "privacy.screenshot.title": {
+      "comment": "Privacy screenshot title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screenshots"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "截图"
+          }
+        }
+      }
+    },
+    "privacy.screenshot.body": {
+      "comment": "Privacy screenshot body",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screenshots are captured and processed locally. Saving writes PNG files to your configured screenshots folder. Copying writes the image to the system clipboard and follows the same local clipboard-history behavior."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "截图仅在本机捕获和处理。保存会将 PNG 写入你配置的截图目录。复制会写入系统剪贴板，并遵循同样的本地剪贴板历史行为。"
+          }
+        }
+      }
+    },
+    "privacy.control.title": {
+      "comment": "Privacy user control title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "User controls"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用户控制"
+          }
+        }
+      }
+    },
+    "privacy.control.body": {
+      "comment": "Privacy user control body",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can disable clipboard recording, change the retention period, delete individual history items, or clear all clipboard history. Clearing history requires confirmation and is not automatically uploaded or reported."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你可以关闭剪贴板记录、调整保留时间、删除单条历史或清空全部剪贴板历史。清空历史需要确认，且不会被自动上传或上报。"
+          }
+        }
+      }
+    },
+    "privacy.feedback.title": {
+      "comment": "Privacy feedback title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feedback and diagnostics"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "反馈与诊断"
+          }
+        }
+      }
+    },
+    "privacy.feedback.body": {
+      "comment": "Privacy feedback body",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feedback is sent only when you click the feedback button, review the data scope, and choose to open your mail app. The prefilled email includes app version, build number, macOS version, an error summary, and your notes. It does not attach clipboard history, screenshots, files, or automatic crash logs."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "反馈仅在你点击反馈按钮、查看数据范围并选择打开邮件应用后发送。预填邮件包含应用版本、构建号、macOS 版本、错误摘要和你的补充说明，不附带剪贴板历史、截图、文件或自动崩溃日志。"
+          }
+        }
+      }
+    },
+    "privacy.contact": {
+      "comment": "Privacy contact format",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questions? Contact %@."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "如有问题，请联系 %@。"
+          }
+        }
+      }
+    },
+    "about.feedback.sheet.title": {
+      "comment": "Feedback sheet title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send Feedback"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "发送反馈"
+          }
+        }
+      }
+    },
+    "about.feedback.sheet.scope": {
+      "comment": "Feedback scope text",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before opening your mail app, review what will be included. You can cancel now. No clipboard history, screenshots, files, or automatic crash logs are attached."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开邮件应用前，请先查看将包含的信息范围。你现在可以取消。不会附带剪贴板历史、截图、文件或自动崩溃日志。"
+          }
+        }
+      }
+    },
+    "about.feedback.summary": {
+      "comment": "Feedback summary label",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Error summary"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "错误摘要"
+          }
+        }
+      }
+    },
+    "about.feedback.summary.placeholder": {
+      "comment": "Feedback summary placeholder",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For example: screenshot failed, shortcut did not open search"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "例如：截图失败、快捷键未打开搜索"
+          }
+        }
+      }
+    },
+    "about.feedback.details": {
+      "comment": "Feedback details label",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your notes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你的补充说明"
+          }
+        }
+      }
+    },
+    "about.feedback.included": {
+      "comment": "Feedback included section title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Included in the email"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "邮件中包含"
+          }
+        }
+      }
+    },
+    "about.feedback.included.version": {
+      "comment": "Feedback included version format",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App version %@ (%@)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "应用版本 %@ (%@)"
+          }
+        }
+      }
+    },
+    "about.feedback.included.macos": {
+      "comment": "Feedback included macOS format",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS version %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS 版本 %@"
+          }
+        }
+      }
+    },
+    "about.feedback.included.summary": {
+      "comment": "Feedback included summary",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Error summary you provide"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你填写的错误摘要"
+          }
+        }
+      }
+    },
+    "about.feedback.included.userText": {
+      "comment": "Feedback included user text",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your additional notes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你的补充说明"
+          }
+        }
+      }
+    },
+    "about.feedback.excluded": {
+      "comment": "Feedback excluded text",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Excluded: clipboard history, screenshots, copied files, and automatic crash logs."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不包含：剪贴板历史、截图、复制的文件和自动崩溃日志。"
+          }
+        }
+      }
+    },
+    "about.feedback.cancel": {
+      "comment": "Feedback cancel button",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消"
+          }
+        }
+      }
+    },
+    "about.feedback.openMail": {
+      "comment": "Feedback open mail button",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Mail"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开邮件"
+          }
+        }
+      }
+    },
+    "about.feedback.error.title": {
+      "comment": "Feedback error alert title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could Not Create Feedback Email"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法创建反馈邮件"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

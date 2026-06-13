@@ -32,7 +32,8 @@ let package = Package(
                 "Info.plist",
                 "SnapVault.entitlements",
                 "Resources/Assets.xcassets",
-                "Resources/appcast.xml"
+                "Resources/appcast.xml",
+                "Resources/Localizable.xcstrings"
             ]
         ),
         .testTarget(

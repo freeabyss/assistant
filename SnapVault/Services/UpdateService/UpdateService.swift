@@ -8,7 +8,7 @@ protocol UpdateServiceProtocol {
     /// Check for updates and return update info if available.
     func checkForUpdates() async throws -> UpdateInfo?
 
-    /// Trigger an immediate update check via Sparkle UI.
+    /// Trigger a user-facing MVP update check.
     func checkNow()
 }
 
@@ -39,9 +39,15 @@ struct UpdateInfo {
 /// - `SUScheduledCheckInterval` – 86400 (seconds)
 final class UpdateService: NSObject, UpdateServiceProtocol, SPUUpdaterDelegate {
     private let logger = Logger.update
+    private let updateCheckService: UpdateCheckServiceProtocol
 
     /// Sparkle updater controller. Created once in `setup()`.
     private var updaterController: SPUStandardUpdaterController?
+
+    init(updateCheckService: UpdateCheckServiceProtocol = WebUpdateCheckService()) {
+        self.updateCheckService = updateCheckService
+        super.init()
+    }
 
     /// Whether the user can initiate a manual check right now.
     @objc dynamic var canCheckForUpdates: Bool = false
@@ -96,8 +102,8 @@ final class UpdateService: NSObject, UpdateServiceProtocol, SPUUpdaterDelegate {
     }
 
     func checkNow() {
-        logger.info("Manual update check requested")
-        updaterController?.checkForUpdates(nil)
+        logger.info("Manual update check requested; opening releases page for MVP")
+        updateCheckService.openDownloadPage()
     }
 
     // MARK: - SPUUpdaterDelegate

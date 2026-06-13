@@ -74,6 +74,8 @@ struct ManagementCenterView: View {
             ManagementSettingsPage(viewModel: viewModel)
         case .permissions:
             PermissionsManagementPage(viewModel: viewModel)
+        case .about:
+            AboutManagementPage()
         }
     }
 }
@@ -383,6 +385,252 @@ struct PermissionsManagementPage: View {
                 }
             }
             .padding(24)
+        }
+    }
+}
+
+struct AboutManagementPage: View {
+    private let aboutProvider: AboutInfoProviderProtocol
+    private let feedbackService: FeedbackServiceProtocol
+    private let updateService: UpdateCheckServiceProtocol
+    private let opener: ReleaseURLOpening
+
+    @State private var showingPrivacyPolicy = false
+    @State private var showingFeedbackSheet = false
+    @State private var feedbackSummary = ""
+    @State private var feedbackDetails = ""
+    @State private var feedbackError: String?
+
+    init(
+        aboutProvider: AboutInfoProviderProtocol = BundleAboutInfoProvider(),
+        feedbackService: FeedbackServiceProtocol = FeedbackEmailService(),
+        updateService: UpdateCheckServiceProtocol = WebUpdateCheckService(),
+        opener: ReleaseURLOpening = NSWorkspace.shared
+    ) {
+        self.aboutProvider = aboutProvider
+        self.feedbackService = feedbackService
+        self.updateService = updateService
+        self.opener = opener
+    }
+
+    var body: some View {
+        let info = aboutProvider.info
+
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                pageHeader(
+                    title: L10n.localized("about.title"),
+                    subtitle: L10n.localized("about.subtitle"),
+                    icon: "info.circle"
+                )
+
+                section(L10n.localized("about.product.section")) {
+                    HStack(alignment: .center, spacing: 16) {
+                        Image(nsImage: NSApp.applicationIconImage)
+                            .resizable()
+                            .frame(width: 64, height: 64)
+                            .cornerRadius(14)
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(info.appName)
+                                .font(.title2.weight(.semibold))
+                            Text(L10n.localized("about.version", info.version, info.buildNumber))
+                                .foregroundColor(.secondary)
+                            Text(L10n.localized("about.description"))
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+
+                section(L10n.localized("about.links.section")) {
+                    aboutLinkRow(title: L10n.localized("about.homepage"), url: info.homepageURL)
+                    aboutButtonRow(title: L10n.localized("about.privacyPolicy"), systemImage: "hand.raised") {
+                        showingPrivacyPolicy = true
+                    }
+                    aboutButtonRow(title: L10n.localized("about.checkUpdates"), systemImage: "arrow.triangle.2.circlepath") {
+                        updateService.openDownloadPage()
+                    }
+                    aboutButtonRow(title: L10n.localized("about.feedback"), systemImage: "envelope") {
+                        showingFeedbackSheet = true
+                    }
+                    aboutLinkRow(title: L10n.localized("about.thirdPartyLicenses"), url: info.thirdPartyLicensesURL)
+                }
+
+                section(L10n.localized("about.release.section")) {
+                    bullet(L10n.localized("about.release.privacy"))
+                    bullet(L10n.localized("about.release.update"))
+                    bullet(L10n.localized("about.release.feedback"))
+                }
+
+                section(L10n.localized("about.copyright.section")) {
+                    Text(info.copyright)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding(24)
+        }
+        .sheet(isPresented: $showingPrivacyPolicy) {
+            PrivacyPolicySheet(info: info)
+        }
+        .sheet(isPresented: $showingFeedbackSheet) {
+            FeedbackSheet(
+                info: info,
+                feedbackService: feedbackService,
+                opener: opener,
+                summary: $feedbackSummary,
+                details: $feedbackDetails,
+                errorMessage: $feedbackError
+            )
+        }
+        .alert(L10n.localized("about.feedback.error.title"), isPresented: Binding(
+            get: { feedbackError != nil },
+            set: { if !$0 { feedbackError = nil } }
+        )) {
+            Button(L10n.localized("settings.alert.ok")) { feedbackError = nil }
+        } message: {
+            Text(feedbackError ?? "")
+        }
+    }
+
+    private func aboutLinkRow(title: String, url: URL) -> some View {
+        aboutButtonRow(title: title, systemImage: "arrow.up.right.square") {
+            opener.open(url)
+        }
+    }
+
+    private func aboutButtonRow(title: String, systemImage: String, action: @escaping () -> Void) -> some View {
+        VStack(spacing: 10) {
+            Button(action: action) {
+                HStack {
+                    Label(title, systemImage: systemImage)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .foregroundColor(.secondary)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            Divider()
+        }
+    }
+
+    private func bullet(_ text: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text("•")
+            Text(text)
+        }
+        .font(.caption)
+        .foregroundColor(.secondary)
+    }
+}
+
+struct PrivacyPolicySheet: View {
+    let info: AboutInfo
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text(L10n.localized("privacy.title"))
+                    .font(.title2.weight(.semibold))
+                Spacer()
+                Button(L10n.localized("settings.alert.ok")) { dismiss() }
+            }
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    privacySection("privacy.local.title", bodyKey: "privacy.local.body")
+                    privacySection("privacy.clipboard.title", bodyKey: "privacy.clipboard.body")
+                    privacySection("privacy.screenshot.title", bodyKey: "privacy.screenshot.body")
+                    privacySection("privacy.control.title", bodyKey: "privacy.control.body")
+                    privacySection("privacy.feedback.title", bodyKey: "privacy.feedback.body")
+                    Text(L10n.localized("privacy.contact", info.feedbackEmail))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .padding(24)
+        .frame(width: 640, height: 560)
+    }
+
+    private func privacySection(_ titleKey: String, bodyKey: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(L10n.localized(titleKey))
+                .font(.headline)
+            Text(L10n.localized(bodyKey))
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
+struct FeedbackSheet: View {
+    let info: AboutInfo
+    let feedbackService: FeedbackServiceProtocol
+    let opener: ReleaseURLOpening
+    @Binding var summary: String
+    @Binding var details: String
+    @Binding var errorMessage: String?
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(L10n.localized("about.feedback.sheet.title"))
+                .font(.title2.weight(.semibold))
+            Text(L10n.localized("about.feedback.sheet.scope"))
+                .foregroundColor(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text(L10n.localized("about.feedback.summary"))
+                TextField(L10n.localized("about.feedback.summary.placeholder"), text: $summary)
+                Text(L10n.localized("about.feedback.details"))
+                TextEditor(text: $details)
+                    .frame(minHeight: 110)
+                    .border(Color.secondary.opacity(0.25))
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(L10n.localized("about.feedback.included"))
+                    .font(.headline)
+                Text("- \(L10n.localized("about.feedback.included.version", info.version, info.buildNumber))")
+                Text("- \(L10n.localized("about.feedback.included.macos", ProcessInfo.processInfo.operatingSystemVersionString))")
+                Text("- \(L10n.localized("about.feedback.included.summary"))")
+                Text("- \(L10n.localized("about.feedback.included.userText"))")
+                Text(L10n.localized("about.feedback.excluded"))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            .font(.caption)
+
+            HStack {
+                Spacer()
+                Button(L10n.localized("about.feedback.cancel"), role: .cancel) { dismiss() }
+                Button(L10n.localized("about.feedback.openMail")) { openMail() }
+                    .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(24)
+        .frame(width: 560)
+    }
+
+    private func openMail() {
+        do {
+            let context = FeedbackContext(
+                appVersion: info.version,
+                buildNumber: info.buildNumber,
+                macOSVersion: ProcessInfo.processInfo.operatingSystemVersionString,
+                errorSummary: summary,
+                userDescription: details
+            )
+            let url = try feedbackService.makeFeedbackEmail(context: context)
+            opener.open(url)
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 }

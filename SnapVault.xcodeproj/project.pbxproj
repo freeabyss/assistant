@@ -26,6 +26,8 @@
 		A1000100000000000000000E /* SearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000E; };
 		A1000100000000000000000F /* OCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000F; };
 		A10001000000000000000010 /* UpdateService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000010; };
+		E01801000000000000000001 /* ReleaseInfoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E01800000000000000000001 /* ReleaseInfoService.swift */; };
+		E01801000000000000000002 /* ReleaseInfoServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E01800000000000000000002 /* ReleaseInfoServiceTests.swift */; };
 		A10001000000000000000011 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011; };
 		A10001000000000000000012 /* ClipboardListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012; };
 		A10001000000000000000013 /* ClipboardItemRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013; };
@@ -119,6 +121,7 @@
 		A1000000000000000000000E /* SearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchService.swift; sourceTree = "<group>"; };
 		A1000000000000000000000F /* OCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRService.swift; sourceTree = "<group>"; };
 		A10000000000000000000010 /* UpdateService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateService.swift; sourceTree = "<group>"; };
+		E01800000000000000000001 /* ReleaseInfoService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseInfoService.swift; sourceTree = "<group>"; };
 		A10000000000000000000011 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
 		A10000000000000000000012 /* ClipboardListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardListView.swift; sourceTree = "<group>"; };
 		A10000000000000000000013 /* ClipboardItemRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardItemRow.swift; sourceTree = "<group>"; };
@@ -183,6 +186,7 @@
 		B0060000000000000000000A /* SearchTextMatcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchTextMatcherTests.swift; sourceTree = "<group>"; };
 		B01000000000000000000002 /* SettingsServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsServiceTests.swift; sourceTree = "<group>"; };
 		B00700000000000000000002 /* AppSearchSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSearchSourceTests.swift; sourceTree = "<group>"; };
+		E01800000000000000000002 /* ReleaseInfoServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseInfoServiceTests.swift; sourceTree = "<group>"; };
 					B01100000000000000000002 /* SearchPanelViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanelViewModel.swift; sourceTree = "<group>"; };
 			B01100000000000000000004 /* SearchPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanelView.swift; sourceTree = "<group>"; };
 			B01100000000000000000006 /* AssistantClipboardSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantClipboardSource.swift; sourceTree = "<group>"; };
@@ -358,6 +362,7 @@
 				B0060000000000000000000A /* SearchTextMatcherTests.swift */,
 				B01000000000000000000002 /* SettingsServiceTests.swift */,
 				B00700000000000000000002 /* AppSearchSourceTests.swift */,
+					E01800000000000000000002 /* ReleaseInfoServiceTests.swift */,
 				B01100000000000000000008 /* SearchPanelViewModelTests.swift */,
 					B01300000000000000000002 /* ClipboardListViewModelTests.swift */,
 			);
@@ -465,6 +470,7 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000010 /* UpdateService.swift */,
+					E01800000000000000000001 /* ReleaseInfoService.swift */,
 			);
 			path = UpdateService;
 			sourceTree = "<group>";
@@ -720,6 +726,7 @@
 				B00600000000000000000009 /* SearchTextMatcherTests.swift in Sources */,
 				B01000000000000000000001 /* SettingsServiceTests.swift in Sources */,
 				B00700000000000000000001 /* AppSearchSourceTests.swift in Sources */,
+					E01801000000000000000002 /* ReleaseInfoServiceTests.swift in Sources */,
 					B01100000000000000000009 /* SearchPanelViewModelTests.swift in Sources */,
 					B01300000000000000000001 /* ClipboardListViewModelTests.swift in Sources */,
 			);
@@ -754,6 +761,7 @@
 				A1000100000000000000000E /* SearchService.swift in Sources */,
 				A1000100000000000000000F /* OCRService.swift in Sources */,
 				A10001000000000000000010 /* UpdateService.swift in Sources */,
+					E01801000000000000000001 /* ReleaseInfoService.swift in Sources */,
 				A10001000000000000000011 /* MenuBarView.swift in Sources */,
 				A10001000000000000000012 /* ClipboardListView.swift in Sources */,
 				A10001000000000000000013 /* ClipboardItemRow.swift in Sources */,

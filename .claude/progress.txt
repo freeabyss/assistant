@@ -3391,3 +3391,47 @@ US-025 从零构建了完整的截图标注编辑器，替换 US-024 的 Annotat
 - US-018+ 不需要修改截图标注核心；后续若做关于/隐私/发布资料，可仅描述截图和标注本地处理。
 - 当前工作区开始前已有无关改动：`doc/prd.md`、`doc/architecture_db.md`、`.claude/scheduled_tasks.lock`，本任务未依赖也不应提交这些无关改动。
 - 如果后续要做手动验收，重点跑 `SHOT-004` ~ `SHOT-009`：标注四工具、预设、撤销/重做、复制进入历史、保存不进历史、ESC/取消行为。
+
+
+## 2026-06-13 - US-018 关于页、隐私政策、反馈邮件与检查更新
+
+### 完成内容
+1. **发布级关于页**
+   - 管理中心新增独立“关于”页面，并修正 `SettingsRoute.about` / 菜单栏“About Mac Super Assistant”路由，使其不再落到设置页。
+   - 关于页展示应用名称、版本号、构建号、官网/项目主页、隐私政策、检查更新、反馈入口、第三方许可、版权信息。
+   - 新增 `BundleAboutInfoProvider` 和 `ReleaseLinks` 统一提供发布信息、主页、隐私政策、GitHub Releases、第三方许可和反馈邮箱。
+
+2. **隐私政策入口与页面**
+   - 关于页提供隐私政策入口，打开应用内 `PrivacyPolicySheet`。
+   - 隐私政策明确说明剪贴板历史和截图本地保存/本地处理，不上传、不同步、不训练；说明文件剪贴板只保存引用/路径；说明如何关闭剪贴板记录、调整保留时间、删除/清空历史。
+   - 隐私政策补充反馈邮件的数据范围和用户控制方式，强调不会附带剪贴板历史、截图、文件或自动崩溃日志。
+
+3. **用户主动触发的反馈邮件**
+   - 新增 `FeedbackEmailService` 和 `FeedbackContext`，通过 `mailto:` 生成反馈邮件。
+   - 关于页“通过邮件反馈”会先展示数据范围确认弹窗，用户可取消；确认后才打开邮件客户端。
+   - 邮件预填应用版本、构建号、macOS 版本、错误摘要和用户补充说明，并写明不会附带隐私数据或自动日志。
+
+4. **检查更新 MVP 行为**
+   - 新增 `WebUpdateCheckService`，检查更新只打开 GitHub Releases 页面。
+   - `UpdateService.checkNow()` 从 Sparkle 手动更新 UI 改为打开发布页，避免 MVP 范围外的自动下载、自动安装或重启更新流程。
+   - 保留现有 Sparkle setup 兼容旧配置，但本次 US-018 的用户主动“检查更新”入口严格走网页下载页。
+
+5. **中英文文案与测试**
+   - `Localizable.xcstrings` 新增关于页、隐私政策、反馈确认、更新说明等中英文文案。
+   - 新增 `ReleaseInfoServiceTests`，覆盖反馈邮件包含版本/macOS/错误摘要/用户说明/隐私排除说明，以及检查更新仅打开指定 Releases URL。
+
+### 技术方案核对
+- 已按要求阅读 `.claude/progress.txt`、`.claude/task.json`、`doc/prd.md`、`doc/architecture.md`、`doc/architecture_db.md`、`doc/architecture_api.md`、`doc/test.md`。
+- 现有文档已覆盖 US-018 所需方案：PRD FR-UI-8~27、FR-UI-18~24；`architecture.md` 第 16 节；`architecture_api.md` 第 15 节；`doc/test.md` ABOUT-001~003、PRIV-001。
+- 本次无需补充 PRD/架构/测试文档，因此未修改既有脏文件 `doc/prd.md`、`doc/architecture_db.md` 或 `.claude/scheduled_tasks.lock`，也未处理 US-019+ 国际化整体收尾、US-020 官网素材或 US-021 测试基线。
+
+### 验证结果
+- `swift test --skip-update`：通过，执行 119 个 XCTest，119 通过、0 失败。
+- `xcodebuild -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug build`：通过，`** BUILD SUCCEEDED **`。
+- `xcodebuild test -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug`：通过，执行 114 个 XCTest，114 通过、0 失败，`** TEST SUCCEEDED **`。
+- Xcode 测试期间仍有系统 `com.apple.linkd.autoShortcut` 连接噪声和既有 Swift 6 warning，但未造成失败。
+
+### 留给后续 Agent 的提示
+- US-018 已满足关于页、隐私政策、反馈邮件和检查更新 MVP 范围；不要在后续任务中把检查更新回退为自动下载/安装流程，除非另有明确任务。
+- 当前默认发布链接使用 GitHub 项目页/Release 页，反馈邮箱为 `feedback@assistant.app`；US-020 官网素材任务可进一步确认最终官网、隐私政策 URL、第三方许可页面和反馈邮箱。
+- 当前工作区仍存在本次未触碰/未提交的用户或其他任务改动：`doc/prd.md`、`doc/architecture_db.md`、`.claude/scheduled_tasks.lock`，后续不要误提交。

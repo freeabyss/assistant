@@ -856,6 +856,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 route = .settings
             case .permissions:
                 route = .permissions
+            case .about:
+                route = .about
             }
             showManagementCenter(route: route)
         } else {

@@ -367,7 +367,7 @@
       "id": "US-018",
       "title": "关于页、隐私政策、反馈邮件与检查更新",
       "priority": "medium",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": [
         "US-015"

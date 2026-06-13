@@ -16,6 +16,7 @@ enum ManagementCenterPage: String, CaseIterable, Identifiable, Hashable {
     case clipboard
     case settings
     case permissions
+    case about
 
     var id: String { rawValue }
 
@@ -25,6 +26,7 @@ enum ManagementCenterPage: String, CaseIterable, Identifiable, Hashable {
         case .clipboard: return L10n.localized("management.page.clipboard")
         case .settings: return L10n.localized("management.page.settings")
         case .permissions: return L10n.localized("management.page.permissions")
+        case .about: return L10n.localized("management.page.about")
         }
     }
 
@@ -34,6 +36,7 @@ enum ManagementCenterPage: String, CaseIterable, Identifiable, Hashable {
         case .clipboard: return "clipboard"
         case .settings: return "slider.horizontal.3"
         case .permissions: return "lock.shield"
+        case .about: return "info.circle"
         }
     }
 }
@@ -137,12 +140,14 @@ final class SettingsViewModel: ObservableObject {
 
     func select(route: SettingsRoute) {
         switch route {
-        case .settings, .searchSources, .hotkey, .screenshot, .about:
+        case .settings, .searchSources, .hotkey, .screenshot:
             selectedPage = .settings
         case .permissions:
             selectedPage = .permissions
         case .clipboardHistory:
             selectedPage = .clipboard
+        case .about:
+            selectedPage = .about
         }
     }
 
