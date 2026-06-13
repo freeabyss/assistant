@@ -3,6 +3,10 @@ import Foundation
 import UniformTypeIdentifiers
 import os.log
 
+extension Notification.Name {
+    static let clipboardItemSaved = Notification.Name("com.assistant.clipboardItemSaved")
+}
+
 /// Legacy event shape kept for the historical GRDB/ContentStore code path.
 /// Assistant MVP clipboard monitoring emits `AssistantClipboardEvent` instead.
 struct ClipboardEvent {

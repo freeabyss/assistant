@@ -3563,3 +3563,50 @@ US-025 从零构建了完整的截图标注编辑器，替换 US-024 的 Annotat
 - US-020 已用 GitHub 项目主页作为 MVP 官网/项目主页承载页；若未来购买正式域名，应同步更新 `ReleaseLinks`、README、Info.plist SUFeedURL/appcast、测试断言和关于页手动验收记录。
 - 发布前仍需按 README 中的 asset placeholder 清单捕获真实截图/演示动图；本任务准备清单和链接，不伪造二进制图片资产。
 - US-022 才执行完整 MVP 集成验收；当前工作区仍存在本任务未触碰/未提交的无关改动：`doc/prd.md`、`doc/architecture_db.md`、`.claude/scheduled_tasks.lock`。
+
+
+## 2026-06-13 - Assistant MVP US-022 MVP 集成验收与文档收尾
+
+### 任务状态
+- US-022 已完成，`.claude/task.json` 中 `US-022.passes=true`、`blocked=false`。
+- 依赖核对：US-001 ~ US-021 全部 `passes=true`、`blocked=false`，满足 US-022 done_definition 的前置条件。
+
+### 完成内容
+1. **P0/P1 自动化验收执行**
+   - 按 `doc/test.md` 必跑命令执行 `swift test --skip-update`、Xcode Debug build、Xcode XCTest。
+   - SwiftPM 测试通过：124 个 XCTest，0 失败。
+   - Xcode build 通过：`** BUILD SUCCEEDED **`。
+   - Xcode test 通过：119 个 XCTest，0 失败，`** TEST SUCCEEDED **`。
+   - 已将 US-022 执行记录追加到 `doc/test.md`。
+
+2. **文档一致性核对**
+   - 完整复核 `doc/prd.md`、`doc/architecture.md`、`doc/architecture_db.md`、`doc/architecture_api.md`、`doc/test.md` 与当前实现和任务状态。
+   - 开始前存在的 `doc/prd.md` 与 `doc/architecture_db.md` 未提交改动确认为当前 Assistant MVP 文档基线：PRD 已对齐 public-beta-ready MVP、范围排除、GitHub Release + 项目主页、隐私/反馈/更新策略；数据库架构已对齐 Core Data + 文件系统、`Assistant.sqlite`、ClipboardRecord/ClipboardResource/SearchBlacklistItem/UsageStat/AppSetting、UUID 资源路径、contentHash 去重和内存索引。
+   - `doc/architecture.md`、`doc/architecture_api.md`、`doc/test.md` 与实现中的 SearchSource Provider、Core Data、截图、命令白名单、设置、发布信息保持一致。
+
+3. **MVP Scope Guard 与范围外能力处理**
+   - 复核并确认用户入口不包含账号、支付、订阅、授权码、Mac App Store、任意 shell、sudo、关机/重启系统/注销、签名公证、自动下载/安装更新。
+   - 检查更新入口保持打开 GitHub Releases，由用户手动下载。
+   - 发现旧 SnapVault 兼容源码中仍有 OCR / ContentStore / FileSearchSource 源文件在构建输入中；为满足 US-022 “MVP 不包含 OCR/文件搜索”收尾标准，已从 SwiftPM target exclude 和 Xcode App target Sources 中排除 `Services/ContentStore/ContentStore.swift`、`Services/OCRService/OCRService.swift`、`Services/SearchEngine/FileSearchSource.swift`。
+   - 将 `clipboardItemSaved` 通知名迁移到当前 `ClipboardMonitor.swift`，解除对旧 ContentStore 文件的编译耦合。源文件本身未删除，作为历史兼容归档留待后续单独清理。
+
+4. **发布材料复核**
+   - 复核 `README.md`、`PRIVACY.md`、`CHANGELOG.md`、`THIRD_PARTY_NOTICES.md`、`ReleaseLinks`、`appcast.xml`：GitHub Release 下载页、项目主页、隐私政策、第三方许可、反馈邮箱和版本记录均已准备。
+   - 不要求签名公证，不接入自动安装更新或 Mac App Store。
+
+5. **手动验收记录**
+   - 本次作为后台子 Agent，无法可靠驱动真实菜单栏、系统权限弹窗、全局快捷键、屏幕录制授权、辅助功能授权、真实截图捕获、邮件客户端和浏览器打开流程。
+   - 未虚构手动验收结果；真实手动项已在 `doc/test.md` US-022 记录中列为 release-candidate 环境待执行清单。
+
+### 验证结果
+- `swift test --skip-update`：通过，执行 124 个 XCTest，124 通过、0 失败。仍有 `--skip-update` deprecation warning 与既有 Swift 6 Sendable/NSLock warning，不影响通过。
+- `xcodebuild -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug build`：通过，`** BUILD SUCCEEDED **`。
+- `xcodebuild test -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug`：通过，执行 119 个 XCTest，119 通过、0 失败，`** TEST SUCCEEDED **`。
+- 范围外源码构建输入检查：`OCRService.swift in Sources`、`ContentStore.swift in Sources`、`FileSearchSource.swift in Sources` 均不再出现在 Xcode App target Sources；SwiftPM target 明确 exclude 三个旧范围外文件。
+
+### 已知问题与后续建议
+1. 发布前仍需人工执行 `doc/test.md` 第 5/6/7 节真实系统手动验收，尤其是 Onboarding 权限拒绝/授权、菜单栏无 Dock、全局快捷键、截图三模式、剪贴板真实格式恢复、邮件反馈和 GitHub Releases 打开。
+2. README 中列出的产品截图/GIF 仍需从 release-candidate 构建捕获，当前只准备了素材清单和链接，不伪造图片资产。
+3. 旧 SnapVault OCR/文件搜索源码和旧本地化键已排除构建但仍在仓库中，建议后续单独清理或归档，避免未来误接回 MVP。
+4. 扩大公开分发前需补齐 Developer ID 签名与 Apple Notarization；当前 MVP 不要求。
+5. `.claude/scheduled_tasks.lock` 为环境锁文件，本次未提交。

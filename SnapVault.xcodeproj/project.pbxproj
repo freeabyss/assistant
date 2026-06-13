@@ -22,9 +22,7 @@
 		A1000100000000000000000A /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000A; };
 		A1000100000000000000000B /* CryptoHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000B; };
 		A1000100000000000000000C /* ClipboardMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000C; };
-		A1000100000000000000000D /* ContentStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000D; };
 		A1000100000000000000000E /* SearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000E; };
-		A1000100000000000000000F /* OCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000F; };
 		A10001000000000000000010 /* UpdateService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000010; };
 		E01801000000000000000001 /* ReleaseInfoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E01800000000000000000001 /* ReleaseInfoService.swift */; };
 		E01801000000000000000002 /* ReleaseInfoServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E01800000000000000000002 /* ReleaseInfoServiceTests.swift */; };
@@ -45,7 +43,6 @@
 		A10001000000000000000022 /* UnifiedSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000022; };
 		A10001000000000000000023 /* ClipboardSearchSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000023; };
 		A10001000000000000000024 /* AppSearchSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000024; };
-		A10001000000000000000025 /* FileSearchSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000025; };
 		A1000100000000000000002D /* SystemCommandSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002D; };
 		A1000100000000000000002E /* CalculatorSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002E; };
 		A1000100000000000000002F /* UnitConverterSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002F; };
@@ -757,9 +754,7 @@
 				A1000100000000000000000A /* Logger.swift in Sources */,
 				A1000100000000000000000B /* CryptoHelper.swift in Sources */,
 				A1000100000000000000000C /* ClipboardMonitor.swift in Sources */,
-				A1000100000000000000000D /* ContentStore.swift in Sources */,
 				A1000100000000000000000E /* SearchService.swift in Sources */,
-				A1000100000000000000000F /* OCRService.swift in Sources */,
 				A10001000000000000000010 /* UpdateService.swift in Sources */,
 					E01801000000000000000001 /* ReleaseInfoService.swift in Sources */,
 				A10001000000000000000011 /* MenuBarView.swift in Sources */,
@@ -777,7 +772,6 @@
 				A10001000000000000000022 /* UnifiedSearchService.swift in Sources */,
 				A10001000000000000000023 /* ClipboardSearchSource.swift in Sources */,
 				A10001000000000000000024 /* AppSearchSource.swift in Sources */,
-				A10001000000000000000025 /* FileSearchSource.swift in Sources */,
 				A1000100000000000000002D /* SystemCommandSource.swift in Sources */,
 				A1000100000000000000002E /* CalculatorSource.swift in Sources */,
 				A1000100000000000000002F /* UnitConverterSource.swift in Sources */,

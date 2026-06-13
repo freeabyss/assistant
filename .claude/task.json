@@ -449,7 +449,7 @@
       "id": "US-022",
       "title": "MVP 集成验收与文档收尾",
       "priority": "high",
-      "passes": false,
+      "passes": true,
       "blocked": false,
       "depends_on": [
         "US-001",
