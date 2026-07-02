@@ -1,3 +1,7 @@
+> **元信息**:本文件由 `.claude/progress.txt` 追溯迁移生成(v1.0.0 追溯归档整改)。原始内容完整保留,仅做 Markdown 格式化。
+
+---
+
 # Assistant / Mac Super Assistant 开发进度记录
 
 > **当前有效状态声明（重要）**

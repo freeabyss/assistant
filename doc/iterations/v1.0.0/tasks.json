@@ -1,25 +1,30 @@
 {
+  "version": "v1.0.0",
+  "issue": null,
   "project": "Assistant",
   "product_name": "Mac Super Assistant",
-  "version": "0.1.0-mvp",
+  "mvp_version": "0.1.0-mvp",
   "created_at": "2026-06-11",
   "source_documents": [
-    "doc/prd.md",
-    "doc/architecture.md",
-    "doc/architecture_db.md",
-    "doc/architecture_api.md",
-    "doc/test.md"
+    "iterations/v1.0.0/prd.md",
+    "iterations/v1.0.0/architecture/design.md",
+    "iterations/v1.0.0/architecture/db.md",
+    "iterations/v1.0.0/architecture/api.md",
+    "iterations/v1.0.0/test/cases.md"
   ],
   "task_schema_generation": "Assistant-MVP-2026-06-11",
   "workflow_note": "当前有效任务体系只以本文件的 Assistant MVP 22 个任务为准；旧 progress 中的 SnapVault US 编号不可与当前 US 编号互认。每个子 Agent 一次只处理一个任务。开始前先阅读 .claude/progress.txt、.claude/task.json 以及相关 doc/*.md；如 progress 与本文件冲突，以本文件为准。完成后运行对应测试，更新 passes/progress，并按项目规则提交。",
+  "migration_note": "本文件由 .claude/task.json 追溯迁移生成。补齐 layer 字段(按 title 推断);test_cases 为空数组——追溯迭代未做任务↔用例(TC)绑定,用例见 test/cases.md。",
   "tasks": [
     {
       "id": "US-001",
       "title": "项目基础壳与菜单栏应用形态",
+      "layer": "interfaces",
       "priority": "high",
       "passes": true,
       "blocked": false,
       "depends_on": [],
+      "test_cases": [],
       "steps": [
         "将工程内部代号统一为 Assistant（保留产品暂定名 Mac Super Assistant）",
         "配置 macOS 13 Ventura+ 最低支持版本",
@@ -34,12 +39,14 @@
     {
       "id": "US-002",
       "title": "Core Data 与文件系统数据层",
+      "layer": "infrastructure",
       "priority": "high",
       "passes": true,
       "blocked": false,
       "depends_on": [
         "US-001"
       ],
+      "test_cases": [],
       "steps": [
         "创建 Core Data Stack 和临时 store 可注入能力",
         "实现 ClipboardRecord、ClipboardResource、SearchBlacklistItem、UsageStat、AppSetting 数据模型",
@@ -54,12 +61,14 @@
     {
       "id": "US-003",
       "title": "文件资源存储与剪贴板 Repository",
+      "layer": "infrastructure",
       "priority": "high",
       "passes": true,
       "blocked": false,
       "depends_on": [
         "US-002"
       ],
+      "test_cases": [],
       "steps": [
         "实现 FileResourceStoreProtocol：写入/读取/删除图片原图、缩略图、RTF、HTML",
         "实现 ClipboardRepositoryProtocol：upsert、fetch、history、delete、clearAll、togglePin、cleanupExpired、storageUsage",
@@ -74,12 +83,14 @@
     {
       "id": "US-004",
       "title": "轻量内存搜索索引",
+      "layer": "infrastructure",
       "priority": "high",
       "passes": true,
       "blocked": false,
       "depends_on": [
         "US-003"
       ],
+      "test_cases": [],
       "steps": [
         "实现 InMemorySearchIndexProtocol",
         "启动时从 Core Data 全量加载轻量索引字段",
@@ -93,12 +104,14 @@
     {
       "id": "US-005",
       "title": "SearchSource Provider 与搜索服务核心",
+      "layer": "application",
       "priority": "high",
       "passes": true,
       "blocked": false,
       "depends_on": [
         "US-004"
       ],
+      "test_cases": [],
       "steps": [
         "实现 SearchSource、SearchResult、SearchAction、SearchService 核心模型与协议",
         "实现空输入不返回推荐结果",
@@ -113,12 +126,14 @@
     {
       "id": "US-006",
       "title": "拼音匹配、中英文别名与搜索黑名单",
+      "layer": "application",
       "priority": "high",
       "passes": true,
       "blocked": false,
       "depends_on": [
         "US-005"
       ],
+      "test_cases": [],
       "steps": [
         "实现中文拼音转换和首字母生成工具",
         "支持应用、命令、设置项的拼音搜索和首字母搜索",
@@ -133,12 +148,14 @@
     {
       "id": "US-007",
       "title": "AppSource 应用启动",
+      "layer": "application",
       "priority": "high",
       "passes": true,
       "blocked": false,
       "depends_on": [
         "US-006"
       ],
+      "test_cases": [],
       "steps": [
         "扫描 /Applications、~/Applications、/System/Applications 下的 .app bundle",
         "建立 ApplicationIndexItem 内存索引",
@@ -153,12 +170,14 @@
     {
       "id": "US-008",
       "title": "CommandSource 内置白名单命令",
+      "layer": "application",
       "priority": "high",
       "passes": true,
       "blocked": false,
       "depends_on": [
         "US-006"
       ],
+      "test_cases": [],
       "steps": [
         "实现 14 个 MVP 内置命令定义（以 doc/architecture_api.md 的“10.1 MVP 内置命令权威清单”为准）",
         "为每个命令维护中文名、英文名、中英文别名、拼音、首字母",
@@ -173,12 +192,14 @@
     {
       "id": "US-009",
       "title": "CalculatorSource 计算与单位换算",
+      "layer": "application",
       "priority": "medium",
       "passes": true,
       "blocked": false,
       "depends_on": [
         "US-005"
       ],
+      "test_cases": [],
       "steps": [
         "实现基础四则运算、括号、小数解析和求值",
         "实现非法表达式、除零、非有限结果防护",
@@ -192,12 +213,14 @@
     {
       "id": "US-010",
       "title": "SettingsSource 与设置服务",
+      "layer": "application",
       "priority": "medium",
       "passes": true,
       "blocked": false,
       "depends_on": [
         "US-006"
       ],
+      "test_cases": [],
       "steps": [
         "实现 SettingsServiceProtocol 和 AppSetting 持久化读写",
         "实现 SettingsSource 页面级与具体设置区块入口",
@@ -212,6 +235,7 @@
     {
       "id": "US-011",
       "title": "统一搜索面板 UI",
+      "layer": "interfaces",
       "priority": "high",
       "passes": true,
       "blocked": false,
@@ -222,6 +246,7 @@
         "US-009",
         "US-010"
       ],
+      "test_cases": [],
       "steps": [
         "实现 Spotlight 外观 + Alfred 式空状态的居中搜索面板",
         "空输入只显示输入提示，不显示推荐/最近/剪贴板内容",
@@ -236,6 +261,7 @@
     {
       "id": "US-012",
       "title": "剪贴板监听与历史记录链路",
+      "layer": "application",
       "priority": "high",
       "passes": true,
       "blocked": false,
@@ -243,6 +269,7 @@
         "US-003",
         "US-004"
       ],
+      "test_cases": [],
       "steps": [
         "实现基于 NSPasteboard.general.changeCount 的 ClipboardMonitor",
         "实现自适应轮询：500ms 活跃、长时间无变化 2s、变化后恢复 500ms",
@@ -257,6 +284,7 @@
     {
       "id": "US-013",
       "title": "剪贴板历史页面 UI",
+      "layer": "interfaces",
       "priority": "high",
       "passes": true,
       "blocked": false,
@@ -264,6 +292,7 @@
         "US-012",
         "US-010"
       ],
+      "test_cases": [],
       "steps": [
         "实现管理中心中的剪贴板历史页面",
         "实现独立搜索框，只搜索剪贴板历史，输入 debounce 即时搜索",
@@ -279,6 +308,7 @@
     {
       "id": "US-014",
       "title": "Onboarding 与权限强制流程",
+      "layer": "interfaces",
       "priority": "high",
       "passes": true,
       "blocked": false,
@@ -286,6 +316,7 @@
         "US-001",
         "US-010"
       ],
+      "test_cases": [],
       "steps": [
         "实现 Onboarding 七步流程：欢迎、搜索入口与快捷键、剪贴板说明、截图权限、辅助功能权限、开机启动、完成",
         "实现剪贴板默认开启但显式确认知晓",
@@ -300,6 +331,7 @@
     {
       "id": "US-015",
       "title": "管理中心、设置、权限与黑名单 UI",
+      "layer": "interfaces",
       "priority": "medium",
       "passes": true,
       "blocked": false,
@@ -308,6 +340,7 @@
         "US-014",
         "US-013"
       ],
+      "test_cases": [],
       "steps": [
         "实现管理中心：首页/概览、剪贴板历史、设置、权限",
         "首页展示快捷入口、权限状态、开启的搜索源、快捷键提示",
@@ -321,6 +354,7 @@
     {
       "id": "US-016",
       "title": "截图捕获、预览工具栏与保存/复制",
+      "layer": "interfaces",
       "priority": "high",
       "passes": true,
       "blocked": false,
@@ -329,6 +363,7 @@
         "US-012",
         "US-014"
       ],
+      "test_cases": [],
       "steps": [
         "实现区域截图、全屏截图、窗口截图",
         "截图完成后显示预览和浮动工具栏",
@@ -345,12 +380,14 @@
     {
       "id": "US-017",
       "title": "截图轻量标注工具",
+      "layer": "interfaces",
       "priority": "high",
       "passes": true,
       "blocked": false,
       "depends_on": [
         "US-016"
       ],
+      "test_cases": [],
       "steps": [
         "实现标注模型 AnnotationShape/AnnotationStyle",
         "实现矩形框、箭头、文字、马赛克/模糊",
@@ -366,12 +403,14 @@
     {
       "id": "US-018",
       "title": "关于页、隐私政策、反馈邮件与检查更新",
+      "layer": "interfaces",
       "priority": "medium",
       "passes": true,
       "blocked": false,
       "depends_on": [
         "US-015"
       ],
+      "test_cases": [],
       "steps": [
         "实现发布级关于页：应用名称、版本号、构建号、官网/项目主页、隐私政策、检查更新、反馈入口、第三方许可、版权信息",
         "编写隐私政策文档/页面，说明本地保存、不上传、不同步、不训练、关闭记录和清空方式",
@@ -385,6 +424,7 @@
     {
       "id": "US-019",
       "title": "中英文国际化与语言切换",
+      "layer": "interfaces",
       "priority": "medium",
       "passes": true,
       "blocked": false,
@@ -394,6 +434,7 @@
         "US-015",
         "US-018"
       ],
+      "test_cases": [],
       "steps": [
         "建立本地化资源结构",
         "支持简体中文和 English",
@@ -408,12 +449,14 @@
     {
       "id": "US-020",
       "title": "官网/项目主页最小产品页素材与链接",
+      "layer": "unknown",
       "priority": "low",
       "passes": true,
       "blocked": false,
       "depends_on": [
         "US-018"
       ],
+      "test_cases": [],
       "steps": [
         "准备标准产品页内容清单：产品名称、Slogan、核心功能介绍、截图/演示动图、下载按钮、版本记录、隐私政策、反馈邮箱、FAQ",
         "补充必要权限用途说明",
@@ -426,6 +469,7 @@
     {
       "id": "US-021",
       "title": "测试基线与自动化验收",
+      "layer": "unknown",
       "priority": "high",
       "passes": true,
       "blocked": false,
@@ -435,6 +479,7 @@
         "US-012",
         "US-016"
       ],
+      "test_cases": [],
       "steps": [
         "建立单元测试目标和运行命令",
         "覆盖 SearchSource、搜索排序、拼音、CalculatorSource、单位换算、hash 去重",
@@ -448,6 +493,7 @@
     {
       "id": "US-022",
       "title": "MVP 集成验收与文档收尾",
+      "layer": "unknown",
       "priority": "high",
       "passes": true,
       "blocked": false,
@@ -474,6 +520,7 @@
         "US-020",
         "US-021"
       ],
+      "test_cases": [],
       "steps": [
         "按 doc/test.md 执行 P0/P1 自动测试和手动验收",
         "验证 PRD、architecture、architecture_db、architecture_api、test 文档与实现一致",

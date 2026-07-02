@@ -1,11 +1,5 @@
 # PRD：Mac Super Assistant（暂定名）
 
-## 版本记录
-
-| 版本 | 上线日期 | 说明 |
-|------|---------|------|
-| v1.0.0 | 2026-07-02 | 首次上线，Mac Super Assistant MVP（22 个用户故事） |
-
 ## 1. 引言 / 概述
 
 Mac Super Assistant 是一款 macOS 原生效率工具，定位为 **增强版 Spotlight + 常用效率工具集成中心**。
