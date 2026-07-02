@@ -57,3 +57,13 @@
 - `xcodebuild test -project /Users/abyss/workspace/abyss/assistant/SnapVault.xcodeproj -scheme SnapVault -configuration Debug`：通过，执行 119 个 XCTest，119 通过、0 失败，`** TEST SUCCEEDED **`。
 - 手动验收记录：本次后台子 Agent 无法可靠操作真实菜单栏、系统权限弹窗、全局快捷键、屏幕录制授权、辅助功能授权、真实截图捕获、邮件客户端和浏览器页面；未虚构人工结果。相关 P0/P1 手动项仍按 [cases.md](cases.md) 第 5/6/7 节在 release-candidate 环境执行。
 - 已知问题 / 后续建议：发布前捕获 README 所列产品截图/GIF；在真实 macOS 环境复测 Onboarding 权限拒绝/授权、菜单栏无 Dock、全局快捷键、截图三模式、剪贴板真实格式恢复、邮件反馈和 GitHub Releases 打开；扩大公开分发前补齐 Developer ID 签名与 Apple Notarization；后续单独删除或归档未参与构建的旧 SnapVault OCR/文件搜索源码和旧本地化键。
+
+---
+
+## v1.0.1（2026-07-02，Issue #1、PR #2）
+
+- **swift test**：126/126 全绿（基线由 v1.0.0 的 124 提升 +2）
+- **xcodebuild test**：119/119 TEST SUCCEEDED（新增用例未纳入 Xcode SnapVaultTests target，P2 遗留）
+- **手动验收**：TC-M-001（Debug 启动无弹窗）/ TC-M-002（Release 启动无弹窗）/ TC-M-003（检查更新跳浏览器）均由 @user 亲自执行通过
+- **覆盖 AC**：AC-1 / AC-2 / AC-3 / AC-4 全通过
+- **详情**：doc/iterations/v1.0.1/test/report.md

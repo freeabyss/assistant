@@ -1,14 +1,14 @@
 # v1.0.1 迭代
 
 - **主题**：修复启动时 Sparkle updater 弹窗错误
-- **状态**：in_progress
-- **当前节点**：⑤ 开发测试
+- **状态**：released
+- **当前节点**：⑥ 已上线
 - **模式**：manual → auto（Gate 3 后用户切换，2026-07-02）
 - **Issue**：#1
 - **分支**：v1.0.1
-- **PR**：#2（open）
+- **PR**：#2（merged 439526d）
 - **开始日期**：2026-07-02
-- **上线日期**：-
+- **上线日期**：2026-07-02
 
 ## 精简说明
 
@@ -20,7 +20,7 @@
 ## 状态推进
 
 - [x] ① Bug 分析 —— bug.md
-- [ ] ⑤ 开发测试
+- [x] ⑤ 开发测试
   - [x] 测试用例生成 —— test/cases.md
   - [x] 用例评审 —— test/review.md
   - [x] 任务拆解 —— tasks.json（Gate 3 通过 2026-07-02）
@@ -28,8 +28,8 @@
     - 2026-07-02 T-001 开发完成（swift test 126/126；xcodebuild 119/119 TEST SUCCEEDED），待 code review
     - 2026-07-02 T-001 code review：APPROVED
     - 2026-07-02 T-001 自动化测试独立验证通过（swift 126；xcodebuild 119），passes=true
-- [x] ⑤ 收尾 —— 开 PR：#2（Gate 4 待用户 GitHub review + merge）
-- [ ] ⑥ 上线部署（Gate 5，用户触发）
+- [x] ⑤ 收尾 —— 开 PR：#2（Gate 4 已通过，merge 439526d，2026-07-02）
+- [x] ⑥ 上线部署（Gate 5 用户 2026-07-02 触发，归档已完成）
 
 ## 关键节点
 
@@ -41,3 +41,5 @@
 - 2026-07-02 T-002 手工验收通过 by @user（TC-M-001/002/003 均通过）
 - 2026-07-02 本迭代所有任务 passes=true，进入 ⑤ 收尾开 PR
 - 2026-07-02 PR #2 已开，进入 Gate 4（用户 GitHub review）
+- 2026-07-02 Gate 4 通过：PR #2 merged (439526d)，Issue #1 CLOSED
+- 2026-07-02 Gate 5 触发 by @user，归档 subagent 完成全局 doc/ 合并

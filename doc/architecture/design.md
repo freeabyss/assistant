@@ -871,3 +871,4 @@ MVP：
 | :--- | :--- |
 | 2026-06-11 | v15：重写总体架构，按 `doc/prd.md` 当前 MVP 决策对齐 SwiftUI + AppKit、菜单栏 App、强制 Onboarding、SearchSource Provider、多动作模型、Core Data + 文件系统、轻量内存搜索索引、剪贴板自适应轮询、截图预览/标注、内置白名单命令、发布与隐私策略。 |
 | 2026-06-12 | US-001：实现 Assistant 基础 App Shell 对齐。工程运行产物改为 `Assistant.app`，Info.plist 使用 `Assistant` / `Mac Super Assistant` 与 `com.assistant.app`；保留现有 Xcode target/module 以兼容测试。菜单栏图标改为 template `sparkles`，菜单补齐打开搜索、剪贴板、截图、设置、关于、退出；默认同步 `SMAppService` 开机启动并在设置中保存/关闭；Application Support 与 OSLog 子系统统一到 Assistant 命名空间。 |
+| 2026-07-02 · v1.0.1（Issue #1、PR #2） | UpdateService 关闭启动期 Sparkle updater 自动启动（新增 `startsUpdaterAutomatically: false` 常量，绑定 `SPUStandardUpdaterController.startingUpdater` 入参）。启动流程与“检查更新”跳转行为不变；架构层无改动。 |
