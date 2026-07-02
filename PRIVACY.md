@@ -1,5 +1,7 @@
 # Privacy Policy for Mac Super Assistant
 
+**English** | [简体中文](PRIVACY.zh-CN.md)
+
 Last updated: 2026-06-13
 
 Mac Super Assistant is a local-first macOS productivity app. The MVP is designed so clipboard history, screenshots, settings, and usage data stay on your Mac by default.

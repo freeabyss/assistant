@@ -1,5 +1,7 @@
 # Mac Super Assistant
 
+**English** | [简体中文](README.zh-CN.md)
+
 > Your local-first macOS command center: Spotlight-style search, clipboard history, screenshots, safe commands, and settings in one menu bar app.
 
 Mac Super Assistant (internal project name: Assistant) is a native macOS productivity assistant for a public-beta-ready MVP. It stays in the menu bar, opens with `⌥ Space`, and keeps clipboard, screenshot, and settings data on your Mac by default.
