@@ -25,6 +25,9 @@
   - [x] 用例评审 —— test/review.md
   - [x] 任务拆解 —— tasks.json（Gate 3 通过 2026-07-02）
   - [ ] 单任务开发 → code review → 测试
+    - 2026-07-02 T-001 开发完成（swift test 126/126；xcodebuild 119/119 TEST SUCCEEDED），待 code review
+    - 2026-07-02 T-001 code review：APPROVED
+    - 2026-07-02 T-001 自动化测试独立验证通过（swift 126；xcodebuild 119），passes=true
 - [ ] ⑤ 收尾 —— 开 PR（Gate 4）
 - [ ] ⑥ 上线部署（Gate 5，用户触发）
 

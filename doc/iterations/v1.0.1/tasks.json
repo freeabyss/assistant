@@ -26,7 +26,7 @@
       ],
       "test_cases": ["TC-U-001", "TC-U-002", "TC-R-001", "TC-R-002"],
       "done_definition": "1) UpdateService 源码中 SPUStandardUpdaterController 的 startingUpdater 实参绑定到 startsUpdaterAutomatically 常量，值为 false（TC-U-001 断言此常量并通过）；2) TC-U-002 单元测试通过（spy 断言 checkNow 触发 releases 跳转）；3) swift test 通过数 ≥ v1.0.0 基线 124；4) xcodebuild test 全绿，用例数 ≥ v1.0.0 基线 119；5) 未改动 Info.plist / entitlements / appcast.xml / CFBundleShortVersionString；6) diff 仅涉及 files_touch_hint 内文件。",
-      "passes": false,
+      "passes": true,
       "blocked": false
     },
     {
