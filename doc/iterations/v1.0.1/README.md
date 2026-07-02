@@ -6,7 +6,7 @@
 - **模式**：manual → auto（Gate 3 后用户切换，2026-07-02）
 - **Issue**：#1
 - **分支**：v1.0.1
-- **PR**：-
+- **PR**：#2（open）
 - **开始日期**：2026-07-02
 - **上线日期**：-
 
@@ -28,7 +28,7 @@
     - 2026-07-02 T-001 开发完成（swift test 126/126；xcodebuild 119/119 TEST SUCCEEDED），待 code review
     - 2026-07-02 T-001 code review：APPROVED
     - 2026-07-02 T-001 自动化测试独立验证通过（swift 126；xcodebuild 119），passes=true
-- [ ] ⑤ 收尾 —— 开 PR（Gate 4）
+- [x] ⑤ 收尾 —— 开 PR：#2（Gate 4 待用户 GitHub review + merge）
 - [ ] ⑥ 上线部署（Gate 5，用户触发）
 
 ## 关键节点
@@ -40,3 +40,4 @@
 - 2026-07-02 Gate 3 通过 by @user，切换到 auto 模式
 - 2026-07-02 T-002 手工验收通过 by @user（TC-M-001/002/003 均通过）
 - 2026-07-02 本迭代所有任务 passes=true，进入 ⑤ 收尾开 PR
+- 2026-07-02 PR #2 已开，进入 Gate 4（用户 GitHub review）
