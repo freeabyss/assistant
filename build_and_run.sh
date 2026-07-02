@@ -9,7 +9,7 @@ PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_NAME="SnapVault"
 SCHEME_NAME="SnapVault"
 DERIVED_DATA_PATH="${PROJECT_DIR}/DerivedData"
-APP_PATH="${DERIVED_DATA_PATH}/Build/Products/Debug/${PROJECT_NAME}.app"
+APP_PATH="${DERIVED_DATA_PATH}/Build/Products/Debug/Assistant.app"
 
 # 颜色输出
 RED='\033[0;31m'
