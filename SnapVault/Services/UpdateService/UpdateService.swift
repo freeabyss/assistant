@@ -41,6 +41,12 @@ final class UpdateService: NSObject, UpdateServiceProtocol, SPUUpdaterDelegate {
     private let logger = Logger.update
     private let updateCheckService: UpdateCheckServiceProtocol
 
+    /// 启动期是否自动启动 Sparkle updater。
+    /// MVP 阶段"检查更新"通过 checkNow() 跳转 GitHub Releases，不依赖 Sparkle 自动流程；
+    /// Sparkle 2 在 SUPublicEDKey 未配置时启动会弹出"无法启动更新程序"错误（Issue #1）。
+    /// 一旦启用真自动更新（生成 EdDSA 密钥并补齐 appcast 签名），改为 true 即可。
+    static let startsUpdaterAutomatically: Bool = false
+
     /// Sparkle updater controller. Created once in `setup()`.
     private var updaterController: SPUStandardUpdaterController?
 
@@ -60,7 +66,7 @@ final class UpdateService: NSObject, UpdateServiceProtocol, SPUUpdaterDelegate {
         logger.info("Setting up Sparkle updater controller")
 
         let controller = SPUStandardUpdaterController(
-            startingUpdater: true,
+            startingUpdater: Self.startsUpdaterAutomatically,
             updaterDelegate: self,
             userDriverDelegate: nil
         )

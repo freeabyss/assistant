@@ -1,0 +1,54 @@
+{
+  "version": "v1.0.1",
+  "issue": 1,
+  "branch": "v1.0.1",
+  "mode": "manual",
+  "notes": "精简 bug 版：单一 1 行代码修改 + 新增 2 条单元测试 + 手工验收。跳过 architecture 层。",
+  "tasks": [
+    {
+      "id": "T-001",
+      "title": "关闭启动期 Sparkle updater，新增回归单元测试",
+      "priority": "P0",
+      "depends_on": [],
+      "layer": "application",
+      "files_touch_hint": [
+        "SnapVault/Services/UpdateService/UpdateService.swift",
+        "SnapVaultTests/UpdateServiceTests.swift"
+      ],
+      "steps": [
+        "在 UpdateService 中暴露启动策略常量（策略 A，推荐）：新增 `static let startsUpdaterAutomatically: Bool = false`（或等价的实例只读属性），并在 setup() 里将 SPUStandardUpdaterController 的 startingUpdater 入参替换为该常量。禁止把常量声明为 var 或让外部可修改",
+        "确认现有 checkNow() → updateCheckService.openDownloadPage() 依赖注入路径未变（保留 UpdateService.init(updateCheckService:) 现有签名）",
+        "新增 SnapVaultTests/UpdateServiceTests.swift（若目录中已存在同名文件则追加，不覆盖）：实现 TC-U-001 与 TC-U-002",
+        "TC-U-001 采用策略 A：断言 UpdateService.startsUpdaterAutomatically == false；如做得到，可再用 mirror/反射或代码层可测钩子确认 setup() 未硬编码 true",
+        "TC-U-002：在测试文件内声明本地 spy（实现 UpdateCheckServiceProtocol 或 ReleaseURLOpening，参考 SnapVaultTests/Services/ReleaseInfoServiceTests.swift:82 的 RecordingURLOpener 模式），注入到 UpdateService，调用 checkNow() 后断言 spy 记录到恰好一次调用且目标 URL 为 https://github.com/abyss/assistant/releases。测试中禁止调用 NSWorkspace.shared.open",
+        "本地跑 `swift test` 与 `xcodebuild test -scheme SnapVault -destination 'platform=macOS'`，全绿",
+        "不修改 Info.plist、entitlements、appcast.xml，不动 CFBundleShortVersionString，不处理 L-1~L-5 遗留项"
+      ],
+      "test_cases": ["TC-U-001", "TC-U-002", "TC-R-001", "TC-R-002"],
+      "done_definition": "1) UpdateService 源码中 SPUStandardUpdaterController 的 startingUpdater 实参绑定到 startsUpdaterAutomatically 常量，值为 false（TC-U-001 断言此常量并通过）；2) TC-U-002 单元测试通过（spy 断言 checkNow 触发 releases 跳转）；3) swift test 通过数 ≥ v1.0.0 基线 124；4) xcodebuild test 全绿，用例数 ≥ v1.0.0 基线 119；5) 未改动 Info.plist / entitlements / appcast.xml / CFBundleShortVersionString；6) diff 仅涉及 files_touch_hint 内文件。",
+      "passes": true,
+      "blocked": false
+    },
+    {
+      "id": "T-002",
+      "title": "Debug + Release 启动手工验收 + 检查更新跳转手工验收",
+      "priority": "P0",
+      "depends_on": ["T-001"],
+      "layer": "verification",
+      "files_touch_hint": [
+        "doc/iterations/v1.0.1/test/report.md"
+      ],
+      "steps": [
+        "执行 TC-M-001（Debug）：./build_and_run.sh run 启动应用，从状态栏图标出现起 3 秒内观察是否有 Sparkle 错误弹窗",
+        "执行 TC-M-002（Release）：xcodebuild -project SnapVault.xcodeproj -scheme SnapVault -configuration Release -derivedDataPath ./DerivedData build 后，open ./DerivedData/Build/Products/Release/SnapVault.app，观察 3 秒",
+        "执行 TC-M-003：进入应用后触发'检查更新'（状态栏菜单或设置），观察 5 秒内浏览器是否打开 https://github.com/abyss/assistant/releases",
+        "把手工验收结果（通过/失败 + 观察截图路径或原始描述）追加到 doc/iterations/v1.0.1/test/report.md",
+        "若任何一条手工用例失败，停止提交，回到 T-001 修订"
+      ],
+      "test_cases": ["TC-M-001", "TC-M-002", "TC-M-003"],
+      "done_definition": "TC-M-001/002/003 三条手工用例全部通过，结果已写入 doc/iterations/v1.0.1/test/report.md；未出现 Sparkle 错误弹窗；检查更新跳转正确。",
+      "passes": true,
+      "blocked": false
+    }
+  ]
+}
