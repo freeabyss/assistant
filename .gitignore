@@ -28,8 +28,5 @@ snapvault.db-shm
 snapvault.db-wal
 
 # Claude Code working files
-.claude/cache/
+.claude/
 CLAUDE.md
-.claude/scheduled_tasks.lock
-.claude/task.json
-.claude/progress.txt
