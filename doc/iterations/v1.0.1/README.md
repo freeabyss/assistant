@@ -24,7 +24,7 @@
   - [x] 测试用例生成 —— test/cases.md
   - [x] 用例评审 —— test/review.md
   - [x] 任务拆解 —— tasks.json（Gate 3 通过 2026-07-02）
-  - [ ] 单任务开发 → code review → 测试
+  - [x] 单任务开发 → code review → 测试
     - 2026-07-02 T-001 开发完成（swift test 126/126；xcodebuild 119/119 TEST SUCCEEDED），待 code review
     - 2026-07-02 T-001 code review：APPROVED
     - 2026-07-02 T-001 自动化测试独立验证通过（swift 126；xcodebuild 119），passes=true
@@ -38,3 +38,5 @@
 - 2026-07-02 用例评审完成 by test-review subagent（APPROVED_WITH_MINOR_FIXES）
 - 2026-07-02 任务拆解完成 —— tasks.json（2 个任务，等 Gate 3）
 - 2026-07-02 Gate 3 通过 by @user，切换到 auto 模式
+- 2026-07-02 T-002 手工验收通过 by @user（TC-M-001/002/003 均通过）
+- 2026-07-02 本迭代所有任务 passes=true，进入 ⑤ 收尾开 PR

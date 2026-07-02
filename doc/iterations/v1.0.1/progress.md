@@ -12,3 +12,9 @@
 - xcodebuild test：119/119 TEST SUCCEEDED（首跑即绿，未复现 code review 记录的 linkd XPC 冷启动 flaky）
 - test/report.md 已生成
 - T-001 passes 置为 true
+
+## 2026-07-02 · T-002 手工验收完成
+- TC-M-001 / TC-M-002 / TC-M-003 三条手工用例由用户 @user 亲自执行并全部通过
+- test/report.md 追加"五、T-002 手工验收结果"和"六、总结"章节
+- tasks.json T-002.passes = true；本迭代全部任务闭合
+- 下一步：开 PR

@@ -59,3 +59,25 @@
 
 - P2：新增 UpdateServiceTests.swift 未纳入 Xcode SnapVaultTests target;swift test 已覆盖，Xcode 侧覆盖需编辑 project.pbxproj，超出 T-001 files_touch_hint 范围。
 - P3：code review 记录的 xcodebuild 首跑 linkd XPC 冷启动 flaky，本次 Step 3 独立验证首跑即绿，未复现。
+
+## 五、T-002 手工验收结果
+
+- **执行时间**：2026-07-02
+- **执行者**：@user（人工，本迭代 auto 模式下唯一人工节点）
+- **执行报告来源**：用户在主会话回执"测试都通过"
+
+| 用例 | 类型 | 结果 | 观察 |
+|------|------|------|------|
+| TC-M-001 | manual · Debug 启动 3s | **通过** | 未出现"无法启动更新程序"弹窗 |
+| TC-M-002 | manual · Release 启动 3s | **通过** | 未出现"无法启动更新程序"弹窗 |
+| TC-M-003 | manual · 检查更新跳转 | **通过** | 浏览器打开 https://github.com/abyss/assistant/releases |
+
+**T-002 结论**：三条手工验收用例全部通过；AC-1（Debug + Release）与 AC-2 均获人工确认；启动弹窗根源消除、"检查更新"MVP 跳转策略未被破坏。
+
+## 六、总结
+
+- 自动化：swift test 126/126（含 2 条新增）；xcodebuild test 119/119 TEST SUCCEEDED
+- 手工：TC-M-001/002/003 三条均由用户人工确认通过
+- 覆盖：AC-1 / AC-2 / AC-3 / AC-4 全通过
+- 遗留：新增 UpdateServiceTests.swift 未纳入 Xcode SnapVaultTests target（P2，后续版本处理）；L-1~L-5 保持不变
+- 判定：v1.0.1 可以进入 ⑤ 收尾（开 PR）

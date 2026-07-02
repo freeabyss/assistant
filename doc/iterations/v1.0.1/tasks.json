@@ -47,7 +47,7 @@
       ],
       "test_cases": ["TC-M-001", "TC-M-002", "TC-M-003"],
       "done_definition": "TC-M-001/002/003 三条手工用例全部通过，结果已写入 doc/iterations/v1.0.1/test/report.md；未出现 Sparkle 错误弹窗；检查更新跳转正确。",
-      "passes": false,
+      "passes": true,
       "blocked": false
     }
   ]
