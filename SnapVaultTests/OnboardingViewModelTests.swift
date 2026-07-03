@@ -111,9 +111,12 @@ final class OnboardingViewModelTests: XCTestCase {
     }
 }
 
-private final class MockPermissionService: PermissionServiceProtocol {
+final class MockPermissionService: PermissionServiceProtocol {
     var statuses: [PermissionKind: PermissionStatus] = [.screenRecording: .authorized, .accessibility: .authorized]
     var opened: [PermissionKind] = []
+
+    var requestScreenRecordingResult: Bool = false
+    private(set) var requestScreenRecordingCallCount: Int = 0
 
     func status(for permission: PermissionKind) -> PermissionStatus {
         statuses[permission] ?? .unknown
@@ -125,6 +128,11 @@ private final class MockPermissionService: PermissionServiceProtocol {
 
     func refreshStatuses() async -> [PermissionKind: PermissionStatus] {
         statuses
+    }
+
+    func requestScreenRecordingPrompt() -> Bool {
+        requestScreenRecordingCallCount += 1
+        return requestScreenRecordingResult
     }
 }
 

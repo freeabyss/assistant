@@ -42,3 +42,5 @@
 - 2026-07-02 测试用例生成完成 —— test/cases.md（TC-U 7 条 + TC-M 9 条 + TC-R 2 条，共 18 条）
 - 2026-07-02 用例评审完成 by test-review subagent（APPROVED_WITH_MINOR_FIXES；1 条阻塞级已修订：TC-U-004 clipboardEnabled 默认值实为 true）
 - 2026-07-02 任务拆解完成 —— tasks.json（4 个任务：T-001 协议 + T-002 VM/View/L10n + T-003 AppDelegate + T-004 手工验收）；auto 模式跳过 Gate 3
+- 2026-07-02 T-001 code review：APPROVED
+- 2026-07-02 T-001 自动化验证通过 by test subagent（swift 128；xcodebuild 119），passes=true

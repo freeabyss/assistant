@@ -27,7 +27,7 @@
       ],
       "test_cases": ["TC-U-001", "TC-U-007"],
       "done_definition": "1) PermissionServiceProtocol 有 requestScreenRecordingPrompt() 声明，无默认实现；2) 三个 conformer（PermissionService、MockPermissionService、StaticPermissionService）都实现该方法；3) MockPermissionService 提供 spy 基础设施（callCount + 可配置返回值）；4) TC-U-001 单元测试通过；5) swift test 全绿且用例数 ≥ 127（v1.0.1 基线 126 +1）；6) 未改动 View / VM / AppDelegate。",
-      "passes": false,
+      "passes": true,
       "blocked": false
     },
     {
