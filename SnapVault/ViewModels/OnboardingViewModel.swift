@@ -69,6 +69,9 @@ final class OnboardingViewModel: ObservableObject {
         case .clipboardPrivacy:
             guard clipboardAcknowledged else { return }
             step = .screenRecording
+            // 触发 TCC 注册，让本 App 出现在系统设置屏幕录制列表（design §4.2，Issue #3）。
+            // 返回值不参与前进判定：canContinueCurrentStep 仍由 refreshPermissions 的 preflight 决定。
+            _ = permissionService.requestScreenRecordingPrompt()
             Task { await refreshPermissions() }
         case .screenRecording:
             guard permissionStatuses[.screenRecording]?.isAuthorized == true else { return }
@@ -93,11 +96,33 @@ final class OnboardingViewModel: ObservableObject {
     }
 
     func openPermissionSettings(_ kind: PermissionKind) {
+        if kind == .screenRecording {
+            // 防止用户绕过 continueToNextStep 直接点“打开设置”仍能触发 TCC 注册（design §4.2）。
+            _ = permissionService.requestScreenRecordingPrompt()
+        }
         permissionService.openSystemSettings(for: kind)
     }
 
     func refreshPermissions() async {
         permissionStatuses = await permissionService.refreshStatuses()
+    }
+
+    /// 跳过 onboarding：不校验权限、任意步骤均可调用（design §4.2 差异表、PRD P-2.3）。
+    func skipOnboarding() async {
+        completionErrorMessage = nil
+        do {
+            // hotkey：持久化当前录入值；未录入时 persistCurrentShortcutString 返回默认 option+space。
+            try await settingsService.set(hotkeyService.persistCurrentShortcutString(), for: .searchHotkey)
+            // 关键：clipboard.enabled 默认为 "true"（PersistenceController.swift:307）。
+            // PRD P-2.3 要求跳过后剪贴板默认关闭（保留用户选择权 / 延后启用），
+            // 因此必须显式写 false —— 不能像 design §4.2 差异表所述“不写”，否则读回为 true。
+            try await settingsService.set(false, for: .clipboardEnabled)
+            try await settingsService.set(true, for: .onboardingCompleted)
+            // 不强制 launchAtLogin、不校验任何权限（与 completeIfPossible 的差异）。
+            onComplete()
+        } catch {
+            completionErrorMessage = error.localizedDescription
+        }
     }
 
     func completeIfPossible() async {

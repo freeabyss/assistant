@@ -5390,6 +5390,91 @@
         }
       }
     },
+    "onboarding.skip": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip Setup"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "跳过设置"
+          }
+        }
+      }
+    },
+    "onboarding.skip.confirm.title": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip onboarding?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "跳过引导？"
+          }
+        }
+      }
+    },
+    "onboarding.skip.confirm.message": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You can configure permissions and preferences later in the app settings. Some features may require additional permissions before they work."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你可以稍后在应用设置中配置权限和偏好。部分功能可能需要在使用前授予额外权限。"
+          }
+        }
+      }
+    },
+    "onboarding.skip.confirm.action": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "跳过"
+          }
+        }
+      }
+    },
+    "onboarding.skip.confirm.cancel": {
+      "comment": "",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消"
+          }
+        }
+      }
+    },
     "management.title": {
       "comment": "US-015 management center",
       "localizations": {

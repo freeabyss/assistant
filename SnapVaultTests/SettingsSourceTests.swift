@@ -184,12 +184,13 @@ private final class EmptyBlacklistRepository: SearchBlacklistRepositoryProtocol 
     func contains(sourceID: SearchSourceID, resultID: SearchResultID) async -> Bool { false }
 }
 
-private final class StaticPermissionService: PermissionServiceProtocol {
+final class StaticPermissionService: PermissionServiceProtocol {
     func status(for permission: PermissionKind) -> PermissionStatus { .authorized }
     func openSystemSettings(for permission: PermissionKind) {}
     func refreshStatuses() async -> [PermissionKind: PermissionStatus] {
         Dictionary(uniqueKeysWithValues: PermissionKind.allCases.map { ($0, .authorized) })
     }
+    func requestScreenRecordingPrompt() -> Bool { true }
 }
 
 private final class NoopLaunchAtLoginService: LaunchAtLoginServiceProtocol {

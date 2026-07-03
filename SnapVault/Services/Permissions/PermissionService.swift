@@ -23,6 +23,12 @@ protocol PermissionServiceProtocol {
     func status(for permission: PermissionKind) -> PermissionStatus
     func openSystemSettings(for permission: PermissionKind)
     func refreshStatuses() async -> [PermissionKind: PermissionStatus]
+
+    /// 触发屏幕录制权限申请，会促使系统首次注册本 App 到 TCC 数据库并加入设置候选列表。
+    /// - Returns: 当前是否已授权(`CGRequestScreenCaptureAccess()` 的直接返回值)。
+    /// - Note: 首次调用会弹出系统权限 UI；必须在主线程调用。参见 Issue #3、v1.1.0 architecture §4.1。
+    @MainActor
+    func requestScreenRecordingPrompt() -> Bool
 }
 
 /// Thin macOS API wrapper for Screen Recording and Accessibility privacy permissions.
@@ -55,6 +61,11 @@ final class PermissionService: PermissionServiceProtocol {
 
     func refreshStatuses() async -> [PermissionKind: PermissionStatus] {
         Dictionary(uniqueKeysWithValues: PermissionKind.allCases.map { ($0, status(for: $0)) })
+    }
+
+    @MainActor
+    func requestScreenRecordingPrompt() -> Bool {
+        CGRequestScreenCaptureAccess()
     }
 
     private func requestAccessibilityPromptIfNeeded() {

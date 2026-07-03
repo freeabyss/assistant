@@ -3,6 +3,7 @@ import KeyboardShortcuts
 
 struct OnboardingView: View {
     @StateObject var viewModel: OnboardingViewModel
+    @State private var showSkipConfirmation = false
 
     init(viewModel: OnboardingViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
@@ -17,6 +18,17 @@ struct OnboardingView: View {
         .padding(32)
         .frame(width: 680, height: 520)
         .onAppear { viewModel.onAppear() }
+        .alert(
+            L10n.localized("onboarding.skip.confirm.title"),
+            isPresented: $showSkipConfirmation
+        ) {
+            Button(L10n.localized("onboarding.skip.confirm.action"), role: .destructive) {
+                Task { await viewModel.skipOnboarding() }
+            }
+            Button(L10n.localized("onboarding.skip.confirm.cancel"), role: .cancel) {}
+        } message: {
+            Text(L10n.localized("onboarding.skip.confirm.message"))
+        }
     }
 
     private var header: some View {
@@ -101,6 +113,10 @@ struct OnboardingView: View {
                 Button(L10n.localized("onboarding.quit")) {
                     NSApp.terminate(nil)
                 }
+                Button(L10n.localized("onboarding.skip")) {
+                    showSkipConfirmation = true
+                }
+                .buttonStyle(.link)
                 Spacer()
                 Button(primaryButtonTitle) {
                     viewModel.continueToNextStep()
