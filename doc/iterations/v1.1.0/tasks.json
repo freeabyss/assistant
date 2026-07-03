@@ -76,7 +76,7 @@
       ],
       "test_cases": ["TC-M-008"],
       "done_definition": "1) AppDelegate.ensureScreenRecordingPermission 内 openSystemSettings 前一行调用 requestScreenRecordingPrompt；2) 单文件 diff 仅涉及 AppDelegate.swift 该函数体；3) swift test 全绿（用例数保持 T-002 后基线）；4) xcodebuild test TEST SUCCEEDED；5) code review 显式检查此步（TC-M-008 通过判定含 code review 项），坐实 AC-7 '复用同一 request 逻辑'。",
-      "passes": false,
+      "passes": true,
       "blocked": false
     },
     {

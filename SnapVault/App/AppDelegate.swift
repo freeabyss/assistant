@@ -775,6 +775,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             alert.addButton(withTitle: L10n.localized("screenshot.permission.cancel"))
             let response = alert.runModal()
             if response == .alertFirstButtonReturn {
+                _ = permissionService.requestScreenRecordingPrompt()
                 permissionService.openSystemSettings(for: .screenRecording)
             }
             return false

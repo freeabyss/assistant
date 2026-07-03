@@ -34,3 +34,9 @@
 - 红线全过：clipboardEnabled 显式 false（VM:119）、Skip 7 步可见、xcstrings JSON valid、TC-U-004 前置断言 default=true
 - design.md §4.2 差异表非阻塞订正（"不写"→"显式 false"）留待 ⑥ 归档或后续 patch 顺手改
 - 备注：swift test 首跑遭遇一条与 T-002 无关的历史 flaky 崩溃（SearchBlacklistRepositoryTests，NSCFSet mutated-while-enumerated），重跑一次全绿
+
+## 2026-07-02 · T-003 开发 + 自审 + 测试完成
+- AppDelegate.ensureScreenRecordingPermission 补 requestScreenRecordingPrompt（openSystemSettings 前一行）
+- swift test 134/134；xcodebuild 125/125 TEST SUCCEEDED
+- 单文件 diff（仅 AppDelegate.swift 该函数体）
+- self-review APPROVED（reviews/task-T-003-review.md）

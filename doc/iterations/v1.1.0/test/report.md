@@ -45,3 +45,8 @@
 - Skip 按钮 7 步可见：确认（footer 恒渲染）
 - L10n 双语齐全：确认
 - 可以 commit T-002：是
+
+## 三、T-003 自动化测试（无新增用例，回归验证）
+- swift test：134/134 全绿
+- xcodebuild test：125/125 TEST SUCCEEDED
+- AC-7 手工验收留待 T-004（TC-M-008）

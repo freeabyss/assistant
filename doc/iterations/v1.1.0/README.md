@@ -46,3 +46,4 @@
 - 2026-07-02 T-001 自动化验证通过 by test subagent（swift 128；xcodebuild 119），passes=true
 - 2026-07-02 T-002 code review：APPROVED（无阻塞级；clipboardEnabled 显式 false 已落地；swift 134 / xcodebuild 125）
 - 2026-07-02 T-002 自动化验证通过 by test subagent（swift 134；xcodebuild 125），passes=true
+- 2026-07-02 T-003 开发+自审+测试完成（swift 134；xcodebuild 125），passes=true；AppDelegate.ensureScreenRecordingPermission 补 request，AC-7 手工验收留 T-004
