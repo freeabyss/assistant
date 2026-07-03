@@ -67,3 +67,17 @@
 - **手动验收**：TC-M-001（Debug 启动无弹窗）/ TC-M-002（Release 启动无弹窗）/ TC-M-003（检查更新跳浏览器）均由 @user 亲自执行通过
 - **覆盖 AC**：AC-1 / AC-2 / AC-3 / AC-4 全通过
 - **详情**：doc/iterations/v1.0.1/test/report.md
+
+---
+
+## v1.1.0（2026-07-03，Issue #3、PR #4）
+
+- **swift test**：134/134 全绿（v1.0.1 基线 126 → 134，+8：T-001 新增 2 + T-002 新增 6）
+- **xcodebuild test**：125/125 TEST SUCCEEDED（v1.0.1 基线 119 → 125；新增 T-002 用例追加到既有 OnboardingViewModelTests.swift 随 target 执行；T-001 的 PermissionServiceProtocolConformanceTests.swift 未纳入 Xcode target，P2 遗留，与 v1.0.1 处理一致）
+- **手动验收（@user）**：TC-M-001~M-006 通过（TCC 注册弹窗 / App 出现在列表 / 授权后 Continue / Skip 7 步可见 / Alert Cancel 无副作用 / Skip 进主界面）
+- **code review**：T-001/T-002/T-003 APPROVED；clipboardEnabled 显式 false 落地
+- **未验证（留待下一迭代，诚实标注）**：
+  - TC-M-007 跳过后重启不重弹（代码层 TC-U-004 单测覆盖持久化，端到端未验）
+  - TC-M-008 hotkey 触发按需申请 Alert（代码层 AppDelegate.ensureScreenRecordingPermission 补 request + code review 通过，端到端未验）
+  - TC-M-009 SettingsViewModel 权限入口（P2 遗留：未改为注入 + 未补 request）
+- **详情**：doc/iterations/v1.1.0/test/report.md

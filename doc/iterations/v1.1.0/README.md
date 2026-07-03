@@ -1,14 +1,14 @@
 # v1.1.0 迭代
 
 - **主题**：Onboarding 死锁修复 —— TCC 权限申请触发 + 允许跳过向导
-- **状态**：in_progress
-- **当前节点**：⑤ 开发测试
+- **状态**：released
+- **当前节点**：⑥ 已上线
 - **模式**：auto
 - **Issue**：#3
 - **分支**：v1.1.0
-- **PR**：#4（open）
+- **PR**：#4（merged 54d9e13）
 - **开始日期**：2026-07-02
-- **上线日期**：-
+- **上线日期**：2026-07-03
 
 ## 迭代说明
 
@@ -25,13 +25,13 @@
 - [x] ② 产品设计（Gate 1 auto 模式跳过） —— prd.md
 - [x] ③ 架构设计 —— architecture/design.md
 - [x] ④ 架构评审 —— architecture/review.md（Gate 2）
-- [ ] ⑤ 开发测试
+- [x] ⑤ 开发测试
   - [x] 测试用例生成 —— test/cases.md
   - [x] 用例评审 —— test/review.md
   - [x] 任务拆解 —— tasks.json（Gate 3 auto 模式跳过）
-  - [x] 单任务开发 → code review → 测试（T-001/002/003 全绿；T-004 手工 6/6 通过，3 条延期）
-- [x] ⑤ 收尾 —— 开 PR：#4（Gate 4 待 GitHub review + merge）
-- [ ] ⑥ 上线部署（Gate 5，用户触发）
+  - [x] 单任务开发 → code review → 测试(T-001/002/003 全绿；T-004 手工 6/6 通过，3 条延期)
+- [x] ⑤ 收尾 —— 开 PR：#4（Gate 4 GitHub review + merge 完成）
+- [x] ⑥ 上线部署（Gate 5，用户触发）
 
 ## 关键节点
 
@@ -49,3 +49,5 @@
 - 2026-07-02 T-003 开发+自审+测试完成（swift 134；xcodebuild 125），passes=true；AppDelegate.ensureScreenRecordingPermission 补 request，AC-7 手工验收留 T-004
 - 2026-07-03 T-004 手工验收：TC-M-001~006 由 @user 验证通过；TC-M-007/008/009 按用户决策延期至下一迭代
 - 2026-07-03 PR #4 已开，进入 Gate 4
+- 2026-07-03 PR #4 merged (54d9e13)，Issue #3 CLOSED
+- 2026-07-03 Gate 5 触发 by @user，归档 subagent 完成全局 doc/ 合并

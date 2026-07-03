@@ -14,6 +14,7 @@
 | :--- | :--- | :--- |
 | 2026-06-11 | Claude | 重写为当前 Mac Super Assistant / Assistant MVP 测试方案，对齐 `doc/prd.md` |
 | 2026-07-02 | Claude | v1.0.1：新增 TC-U-001（常量断言）/TC-U-002（checkNow spy）2 条自动化用例 + TC-M-001/002/003 手工验收记录 |
+| 2026-07-03 | Claude | v1.1.0：新增 +7 条自动化用例（协议 conformer / request 触发 / skipOnboarding / 7 步参数化 / hotkey 持久化）+6 条手工用例；+2 条回归基线更新（swift 134 / xcodebuild 125）；3 条端到端用例（TC-M-007/008/009）留待下一迭代。详见第 10 节「Onboarding 与权限（v1.1.0 起）」 |
 
 ---
 
@@ -400,5 +401,71 @@ MVP 暂不覆盖：
 3. 增加 UI 自动化测试，覆盖 Onboarding、管理中心和搜索框基础交互。
 4. 后续引入签名/公证后，增加发布包安装、Gatekeeper、更新检查的端到端验收。
 5. 后续引入右键菜单、Action Panel、快捷数字键后，补充对应交互测试。
+
+---
+
+## 10. Onboarding 与权限（v1.1.0 起）
+
+> 本节用例来自 v1.1.0 迭代（Onboarding 死锁修复：屏幕录制权限申请 + 跳过向导，Issue #3、PR #4）。用例 ID 在本节内命名，与第 4/5 节 v1.0.1 的同号用例不冲突。追溯详见 `iterations/v1.1.0/test/cases.md`。
+
+### 10.1 自动化用例
+
+| 编号 | 标题 | 关联 AC / 需求 | 类型 | 优先级 |
+|------|------|------|------|------|
+| TC-U-001 | 协议扩展未破坏既有 conformer | AC-8 | unit | P0 |
+| TC-U-002 | 进入 .screenRecording 调 request 恰一次 | AC-8 | unit | P0 |
+| TC-U-003 | openPermissionSettings 先 request 后 openSettings | AC-8 | unit | P0 |
+| TC-U-004 | skipOnboarding 写 flag、显式 clipboard=false、回调 onComplete | AC-5/6 | unit | P0 |
+| TC-U-005 | skipOnboarding 遍历 7 步参数化均可跳 | AC-4/5 | unit | P0 |
+| TC-U-006 | 跳过时 hotkey 持久化策略 | P-2.3 | unit | P1 |
+| TC-U-007 | MockPermissionService spy 计数/返回值可配 | AC-8（基础设施） | unit | P0 |
+
+- **TC-U-001**：`PermissionServiceProtocol` 新增 `requestScreenRecordingPrompt() -> Bool` 后，全部 conformer（真实 `PermissionService`、`MockPermissionService`、`StaticPermissionService`）均实现且可调用。判定：Mock 返回可配置 `true`、Static 返回固定 `true`、测试目标编译通过且不弹任何系统对话框。
+- **TC-U-002**：`continueToNextStep()` 从 `.clipboardPrivacy` 进入 `.screenRecording` 时调用 `requestScreenRecordingPrompt()` 恰好一次。判定：`requestScreenRecordingCallCount == 1` 且 `step == .screenRecording`。
+- **TC-U-003**：`openPermissionSettings(.screenRecording)` 在调 `openSystemSettings` 前先调 `requestScreenRecordingPrompt`。判定：`callLog == ["request", "openSettings"]` 且 `opened == [.screenRecording]`；`openPermissionSettings(.accessibility)` 不应调 request（`requestScreenRecordingCallCount == 0`）。
+- **TC-U-004**：`skipOnboarding()` 写 `onboardingCompleted=true`、**显式**写 `clipboardEnabled=false`（`clipboard.enabled` 代码默认为 `"true"`，见 `PersistenceController.swift:307`，因此必须显式写 false 而非留空）、触发 `onComplete` 一次。判定：`XCTAssertTrue(onboardingCompleted)`、`XCTAssertFalse(clipboardEnabled)`、`XCTAssertTrue(didComplete)`。
+- **TC-U-005**：在 `OnboardingStep.allCases`（7 步）任意一步调 `skipOnboarding()` 均成功且行为一致。判定：每步 `onboardingCompleted == true` 且 `didComplete == true`，`allCases.count == 7`。
+- **TC-U-006**：跳过时若 hotkey 已录入有效值则持久化其值，否则用默认 `option+space`，禁止写空串/非法值。判定：`searchHotkey == "option+space"`（或实现选择的默认键）。
+- **TC-U-007**：`MockPermissionService.requestScreenRecordingPrompt()` 支持 spy 计数（`requestScreenRecordingCallCount`）与返回值可配（`requestScreenRecordingResult`）+ `callLog`。判定：返回值随配置变化、计数累加。
+
+### 10.2 手工验收用例
+
+| 编号 | 标题 | 关联 AC / 需求 | 优先级 | 结果 |
+|------|------|------|------|------|
+| TC-M-001 | 首启触发系统授权弹窗 | AC-1 | P0 | 通过 |
+| TC-M-002 | app 出现在系统设置列表 | AC-2 | P0 | 通过 |
+| TC-M-003 | 授权后可继续（含 Recheck 隐含验证） | AC-3 | P0 | 通过 |
+| TC-M-004 | Skip Setup 按钮 7 步全可见 | AC-4 | P0 | 通过 |
+| TC-M-005 | Skip 弹确认 Alert，Cancel 不改变 | P-2.2 | P0 | 通过 |
+| TC-M-006 | Skip 确认后进主界面 | AC-5 | P0 | 通过 |
+
+- **TC-M-001**：`tccutil reset ScreenCapture com.assistant.app` 后 Clean 构建首启，进入 `.screenRecording` 步骤 5 秒内出现 macOS 系统屏幕录制授权弹窗。
+- **TC-M-002**：TC-M-001 触发 request 后，「系统设置 → 隐私与安全 → 屏幕录制与系统录音」列表中出现本 App（Mac Super Assistant / Assistant）。
+- **TC-M-003**：系统设置勾选授权后切回 app 点 Recheck，Continue 由禁用变可用、进入 accessibility 步骤（无 activation 自动检测、需手动 Recheck 是可接受降级）。
+- **TC-M-004**：welcome/searchHotkey/clipboardPrivacy/screenRecording/accessibility/launchAtLogin/done 7 步 footer 左下角均可见 Skip Setup 按钮。
+- **TC-M-005**：点 Skip Setup 弹含标题+内容+Skip/Cancel 两按钮的确认 Alert；点 Cancel 停留原步骤、无 settings 变化。
+- **TC-M-006**：Alert 中点 Skip 后 onboarding 窗口关闭、状态栏图标出现、可打开搜索面板（跳过后 clipboardEnabled=false，剪贴板监听 pause 不 crash、不影响其它快捷键）。
+
+- **待验证（v1.1.1+）**：TC-M-007 重启不重弹 / TC-M-008 hotkey 按需申请 Alert / TC-M-009 设置面板权限入口。代码层对称补齐（AppDelegate.ensureScreenRecordingPermission 补 request、`onboardingCompleted=true` 持久化由 TC-U-004 单测覆盖），端到端待下一迭代补验。详见 `iterations/v1.1.0/test/report.md`。
+
+### 10.3 回归基线（v1.1.0 起）
+
+| 编号 | 标题 | 基线 | 结果 |
+|------|------|------|------|
+| TC-R-001 | swift test 全绿 | ≥ 134（v1.0.1 基线 126 → 134） | 134/134 全绿 |
+| TC-R-002 | xcodebuild test 全绿 | ≥ 125（v1.0.1 基线 119 → 125） | 125/125 TEST SUCCEEDED |
+
+### 10.4 追溯矩阵（v1.1.0 AC → 用例）
+
+| AC | 描述 | 覆盖用例 |
+|----|------|---------|
+| AC-1 | Clean 构建首启触发系统授权弹窗 | TC-M-001 |
+| AC-2 | app 出现在系统设置列表 | TC-M-002 |
+| AC-3 | 授权后可继续 | TC-M-003 |
+| AC-4 | Skip 按钮全 7 步可见 | TC-M-004, TC-M-005, TC-U-005 |
+| AC-5 | Skip 后进主界面 | TC-M-006 + TC-U-004/005 |
+| AC-6 | 重启不重弹 | 待验证（TC-M-007 延期；代码层 TC-U-004 覆盖持久化，端到端未验） |
+| AC-7 | 跳过后按需申请可用 | 待验证（TC-M-008/009 延期；code review 坐实复用同一 request API，端到端未验） |
+| AC-8 | 既有测试全绿 + 新增单测覆盖 | TC-R-001, TC-R-002, TC-U-001~007 |
 
 ---

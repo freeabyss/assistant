@@ -6,6 +6,7 @@
 |------|---------|------|
 | v1.0.0 | 2026-07-02 | 首次上线，Mac Super Assistant MVP（22 个用户故事） |
 | v1.0.1 | 2026-07-02 | Bug 修复：修复启动时“无法启动更新程序”弹窗（Issue #1、PR #2）。产品行为无变化：MVP 阶段“检查更新”继续跳转 GitHub Releases。 |
+| v1.1.0 | 2026-07-03 | Bug 修复 + 新功能（Issue #3、PR #4）：修复 onboarding 屏幕录制权限申请断点（PermissionService 新增 `requestScreenRecordingPrompt()` 触发 TCC 注册，使 App 出现在系统设置列表）+ 新增 onboarding “跳过设置”入口（skipOnboarding 状态分支 + footer Skip 按钮 + 确认 Alert + 双语 L10n）。AppDelegate.ensureScreenRecordingPermission 对称补 request。遗留：重启不重弹、按需申请 Alert 端到端、SettingsViewModel 权限入口待下一迭代验证。 |
 
 ## 1. 引言 / 概述
 
