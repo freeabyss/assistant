@@ -1,0 +1,110 @@
+{
+  "version": "v1.1.0",
+  "issue": 3,
+  "branch": "v1.1.0",
+  "mode": "auto",
+  "notes": "Onboarding 死锁修复迭代：TCC 权限申请触发（Bug）+ 跳过向导入口（Feature）。方案 A 最小侵入。开发关键约束：skipOnboarding() 必须显式 set(false, .clipboardEnabled)，因为 AssistantSettingDefaults 默认为 true（PersistenceController.swift:307），若不写会读回 true 违背 PRD P-2.3。",
+  "tasks": [
+    {
+      "id": "T-001",
+      "title": "PermissionServiceProtocol 新增 requestScreenRecordingPrompt() 并补齐所有 conformer",
+      "priority": "P0",
+      "depends_on": [],
+      "layer": "domain",
+      "files_touch_hint": [
+        "SnapVault/Services/Permissions/PermissionService.swift",
+        "SnapVaultTests/OnboardingViewModelTests.swift",
+        "SnapVaultTests/SettingsSourceTests.swift"
+      ],
+      "steps": [
+        "在 PermissionServiceProtocol 新增方法：`func requestScreenRecordingPrompt() -> Bool`，不给默认实现（评审 §三：确保编译期强制 conformer 都实现）",
+        "在 PermissionService（真实实现）中添加：内部调用 `CGRequestScreenCaptureAccess()` 并返回其 Bool 结果。@MainActor 或显式主线程断言（design §八）。import CoreGraphics 如尚未 import",
+        "在 MockPermissionService（SnapVaultTests/OnboardingViewModelTests.swift:114 附近）补齐新方法，并加入 spy 基础设施：`var requestScreenRecordingResult = false`（默认 false，用例可覆盖）+ `private(set) var requestScreenRecordingCallCount = 0`；方法自增计数并返回配置值（对齐 design §五代码块）",
+        "在 StaticPermissionService（SnapVaultTests/SettingsSourceTests.swift:187 附近）补齐新方法，返回固定 `true`（该 test 场景不需要 spy 计数）",
+        "编写 TC-U-001 单元测试（放在 SnapVaultTests/PermissionServiceProtocolConformanceTests.swift，若无则新建）：实例化 MockPermissionService 与 StaticPermissionService，各调用一次 requestScreenRecordingPrompt()，断言返回类型为 Bool、断言 MockPermissionService.requestScreenRecordingCallCount==1；不测试真实 PermissionService（会真调 CG API）",
+        "本地跑 `swift test` 全绿",
+        "禁止改 SnapVault/ 之外的其他源文件（View、VM、AppDelegate 都不动）"
+      ],
+      "test_cases": ["TC-U-001", "TC-U-007"],
+      "done_definition": "1) PermissionServiceProtocol 有 requestScreenRecordingPrompt() 声明，无默认实现；2) 三个 conformer（PermissionService、MockPermissionService、StaticPermissionService）都实现该方法；3) MockPermissionService 提供 spy 基础设施（callCount + 可配置返回值）；4) TC-U-001 单元测试通过；5) swift test 全绿且用例数 ≥ 127（v1.0.1 基线 126 +1）；6) 未改动 View / VM / AppDelegate。",
+      "passes": false,
+      "blocked": false
+    },
+    {
+      "id": "T-002",
+      "title": "OnboardingViewModel 触发 request + skipOnboarding + OnboardingView Skip 按钮 + 本地化",
+      "priority": "P0",
+      "depends_on": ["T-001"],
+      "layer": "application_presentation",
+      "files_touch_hint": [
+        "SnapVault/ViewModels/OnboardingViewModel.swift",
+        "SnapVault/Views/Onboarding/OnboardingView.swift",
+        "SnapVault/Resources/Localizable.xcstrings",
+        "SnapVaultTests/OnboardingViewModelTests.swift"
+      ],
+      "steps": [
+        "在 OnboardingViewModel.continueToNextStep()（当前 .clipboardPrivacy → .screenRecording 分支）进入 .screenRecording 后**追加一次** `permissionService.requestScreenRecordingPrompt()`（design §4.2）。返回值不用于判前进（保持既有 refreshPermissions 决定 canContinueCurrentStep），只为触发 TCC 注册",
+        "在 openPermissionSettings(_ kind:)（OnboardingViewModel.swift:95-97）里，若 kind == .screenRecording，**先调** requestScreenRecordingPrompt() 再 openSystemSettings（顺序断言：TC-U-003）",
+        "新增 skipOnboarding() 方法：a) persistCurrentHotkeyIfValid()（复用现有逻辑，若已录入 hotkey 则持久化）；b) 显式 `settings.set(false, for: .clipboardEnabled)` —— **关键约束**：AssistantSettingDefaults.values['clipboard.enabled']='true'（PersistenceController.swift:307），若不写会读回 true 违背 PRD P-2.3，评审阻塞级发现已修订 TC-U-004；c) `settings.set(true, for: .onboardingCompleted)`；d) 调 onComplete?()。**不**强制 launchAtLogin，**不**校验权限",
+        "在 OnboardingView footer HStack 增加 `Button('Skip Setup') { showSkipConfirmation = true }`，位置**左下角**（远离右下 Continue），全 7 步可见。添加 `@State var showSkipConfirmation = false` 与 SwiftUI `.alert(...) { Button('Skip', role: .destructive) { Task { await viewModel.skipOnboarding() } }; Button('Cancel', role: .cancel) {} } message: { Text(...) }`",
+        "在 Localizable.xcstrings 添加键（en + zh-Hans 双份）：`onboarding.skip` = 'Skip Setup' / '跳过设置'；`onboarding.skip.confirm.title` = 'Skip onboarding?' / '跳过引导？'；`onboarding.skip.confirm.message` = 'You can configure permissions and preferences later in the app settings. Some features may require additional permissions before they work.' / '你可以稍后在应用设置中配置权限和偏好。部分功能可能需要在使用前授予额外权限。'；`onboarding.skip.confirm.action` = 'Skip' / '跳过'；`onboarding.skip.confirm.cancel` = 'Cancel' / '取消'",
+        "编写单元测试 TC-U-002/003/004/005/006（追加到 SnapVaultTests/OnboardingViewModelTests.swift）：a) TC-U-002 spy 断言 continueToNextStep 进入 .screenRecording 时 requestScreenRecordingCallCount 从 0 变为 ≥1；b) TC-U-003 断言 openPermissionSettings(.screenRecording) 时 spy 记录调用顺序 [request, openSettings]（MockPermissionService 需支持 opened 记录 + request 计数的时序）；c) TC-U-004 使用 InMemorySettingsService 断言 skipOnboarding 后 onboardingCompleted==true、clipboardEnabled==false、didComplete 回调触发一次（**必须显式 XCTAssertFalse(clipboardEnabled)**）；d) TC-U-005 参数化遍历 7 步，每步新构造 VM 调 skipOnboarding，断言行为一致；e) TC-U-006 hotkey 已录入分支验证持久化",
+        "本地跑 `swift test` 与 `xcodebuild test -project SnapVault.xcodeproj -scheme SnapVault -destination 'platform=macOS' -derivedDataPath ./DerivedData`",
+        "禁止改 AppDelegate / PermissionService.swift（分别归 T-001 与 T-003）；禁止改 Info.plist / entitlements / build_and_run.sh"
+      ],
+      "test_cases": ["TC-U-002", "TC-U-003", "TC-U-004", "TC-U-005", "TC-U-006"],
+      "done_definition": "1) OnboardingViewModel 进入 .screenRecording 时 + openPermissionSettings(.screenRecording) 时均触发 requestScreenRecordingPrompt；2) skipOnboarding 显式写 clipboardEnabled=false + onboardingCompleted=true + 触发 onComplete；3) OnboardingView footer 左下角有 Skip 按钮 + 确认 Alert，7 步都可见；4) Localizable.xcstrings 双语键齐全；5) TC-U-002/003/004/005/006 单元测试全绿；6) swift test ≥ 132（基线 127 +5）；7) xcodebuild test 全绿 TEST SUCCEEDED（新增测试是否入 Xcode target 属 P2，若不入不阻塞但需在 progress.md 记录）。",
+      "passes": false,
+      "blocked": false
+    },
+    {
+      "id": "T-003",
+      "title": "AppDelegate.ensureScreenRecordingPermission 在 openSystemSettings 前补 requestScreenRecordingPrompt 调用",
+      "priority": "P0",
+      "depends_on": ["T-001"],
+      "layer": "application",
+      "files_touch_hint": [
+        "SnapVault/App/AppDelegate.swift"
+      ],
+      "steps": [
+        "定位 AppDelegate.ensureScreenRecordingPermission()（约 line 766-783）",
+        "在其内部 NSAlert '打开设置' 分支中，调用 openSystemSettings(for:.screenRecording) **之前**，先调一次 `permissionService.requestScreenRecordingPrompt()`（design §4.4）。若 AppDelegate 内使用的是 `PermissionService()` new 实例而非注入，保持现状，本迭代不改为注入（评审 §五判定：作为 P2 遗留，不阻塞 AC-7 手工验收）",
+        "仅此一处最小改动。不改整个 AppDelegate 结构、不改截图入口守卫、不引入 DI 改造",
+        "本地跑 `swift test` + `xcodebuild test`，全绿",
+        "禁止改 PermissionService.swift / OnboardingViewModel / View / Info.plist / entitlements",
+        "禁止修改 build_and_run.sh 里的 pgrep -x SnapVault（属 L-2 遗留，本迭代不处理）"
+      ],
+      "test_cases": ["TC-M-008"],
+      "done_definition": "1) AppDelegate.ensureScreenRecordingPermission 内 openSystemSettings 前一行调用 requestScreenRecordingPrompt；2) 单文件 diff 仅涉及 AppDelegate.swift 该函数体；3) swift test 全绿（用例数保持 T-002 后基线）；4) xcodebuild test TEST SUCCEEDED；5) code review 显式检查此步（TC-M-008 通过判定含 code review 项），坐实 AC-7 '复用同一 request 逻辑'。",
+      "passes": false,
+      "blocked": false
+    },
+    {
+      "id": "T-004",
+      "title": "手工验收：Clean 构建 TCC 权限申请全路径 + 跳过路径 + 按需申请路径",
+      "priority": "P0",
+      "depends_on": ["T-001", "T-002", "T-003"],
+      "layer": "verification",
+      "files_touch_hint": [
+        "doc/iterations/v1.1.0/test/report.md"
+      ],
+      "steps": [
+        "TC-M-001（AC-1）：终端执行 `tccutil reset ScreenCapture com.assistant.app` 清 TCC 记录；用 Xcode Clean Build 或 `./build_and_run.sh` clean+run；启动 app 走到 onboarding 屏幕录制步骤，观察系统权限弹窗是否出现（预期出现）",
+        "TC-M-002（AC-2）：TC-M-001 后打开系统设置 → 隐私与安全 → 屏幕录制，观察本 App 是否出现在列表中（预期出现）",
+        "TC-M-003（AC-3）：TC-M-002 中授权后回到 app，点 Recheck / Continue，观察屏幕录制步骤是否可继续进入下一步",
+        "TC-M-004（AC-4）：验证 onboarding 7 步中每一步 footer 左下角都能看到 Skip Setup 按钮（欢迎/hotkey/clipboard/screenRecording/accessibility/launchAtLogin/done）",
+        "TC-M-005（AC-4 + P-2.2）：点 Skip Setup，弹出确认 Alert，含正确标题/正文/两个按钮；点 Cancel 关闭 Alert 不做改变",
+        "TC-M-006（AC-5）：重新点 Skip → Alert 选 Skip，观察 onboarding 窗口关闭 + 状态栏图标出现 + 主功能可用",
+        "TC-M-007（AC-6）：完全退出 app 后重启，观察不再弹 onboarding，直接进入主界面",
+        "TC-M-008（AC-7）：跳过 onboarding 后按截图快捷键（如 ⌥Space + 截图触发键，或项目实际快捷键），观察应用内 Alert 弹窗（AppDelegate.ensureScreenRecordingPermission）；点其中'打开设置'按钮，系统设置'屏幕录制'应打开且 App 出现在列表（**关键**：这是 T-003 修复的对称路径）",
+        "TC-M-009（AC-7 · known-limitation）：进入设置面板尝试触发权限申请（SettingsViewModel 相关入口），观察行为；本迭代允许 known-limitation（评审 §五：SettingsViewModel 未补 request 属 P2 遗留）",
+        "把每条手工用例结果（通过/失败 + 一句观察）追加到 doc/iterations/v1.1.0/test/report.md",
+        "任何一条失败：不修改 tasks.json，回报 BLOCKED，主会话决定回哪个 T 修订"
+      ],
+      "test_cases": ["TC-M-001", "TC-M-002", "TC-M-003", "TC-M-004", "TC-M-005", "TC-M-006", "TC-M-007", "TC-M-008", "TC-M-009"],
+      "done_definition": "TC-M-001~M-008 均通过（M-009 允许 known-limitation 标注但需真跑并记录观察）；结果写入 doc/iterations/v1.1.0/test/report.md 手工验收章节；无 Sparkle 遗留、无重启复弹、跳过后主界面可用。",
+      "passes": false,
+      "blocked": false
+    }
+  ]
+}
