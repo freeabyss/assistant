@@ -24,9 +24,9 @@
 ## 状态推进
 
 - [x] ① 需求分析 —— doc/prd.md（直接修订，commit e41dc56）
-- [x] ② 产品设计 —— doc/prd.md（直接修订，Gate 1 待审阅）
-- [ ] ③ 架构设计 —— doc/architecture/*.md（直接修订）
-- [ ] ④ 架构评审 —— doc/iterations/v1.2.0/architecture/review.md（评审记录）
+- [x] ② 产品设计 —— doc/prd.md（直接修订，Gate 1 通过 2026-07-03，commit 510d857）
+- [x] ③ 架构设计 —— doc/architecture/*.md（直接修订，commit e9c448f）
+- [x] ④ 架构自审 —— doc/iterations/v1.2.0/architecture/review.md（APPROVED_WITH_MINOR_FIXES，0 阻塞），Gate 2 待审阅
 - [ ] ⑤ 开发测试
 - [ ] ⑥ 上线部署
 
@@ -34,3 +34,5 @@
 
 - 2026-07-03 迭代初始化，issue #5 创建，分支 v1.2.0 创建（commit ed4e524）
 - 2026-07-03 PRD 重写完成（commit e41dc56），进入 Gate 1
+- 2026-07-03 PRD UI 设计语言补全（commit 510d857），Gate 1 通过 by @user
+- 2026-07-03 架构设计完成（design.md v17 / api.md v3 / db.md v3），架构自审 APPROVED（0 阻塞，6 改善），commit e9c448f，进入 Gate 2
