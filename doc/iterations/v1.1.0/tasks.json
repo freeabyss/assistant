@@ -3,7 +3,7 @@
   "issue": 3,
   "branch": "v1.1.0",
   "mode": "auto",
-  "notes": "Onboarding 死锁修复迭代：TCC 权限申请触发（Bug）+ 跳过向导入口（Feature）。方案 A 最小侵入。开发关键约束：skipOnboarding() 必须显式 set(false, .clipboardEnabled)，因为 AssistantSettingDefaults 默认为 true（PersistenceController.swift:307），若不写会读回 true 违背 PRD P-2.3。",
+  "notes": "Onboarding 死锁修复迭代：TCC 权限申请触发（Bug）+ 跳过向导入口（Feature）。方案 A 最小侵入。开发关键约束：skipOnboarding() 必须显式 set(false, .clipboardEnabled)，因为 AssistantSettingDefaults 默认为 true（PersistenceController.swift:307），若不写会读回 true 违背 PRD P-2.3。本迭代用户决策：TC-M-007（重启不重弹）/TC-M-008（按需申请 Alert）/TC-M-009（设置面板入口）3 条手工用例未执行，AC-6/AC-7 端到端留待下一迭代验证；code review 坐实代码层对称。",
   "tasks": [
     {
       "id": "T-001",
@@ -81,7 +81,7 @@
     },
     {
       "id": "T-004",
-      "title": "手工验收：Clean 构建 TCC 权限申请全路径 + 跳过路径 + 按需申请路径",
+      "title": "手工验收：TCC 权限申请 + Skip 路径核心路径（6/9 条，剩余 3 条留待后续迭代）",
       "priority": "P0",
       "depends_on": ["T-001", "T-002", "T-003"],
       "layer": "verification",
@@ -89,22 +89,20 @@
         "doc/iterations/v1.1.0/test/report.md"
       ],
       "steps": [
-        "TC-M-001（AC-1）：终端执行 `tccutil reset ScreenCapture com.assistant.app` 清 TCC 记录；用 Xcode Clean Build 或 `./build_and_run.sh` clean+run；启动 app 走到 onboarding 屏幕录制步骤，观察系统权限弹窗是否出现（预期出现）",
-        "TC-M-002（AC-2）：TC-M-001 后打开系统设置 → 隐私与安全 → 屏幕录制，观察本 App 是否出现在列表中（预期出现）",
-        "TC-M-003（AC-3）：TC-M-002 中授权后回到 app，点 Recheck / Continue，观察屏幕录制步骤是否可继续进入下一步",
-        "TC-M-004（AC-4）：验证 onboarding 7 步中每一步 footer 左下角都能看到 Skip Setup 按钮（欢迎/hotkey/clipboard/screenRecording/accessibility/launchAtLogin/done）",
-        "TC-M-005（AC-4 + P-2.2）：点 Skip Setup，弹出确认 Alert，含正确标题/正文/两个按钮；点 Cancel 关闭 Alert 不做改变",
-        "TC-M-006（AC-5）：重新点 Skip → Alert 选 Skip，观察 onboarding 窗口关闭 + 状态栏图标出现 + 主功能可用",
-        "TC-M-007（AC-6）：完全退出 app 后重启，观察不再弹 onboarding，直接进入主界面",
-        "TC-M-008（AC-7）：跳过 onboarding 后按截图快捷键（如 ⌥Space + 截图触发键，或项目实际快捷键），观察应用内 Alert 弹窗（AppDelegate.ensureScreenRecordingPermission）；点其中'打开设置'按钮，系统设置'屏幕录制'应打开且 App 出现在列表（**关键**：这是 T-003 修复的对称路径）",
-        "TC-M-009（AC-7 · known-limitation）：进入设置面板尝试触发权限申请（SettingsViewModel 相关入口），观察行为；本迭代允许 known-limitation（评审 §五：SettingsViewModel 未补 request 属 P2 遗留）",
-        "把每条手工用例结果（通过/失败 + 一句观察）追加到 doc/iterations/v1.1.0/test/report.md",
-        "任何一条失败：不修改 tasks.json，回报 BLOCKED，主会话决定回哪个 T 修订"
+        "TC-M-001（AC-1）：tccutil reset + clean build，进入 onboarding 屏幕录制步骤观察系统权限弹窗出现（通过）",
+        "TC-M-002（AC-2）：打开系统设置屏幕录制页，本 App 出现在列表（通过）",
+        "TC-M-003（AC-3）：授权后 Recheck/Continue 可继续（通过）",
+        "TC-M-004（AC-4）：onboarding 7 步 footer 都可见 Skip 按钮（通过）",
+        "TC-M-005（AC-4 + P-2.2）：点 Skip 弹出确认 Alert；Cancel 不改变状态（通过）",
+        "TC-M-006（AC-5）：Alert 点 Skip → 进入主界面（通过）",
+        "TC-M-007/008/009：按用户决策本次不执行，留待下一迭代验证（AC-6/AC-7 端到端行为）",
+        "结果写入 doc/iterations/v1.1.0/test/report.md"
       ],
-      "test_cases": ["TC-M-001", "TC-M-002", "TC-M-003", "TC-M-004", "TC-M-005", "TC-M-006", "TC-M-007", "TC-M-008", "TC-M-009"],
-      "done_definition": "TC-M-001~M-008 均通过（M-009 允许 known-limitation 标注但需真跑并记录观察）；结果写入 doc/iterations/v1.1.0/test/report.md 手工验收章节；无 Sparkle 遗留、无重启复弹、跳过后主界面可用。",
-      "passes": false,
-      "blocked": false
+      "test_cases": ["TC-M-001", "TC-M-002", "TC-M-003", "TC-M-004", "TC-M-005", "TC-M-006"],
+      "done_definition": "TC-M-001~M-006 均通过；TC-M-007/008/009 已文档化留待后续（AC-6/AC-7 由 code review 坐实代码对称，但未端到端验证）；结果写入 report.md；PR body 如实标注待验证项。",
+      "passes": true,
+      "blocked": false,
+      "blocked_reason": "TC-M-007/008/009 按用户决策延期"
     }
   ]
 }

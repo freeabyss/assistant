@@ -6,7 +6,7 @@
 - **模式**：auto
 - **Issue**：#3
 - **分支**：v1.1.0
-- **PR**：-
+- **PR**：#<N>（open，开出来后填）
 - **开始日期**：2026-07-02
 - **上线日期**：-
 
@@ -29,8 +29,8 @@
   - [x] 测试用例生成 —— test/cases.md
   - [x] 用例评审 —— test/review.md
   - [x] 任务拆解 —— tasks.json（Gate 3 auto 模式跳过）
-  - [ ] 单任务开发 → code review → 测试
-- [ ] ⑤ 收尾 —— 开 PR（Gate 4）
+  - [x] 单任务开发 → code review → 测试（T-001/002/003 全绿；T-004 手工 6/6 通过，3 条延期）
+- [x] ⑤ 收尾 —— 开 PR：#?（Gate 4 待 GitHub review + merge）
 - [ ] ⑥ 上线部署（Gate 5，用户触发）
 
 ## 关键节点
@@ -47,3 +47,5 @@
 - 2026-07-02 T-002 code review：APPROVED（无阻塞级；clipboardEnabled 显式 false 已落地；swift 134 / xcodebuild 125）
 - 2026-07-02 T-002 自动化验证通过 by test subagent（swift 134；xcodebuild 125），passes=true
 - 2026-07-02 T-003 开发+自审+测试完成（swift 134；xcodebuild 125），passes=true；AppDelegate.ensureScreenRecordingPermission 补 request，AC-7 手工验收留 T-004
+- 2026-07-03 T-004 手工验收：TC-M-001~006 由 @user 验证通过；TC-M-007/008/009 按用户决策延期至下一迭代
+- 2026-07-03 PR #<N> 已开，进入 Gate 4

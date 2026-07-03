@@ -40,3 +40,9 @@
 - swift test 134/134；xcodebuild 125/125 TEST SUCCEEDED
 - 单文件 diff（仅 AppDelegate.swift 该函数体）
 - self-review APPROVED（reviews/task-T-003-review.md）
+
+## 2026-07-03 · T-004 手工验收 + 收尾开 PR
+- TC-M-001~006 由 @user 亲自验证通过（核心路径：TCC 注册 + Skip 进入主界面）
+- TC-M-007/008/009 按用户决策延期（AC-6/AC-7 端到端），cases.md 与 tasks.json 已记录
+- T-004.passes=true
+- 代码冻结，准备开 PR
