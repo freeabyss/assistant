@@ -54,7 +54,7 @@
       ],
       "test_cases": ["TC-U-002", "TC-U-003", "TC-U-004", "TC-U-005", "TC-U-006"],
       "done_definition": "1) OnboardingViewModel 进入 .screenRecording 时 + openPermissionSettings(.screenRecording) 时均触发 requestScreenRecordingPrompt；2) skipOnboarding 显式写 clipboardEnabled=false + onboardingCompleted=true + 触发 onComplete；3) OnboardingView footer 左下角有 Skip 按钮 + 确认 Alert，7 步都可见；4) Localizable.xcstrings 双语键齐全；5) TC-U-002/003/004/005/006 单元测试全绿；6) swift test ≥ 132（基线 127 +5）；7) xcodebuild test 全绿 TEST SUCCEEDED（新增测试是否入 Xcode target 属 P2，若不入不阻塞但需在 progress.md 记录）。",
-      "passes": false,
+      "passes": true,
       "blocked": false
     },
     {

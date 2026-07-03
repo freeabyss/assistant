@@ -21,3 +21,27 @@
 ### T-001 结论
 - done_definition：6/6 满足
 - 是否可以 commit T-001：是
+
+## 二、T-002 自动化测试（Step 3 独立验证）
+
+- **执行时间**：2026-07-02
+- **执行者**：test subagent（独立复跑）
+
+### swift test
+- 命令：`swift test`
+- 结果：134/134 通过（本次 N=134；v1.0.1 基线 126 + T-001 新增 2 + T-002 新增 6）
+- 新增用例 TC-U-002/003/004/005/006：全绿（无 XCTSkip 降级）
+- 判定：PASS
+- 备注：首跑遭遇一条与 T-002 无关的历史 flaky 崩溃（SearchBlacklistRepositoryTests，PersistenceController.initializeDefaultSettings 的 NSCFSet mutated-while-enumerated），重跑一次即全绿
+
+### xcodebuild test
+- 命令：`xcodebuild test -project SnapVault.xcodeproj -scheme SnapVault -destination 'platform=macOS' -derivedDataPath ./DerivedData`
+- 结果：125/125 TEST SUCCEEDED（新增测试追加到既有 OnboardingViewModelTests.swift，随 target 一起执行；预期 125）
+- 判定：PASS
+
+### T-002 结论
+- done_definition：7/7 满足
+- clipboardEnabled 显式 false：确认落地（红线）
+- Skip 按钮 7 步可见：确认（footer 恒渲染）
+- L10n 双语齐全：确认
+- 可以 commit T-002：是

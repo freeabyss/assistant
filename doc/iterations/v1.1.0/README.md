@@ -44,3 +44,5 @@
 - 2026-07-02 任务拆解完成 —— tasks.json（4 个任务：T-001 协议 + T-002 VM/View/L10n + T-003 AppDelegate + T-004 手工验收）；auto 模式跳过 Gate 3
 - 2026-07-02 T-001 code review：APPROVED
 - 2026-07-02 T-001 自动化验证通过 by test subagent（swift 128；xcodebuild 119），passes=true
+- 2026-07-02 T-002 code review：APPROVED（无阻塞级；clipboardEnabled 显式 false 已落地；swift 134 / xcodebuild 125）
+- 2026-07-02 T-002 自动化验证通过 by test subagent（swift 134；xcodebuild 125），passes=true
