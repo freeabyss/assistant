@@ -23,8 +23,8 @@
 
 ## 状态推进
 
-- [ ] ① 需求分析 —— doc/prd.md（直接修订）
-- [ ] ② 产品设计 —— doc/prd.md（直接修订，完成后 Gate 1）
+- [x] ① 需求分析 —— doc/prd.md（直接修订，commit e41dc56）
+- [x] ② 产品设计 —— doc/prd.md（直接修订，Gate 1 待审阅）
 - [ ] ③ 架构设计 —— doc/architecture/*.md（直接修订）
 - [ ] ④ 架构评审 —— doc/iterations/v1.2.0/architecture/review.md（评审记录）
 - [ ] ⑤ 开发测试
@@ -32,4 +32,5 @@
 
 ## 关键节点
 
-- 2026-07-03 迭代初始化，issue #5 创建，分支 v1.2.0 创建
+- 2026-07-03 迭代初始化，issue #5 创建，分支 v1.2.0 创建（commit ed4e524）
+- 2026-07-03 PRD 重写完成（commit e41dc56），进入 Gate 1
