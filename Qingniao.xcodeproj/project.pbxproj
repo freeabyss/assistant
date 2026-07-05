@@ -72,6 +72,7 @@
 		A1000100000000000000003F /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003F; };
 		A10001000000000000000040 /* AssistantFileSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000040; };
 		F00500000000000000000101 /* DataDirectoryMigrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00500000000000000000001 /* DataDirectoryMigrator.swift */; };
+		F00500000000000000000102 /* DataManagementService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00500000000000000000002 /* DataManagementService.swift */; };
 		A10001000000000000000041 /* PersistenceControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000041; };
 		F00500000000000000000201 /* DataDirectoryMigratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00500000000000000000202 /* DataDirectoryMigratorTests.swift */; };
 		A10001000000000000000042 /* AssistantClipboardRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000042; };
@@ -178,6 +179,7 @@
 		A1000000000000000000003F /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
 		A10000000000000000000040 /* AssistantFileSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantFileSystem.swift; sourceTree = "<group>"; };
 		F00500000000000000000001 /* DataDirectoryMigrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Database/DataDirectoryMigrator.swift; sourceTree = SOURCE_ROOT; };
+		F00500000000000000000002 /* DataManagementService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Services/DataManagement/DataManagementService.swift; sourceTree = SOURCE_ROOT; };
 		A10000000000000000000041 /* PersistenceControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceControllerTests.swift; sourceTree = "<group>"; };
 		F00500000000000000000202 /* DataDirectoryMigratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QingniaoTests/DataDirectoryMigratorTests.swift; sourceTree = SOURCE_ROOT; };
 		A10000000000000000000042 /* AssistantClipboardRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantClipboardRepository.swift; sourceTree = "<group>"; };
@@ -316,6 +318,7 @@
 				A10003000000000000000014 /* OCRService */,
 				A10003000000000000000015 /* UpdateService */,
 				A10003000000000000000019 /* DataCleanup */,
+				F00500000000000000000010 /* DataManagement */,
 				A1000300000000000000001A /* ExportService */,
 			A1000300000000000000001B /* ScreenshotService */,
 			);
@@ -514,6 +517,14 @@
 				A1000000000000000000001D /* DataCleanupService.swift */,
 			);
 			path = DataCleanup;
+			sourceTree = "<group>";
+		};
+		F00500000000000000000010 /* DataManagement */ = {
+			isa = PBXGroup;
+			children = (
+				F00500000000000000000002 /* DataManagementService.swift */,
+			);
+			path = DataManagement;
 			sourceTree = "<group>";
 		};
 		A1000300000000000000001A /* ExportService */ = {
@@ -784,6 +795,7 @@
 				A1000100000000000000003F /* PersistenceController.swift in Sources */,
 				A10001000000000000000040 /* AssistantFileSystem.swift in Sources */,
 				F00500000000000000000101 /* DataDirectoryMigrator.swift in Sources */,
+				F00500000000000000000102 /* DataManagementService.swift in Sources */,
 				A10001000000000000000042 /* AssistantClipboardRepository.swift in Sources */,
 				B00600000000000000000001 /* SearchBlacklistRepository.swift in Sources */,
 				A10001000000000000000005 /* ContentRepository.swift in Sources */,
