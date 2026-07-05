@@ -328,3 +328,73 @@ TOK(6) 设计 token / BRAND(7) 改名一致性 / DATA(5) 数据迁移 / DI(3) Ap
 - ClipboardMonitor 里 `ClipboardEvent`（legacy 形状）+ `.clipboardItemSaved` 声明保留（live ClipboardMonitor 仍 post 该通知，ClipboardListViewModel 订阅）。
 - GRDB 依赖仍在（DatabaseManager/ClipboardItem/Tag/AppSetting 模型），api.md 说 v1.2 保留兼容不写入；未在本任务移除。
 - ClipboardItemRow.swift / PreviewPanel.swift 保留（T-012 files_touch_hint 引用、各自有 #Preview 可独立编译），虽然当前无 live 调用点。
+
+---
+
+## T-006 AppContainer DI 容器 + 窗口控制器拆分（解耦 AppDelegate）（已完成 · 2026-07-05）
+
+### 目标
+把 ~600 行 god object `AppDelegate` 按职责拆成 AppContainer(DI 根) + 5 个 App Shell 控制器，AppDelegate 瘦身到 <200 行；顺带清掉 review 标注的强制解包点。不重写任何 UI 外观（SearchPanelView/ClipboardListView/ManagementCenterView 保持现状）。
+
+### 新增文件（Qingniao/App/Controllers/）
+- **AppContainer.swift**（@MainActor, NSObject）：依赖注入根。
+  - 持有 Data/Repository/Service 单例：`clipboardSearchIndex`、`resourceStore`、`clipboardRepository`(IndexingClipboardRepository)、`clipboardMonitor`、`clipboardService`、`cleanupService`、`updateService`、`screenshotService`、三个 SearchSource(app/command/calculator)。
+  - 惰性持有 5 个控制器（statusItem/commandBar/clipboardHistory/settings/screenshot）。
+  - `bootstrapDataStack(onMigrationFallback:)`：目录迁移(T-003) → DatabaseManager.setup → PersistenceController.load → 索引重建 → 建 App Support 目录。
+  - `startFullExperienceServices()` / `stopRuntimeServices()`：剪贴板监听 + 清理服务生命周期。
+  - `syncRuntimeSettings()`（clipboardEnabled）/ `syncLaunchAtLoginPreference()` / `loadOnboardingCompletionState()`。
+  - `registerCommandObservers()` + 全部命令通知处理（openManagementCenter/settingsDidChange/toggleClipboardRecording/checkPermissions/capture*/checkForUpdates），路由到对应控制器/服务。
+  - 工厂：`makeSearchPanelViewModel(onClose:)`（原 AppDelegate.makeSearchPanelViewModel 全套 sources/executor 组装搬来）、`makeClipboardListViewModel()`。
+  - init 标 `nonisolated override init()`，避免 AppDelegate 存储属性初始化时的 main-actor 隔离报错。
+- **StatusItemController.swift**（NSObject）：NSStatusItem + NSMenu（打开搜索/剪贴板/截图/分隔/设置/关于/分隔/退出），菜单回调转 container 控制器；截图项通过 `onStartScreenshot` 闭包回调。
+- **CommandBarController.swift**（NSObject）：Command Bar NSPanel（borderless、floating、hidesOnDeactivate=false、cornerRadius 12、宽 640）。`toggle()/show()/hide()/isVisible`；保留 resignKey + localEventMonitor(guard let) 双关闭、query 驱动的动态 resize（156↔560）、focusSearchField 通知。承载现有 SearchPanelView（UI 重写留 T-011）。含 `FloatingCommandPanel`(canBecomeKey/Main)。
+- **ClipboardHistoryWindowController.swift**（NSWindowController）：min 880x600、title「剪贴板历史」、承载 ClipboardListView、首次创建复用（orderOut 隐藏，isReleasedWhenClosed=false）。
+- **SettingsWindowController.swift**（NSWindowController）：min 920x640、title「管理中心」、承载 ManagementCenterView（viewModel 由控制器持有），`show(route:)` 直接调 `SettingsViewModel.select(route:)` 导航——**刻意不走 .openManagementCenter 通知**避免与 AppDelegate/AppContainer 的观察者递归。
+- **ScreenshotWindowController.swift**：薄封装，惰性持有现有 `ScreenshotToolbarController`；`captureRegion/captureWindow/captureFullScreen` 共用一个 `performCapture` 流程（含权限校验弹窗、隐藏命令栏、捕获、预览、取消恢复）。UI 重写留 T-014。
+
+### 搬移方法清单（AppDelegate → 去向）
+| 原 AppDelegate 方法 | 去向 |
+| :-- | :-- |
+| makeSearchPanelViewModel / assistant* 组装 | AppContainer.makeSearchPanelViewModel + 存储属性 |
+| makeSearchPanelViewModel 里 clipboard 组装（showManagementCenter 内） | AppContainer.makeClipboardListViewModel |
+| setupStatusItem / makeStatusMenu / statusItemClicked / *FromMenu | StatusItemController |
+| togglePanel / showPanel / closePanel / createPanel / resizePanelForSearchState / panelDidResignKey / start/stopMonitoringEvents | CommandBarController |
+| showClipboardHistoryWindow | ClipboardHistoryWindowController.show |
+| showManagementCenter(route:) | SettingsWindowController.show(route:) |
+| performRegionCapture / performWindowCapture / performScreenCapture / ensureScreenRecordingPermission | ScreenshotWindowController |
+| startClipboardMonitoring / startInitialClipboardIndexRebuild / syncAssistantRuntimeSettings | AppContainer |
+| createApplicationSupportDirectory / migrateDataDirectoryIfNeeded / syncLaunchAtLoginPreference / loadOnboardingCompletionState | AppContainer（migration fallback alert 仍在 AppDelegate，因需 NSAlert/UI） |
+| handleCommand* / handleOpenManagementCenter / handleSettingsDidChange / handleCheckForUpdates | AppContainer.registerCommandObservers + handlers |
+| applicationDidFinishLaunching / applicationWillTerminate / showOnboardingWindow / ensureOnboardingGate / presentMigrationFallbackAlert / registerGlobalShortcuts / activateApp | **保留在 AppDelegate** |
+
+AppDelegate 通过 `container.onboardingGate = { self.ensureOnboardingGate() }` 把 onboarding 门禁注入容器，控制器调用 `container.ensureOnboardingReady()` 决定是否放行（保留原「未完成 onboarding 则弹向导、不放行」行为）。
+
+### 强制解包整改（review M-6）
+- `localEventMonitor!` → CommandBarController 内 `guard let monitor = localEventMonitor`。
+- `ReleaseInfoService` 4 个 `URL(string:)!` → 私有 `url(_:)` helper（`URL(string:) ?? URL(fileURLWithPath:"/")`）；`errorSummary!` → 可选绑定。
+- `SystemCommandSource` `URL(string:"x-apple.systempreferences:")!` → guard let，失败 throw executionFailed。
+- `CalculatorSource` `try! NSRegularExpression` → do/catch，编译失败记日志并禁用换算（regex 改可选，parse 首行 guard）。
+- `PreviewPanel` `documentView as! NSTextView` → guard let 优雅降级。
+- 剩余 fatalError 仅 4 处，全是 AppKit `init(coder:)` 样板。
+
+### 验证结果
+- `xcodebuild -project Qingniao.xcodeproj -scheme Qingniao -configuration Debug build` → **BUILD SUCCEEDED**。
+- `xcodebuild ... build-for-testing` → **TEST BUILD SUCCEEDED**。
+- `swift build` → Build complete；`swift test` → **133 tests, 0 failures**。
+- `grep 'try!| as! |string:)!'` 非测试代码仅剩 ReleaseInfoService 注释里的说明字样，无 live 强解。
+- AppDelegate.swift = **150 行**（< 200 目标）。
+
+### commit
+1. `refactor(T-006): extract AppContainer DI root + window controllers from AppDelegate`（新增 6 控制器文件 + AppDelegate 瘦身 + QingniaoApp Settings 场景清空 + pbxproj 接线）
+2. `fix(T-006): remove force-unwraps flagged in v1.2 robustness pass`
+3. 本次 progress/tasks 记录 commit
+
+### 留给后续 agent 的提示
+- **pbxproj 是手工维护的 group 型工程**（非 fileSystemSynchronized）。新增 .swift 必须同时：① SwiftPM 自动 glob `Qingniao/` 目录（无需改）；② **手动在 project.pbxproj 加 PBXBuildFile + PBXFileReference + PBXGroup children + Sources build phase 四处**。本次新控制器用 `G001...` 前缀 id，放在新建的 `App/Controllers` group。
+- **AppState.swift 现已成为死代码**：QingniaoApp 原来靠它注入 SettingsView 的 environmentObject，本次 Settings 场景改 EmptyView 后无人引用。未删（避免动 pbxproj 引用、非 T-006 目标）；可在后续清理任务顺手删（需同步删 pbxproj 三处引用）。
+- **SettingsWindowController 用直接 select(route:) 导航**，没订阅 .openManagementCenter；但 ManagementCenterView 自身仍订阅该通知（SearchPanelViewModel/SystemCommandSource 会 post）。AppContainer.handleOpenManagementCenter 收到通知后调 `settingsWindowController.show(route:)`，窗口已存在时再 select 一次——不会递归（控制器不再 post 通知）。
+- **命令栏 UI 仍是 SearchPanelView**（T-011 会重写为 Jade 风格 CommandBarView，装进 CommandBarController 即可，无需再动窗口层）。
+- **截图 UI 仍是 ScreenshotToolbarController/AnnotationEditorWindow/ScreenshotOverlay**（T-014 重写；ScreenshotWindowController 只搬了编排逻辑，未碰 UI）。
+- **Onboarding 显示逻辑保持原样**（单屏化是 T-010）；AppDelegate 仍持 onboardingWindow 并通过 onboardingGate 闭包注入容器。
+- api.md v3 里 CommandBarController 要求 `.ultraThinMaterial`、20px 圆角——本任务保留现状（borderless panel + cornerRadius 12 + SearchPanelView 自带外观），材质/圆角属于 T-011 UI 重写范畴，未提前引入。
+- api.md 还列了 AnnotationWindowController / ScreenshotOverlayController / GlobalShortcutManager / HotkeyConflictDetector 作为独立类型——本任务按「薄封装、不重写」原则用 ScreenshotWindowController 统一封装现有截图窗口，热键仍用 KeyboardShortcuts 直接注册；独立的 GlobalShortcutManager/冲突检测/全屏热键注册留给热键相关任务。

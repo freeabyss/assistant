@@ -253,7 +253,7 @@
         "REG-007"
       ],
       "done_definition": "AppDelegate.swift 行数 < 200；所有窗口通过独立 controller 管理；swift test 通过、xcodebuild build 通过、无 ! 强解（除 init(coder) 和显式 fatalError）",
-      "passes": false
+      "passes": true
     },
     {
       "id": "T-007",
