@@ -2,6 +2,7 @@ import AppKit
 import Foundation
 import KeyboardShortcuts
 import ServiceManagement
+import SwiftUI
 import os.log
 
 /// Notification posted when Assistant MVP settings change so long-running services
@@ -11,32 +12,87 @@ extension Notification.Name {
     static let openManagementCenter = Notification.Name("com.assistant.openManagementCenter")
 }
 
+/// Sidebar groupings for the management center (P-03). `.top` has no header;
+/// `.core` / `.system` render a Section header.
+enum ManagementSidebarSection: String, CaseIterable, Identifiable, Hashable {
+    case top
+    case core
+    case system
+
+    var id: String { rawValue }
+
+    /// Localized header title, or `nil` for the top (headerless) group.
+    var header: String? {
+        switch self {
+        case .top: return nil
+        case .core: return L10n.localized("management.section.core")
+        case .system: return L10n.localized("management.section.system")
+        }
+    }
+}
+
+/// The eleven detail pages of the settings / management center (P-03).
 enum ManagementCenterPage: String, CaseIterable, Identifiable, Hashable {
     case overview
     case clipboard
-    case settings
+    case shortcuts
+    case screenshot
+    case searchSources
+    case appearance
     case permissions
+    case data
+    case updates
     case about
+    case feedback
 
     var id: String { rawValue }
+
+    /// Which sidebar group this page belongs to.
+    var section: ManagementSidebarSection {
+        switch self {
+        case .overview:
+            return .top
+        case .clipboard, .shortcuts, .screenshot, .searchSources:
+            return .core
+        case .appearance, .permissions, .data, .updates, .about, .feedback:
+            return .system
+        }
+    }
+
+    /// Pages belonging to a given sidebar section, in display order.
+    static func pages(in section: ManagementSidebarSection) -> [ManagementCenterPage] {
+        allCases.filter { $0.section == section }
+    }
 
     var title: String {
         switch self {
         case .overview: return L10n.localized("management.page.overview")
         case .clipboard: return L10n.localized("management.page.clipboard")
-        case .settings: return L10n.localized("management.page.settings")
+        case .shortcuts: return L10n.localized("management.page.shortcuts")
+        case .screenshot: return L10n.localized("management.page.screenshot")
+        case .searchSources: return L10n.localized("management.page.searchSources")
+        case .appearance: return L10n.localized("management.page.appearance")
         case .permissions: return L10n.localized("management.page.permissions")
+        case .data: return L10n.localized("management.page.data")
+        case .updates: return L10n.localized("management.page.updates")
         case .about: return L10n.localized("management.page.about")
+        case .feedback: return L10n.localized("management.page.feedback")
         }
     }
 
     var iconName: String {
         switch self {
         case .overview: return "sparkles"
-        case .clipboard: return "clipboard"
-        case .settings: return "slider.horizontal.3"
+        case .clipboard: return "doc.on.clipboard"
+        case .shortcuts: return "keyboard"
+        case .screenshot: return "camera.viewfinder"
+        case .searchSources: return "magnifyingglass"
+        case .appearance: return "paintpalette"
         case .permissions: return "lock.shield"
+        case .data: return "externaldrive"
+        case .updates: return "arrow.clockwise"
         case .about: return "info.circle"
+        case .feedback: return "envelope"
         }
     }
 }
@@ -66,17 +122,32 @@ final class SettingsViewModel: ObservableObject {
     private let userDefaults: UserDefaults
     private let dataManagementService: DataManagementService
     private let conflictDetector: HotkeyConflictDetector
+    private let clipboardRepository: ClipboardRepositoryProtocol
     private let logger = Logger.app
 
     @Published var selectedPage: ManagementCenterPage = .overview
+    @Published var sidebarFilter: String = ""
     @Published var sourceToggles: [SearchSourceToggle] = SettingsViewModel.defaultSearchSourceToggles
     @Published var clipboardEnabled = true
     @Published var clipboardRetention: ClipboardRetention = .thirtyDays
     @Published var screenshotSaveDirectory: URL = URL(fileURLWithPath: ("~/Desktop" as NSString).expandingTildeInPath)
     @Published var launchAtLoginEnabled = true
     @Published var languageMode: LanguageMode = .followSystem
+    @Published var appearanceMode: AppearanceMode = .system
     @Published var blacklistItems: [SearchBlacklistItemSnapshot] = []
     @Published var permissionStatuses: [PermissionKind: PermissionStatus] = Dictionary(uniqueKeysWithValues: PermissionKind.allCases.map { ($0, .unknown) })
+
+    // v1.2 (T-013) overview usage metrics. Zero when no data / repositories unavailable.
+    @Published var usageDaysCount: Int = 0
+    @Published var averageDailyLaunches: Int = 0
+    @Published var clipboardItemCount: Int = 0
+    @Published var screenshotItemCount: Int = 0
+
+    // v1.2 (T-013) data page storage usage (bytes). `nil` until computed.
+    @Published var storageUsageBytes: Int64?
+
+    // v1.2 (T-013) auto-check-updates preference (MVP: only opens Releases page).
+    @Published var autoCheckUpdates = true
 
     @Published var newBlacklistSourceID = SearchSourceID.app.rawValue
     @Published var newBlacklistResultID = ""
@@ -141,7 +212,8 @@ final class SettingsViewModel: ObservableObject {
         notificationCenter: NotificationCenter = .default,
         userDefaults: UserDefaults = .standard,
         dataManagementService: DataManagementService = DataManagementService(),
-        conflictDetector: HotkeyConflictDetector = HotkeyConflictDetector()
+        conflictDetector: HotkeyConflictDetector = HotkeyConflictDetector(),
+        clipboardRepository: ClipboardRepositoryProtocol = ClipboardRepository()
     ) {
         self.settingsService = settingsService
         self.blacklistRepository = blacklistRepository
@@ -151,6 +223,7 @@ final class SettingsViewModel: ObservableObject {
         self.userDefaults = userDefaults
         self.dataManagementService = dataManagementService
         self.conflictDetector = conflictDetector
+        self.clipboardRepository = clipboardRepository
     }
 
     func load() async {
@@ -158,12 +231,20 @@ final class SettingsViewModel: ObservableObject {
         await reloadBlacklist()
         await refreshPermissions()
         refreshShortcutConflicts()
+        await refreshOverviewStats()
+        await refreshStorageUsage()
     }
 
     func select(route: SettingsRoute) {
         switch route {
-        case .settings, .searchSources, .hotkey, .screenshot:
-            selectedPage = .settings
+        case .settings:
+            selectedPage = .overview
+        case .searchSources:
+            selectedPage = .searchSources
+        case .hotkey:
+            selectedPage = .shortcuts
+        case .screenshot:
+            selectedPage = .screenshot
         case .permissions:
             selectedPage = .permissions
         case .clipboardHistory:
@@ -187,6 +268,7 @@ final class SettingsViewModel: ObservableObject {
             try await settingsService.set(screenshotSaveDirectory, for: .screenshotSaveDirectory)
             try await settingsService.set(launchAtLoginEnabled, for: .launchAtLoginEnabled)
             try await settingsService.set(languageMode, for: .languageMode)
+            try await settingsService.set(appearanceMode, for: .appearanceMode)
             try launchAtLoginService.setEnabled(launchAtLoginEnabled)
             applyLanguagePreference()
             notificationCenter.post(name: .settingsDidChange, object: nil)
@@ -210,7 +292,8 @@ final class SettingsViewModel: ObservableObject {
                 .clipboardRetention,
                 .screenshotSaveDirectory,
                 .launchAtLoginEnabled,
-                .languageMode
+                .languageMode,
+                .appearanceMode
             ] {
                 try await settingsService.reset(key: key)
             }
@@ -224,6 +307,76 @@ final class SettingsViewModel: ObservableObject {
 
     func updateScreenshotDirectory(_ directory: URL) {
         screenshotSaveDirectory = directory
+        Task { try? await settingsService.set(directory, for: .screenshotSaveDirectory) }
+    }
+
+    // MARK: - Appearance (T-013)
+
+    /// Persist the appearance override immediately so the root view's
+    /// `.preferredColorScheme` can react without a full "save".
+    func updateAppearanceMode(_ mode: AppearanceMode) {
+        appearanceMode = mode
+        Task {
+            do {
+                try await settingsService.set(mode, for: .appearanceMode)
+                notificationCenter.post(name: .settingsDidChange, object: nil)
+            } catch {
+                logger.error("Failed to persist appearance mode: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+    }
+
+    /// SwiftUI `ColorScheme?` for `.preferredColorScheme`; `nil` == follow system.
+    var preferredColorScheme: ColorScheme? {
+        switch appearanceMode {
+        case .system: return nil
+        case .light: return .light
+        case .dark: return .dark
+        }
+    }
+
+    // MARK: - Overview stats + storage (T-013)
+
+    /// Refresh the four overview StatCards. Falls back to 0 on any failure so the
+    /// overview always renders (per task spec: "没有就返回 0").
+    func refreshOverviewStats() async {
+        // Clipboard item count from history.
+        if let history = try? await clipboardRepository.fetchHistory(filter: ClipboardHistoryFilter()) {
+            clipboardItemCount = history.count
+            screenshotItemCount = history.filter { $0.contentType == .image }.count
+        }
+
+        // Usage days: elapsed days since first launch (persisted in the app
+        // UserDefaults suite). Average daily launches derived from a launch counter.
+        let firstLaunch = firstLaunchDate()
+        let days = max(1, Calendar.current.dateComponents([.day], from: firstLaunch, to: Date()).day ?? 0 + 1)
+        usageDaysCount = days
+        let launches = userDefaults.integer(forKey: Self.launchCountKey)
+        averageDailyLaunches = launches > 0 ? max(1, launches / days) : 0
+    }
+
+    /// Compute total on-disk usage (Core Data store + resource files) for the Data page.
+    func refreshStorageUsage() async {
+        if let usage = try? await clipboardRepository.storageUsage() {
+            storageUsageBytes = usage.totalBytes
+        }
+    }
+
+    /// Human-readable storage size for the Data page (e.g. "12.4 MB").
+    var storageUsageText: String {
+        ByteCountFormatter.string(fromByteCount: storageUsageBytes ?? 0, countStyle: .file)
+    }
+
+    private static let launchCountKey = "usage.launchCount"
+    private static let firstLaunchKey = "usage.firstLaunchAt"
+
+    private func firstLaunchDate() -> Date {
+        if let stored = userDefaults.object(forKey: Self.firstLaunchKey) as? Date {
+            return stored
+        }
+        let now = Date()
+        userDefaults.set(now, forKey: Self.firstLaunchKey)
+        return now
     }
 
     // MARK: - Shortcut conflict detection (T-008)
@@ -392,6 +545,7 @@ final class SettingsViewModel: ObservableObject {
             screenshotSaveDirectory = try await settingsService.value(for: .screenshotSaveDirectory, as: URL.self)
             launchAtLoginEnabled = try await settingsService.value(for: .launchAtLoginEnabled, as: Bool.self)
             languageMode = try await settingsService.value(for: .languageMode, as: LanguageMode.self)
+            appearanceMode = try await settingsService.value(for: .appearanceMode, as: AppearanceMode.self)
         } catch {
             errorMessage = error.localizedDescription
         }

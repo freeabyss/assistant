@@ -90,10 +90,14 @@ final class AppContainer: NSObject {
         } else if let page = notification.object as? ManagementCenterPage {
             let route: SettingsRoute
             switch page {
-            case .overview, .settings: route = .settings
+            case .overview: route = .settings
             case .clipboard: route = .clipboardHistory
+            case .shortcuts: route = .hotkey
+            case .screenshot: route = .screenshot
+            case .searchSources: route = .searchSources
             case .permissions: route = .permissions
-            case .about: route = .about
+            case .about, .updates: route = .about
+            case .appearance, .data, .feedback: route = .settings
             }
             settingsWindowController.show(route: route)
         } else {
