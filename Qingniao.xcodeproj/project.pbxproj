@@ -45,7 +45,6 @@
 		A10001000000000000000024 /* AppSearchSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000024; };
 		A1000100000000000000002D /* SystemCommandSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002D; };
 		A1000100000000000000002E /* CalculatorSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002E; };
-		A1000100000000000000002F /* UnitConverterSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002F; };
 		A10001000000000000000026 /* ScreenshotService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000026; };
 		A10001000000000000000027 /* ScreenshotOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000027; };
 		A10001000000000000000028 /* UnifiedSearchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000028; };
@@ -65,7 +64,6 @@
 		83FEB8F66657416FBC33566D /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 0CE8DD2E740FFABBB9BFE5BD /* Localizable.xcstrings */; };
 		A10001000000000000000038 /* CalculatorSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000038; };
 		A10001000000000000000039 /* SystemCommandSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000039; };
-		A1000100000000000000003A /* UnitConverterSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003A; };
 		A1000100000000000000003B /* CryptoHelperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003B; };
 		A1000100000000000000003C /* DatabaseManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003C; };
 		A1000100000000000000003D /* PinyinHelperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003D; };
@@ -151,7 +149,6 @@
 		A10000000000000000000025 /* FileSearchSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchSource.swift; sourceTree = "<group>"; };
 		A1000000000000000000002D /* SystemCommandSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemCommandSource.swift; sourceTree = "<group>"; };
 		A1000000000000000000002E /* CalculatorSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorSource.swift; sourceTree = "<group>"; };
-		A1000000000000000000002F /* UnitConverterSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnitConverterSource.swift; sourceTree = "<group>"; };
 		A10000000000000000000026 /* ScreenshotService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotService.swift; sourceTree = "<group>"; };
 		A10000000000000000000027 /* ScreenshotOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotOverlay.swift; sourceTree = "<group>"; };
 		A10000000000000000000028 /* UnifiedSearchViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedSearchViewModel.swift; sourceTree = "<group>"; };
@@ -171,7 +168,6 @@
 		0CE8DD2E740FFABBB9BFE5BD /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		A10000000000000000000038 /* CalculatorSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorSourceTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000039 /* SystemCommandSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemCommandSourceTests.swift; sourceTree = "<group>"; };
-		A1000000000000000000003A /* UnitConverterSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnitConverterSourceTests.swift; sourceTree = "<group>"; };
 		A1000000000000000000003B /* CryptoHelperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoHelperTests.swift; sourceTree = "<group>"; };
 		A1000000000000000000003C /* DatabaseManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManagerTests.swift; sourceTree = "<group>"; };
 		A1000000000000000000003D /* PinyinHelperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinyinHelperTests.swift; sourceTree = "<group>"; };
@@ -367,7 +363,6 @@
 					C0140000000000000000000C /* OnboardingViewModelTests.swift */,
 				A10000000000000000000038 /* CalculatorSourceTests.swift */,
 				A10000000000000000000039 /* SystemCommandSourceTests.swift */,
-				A1000000000000000000003A /* UnitConverterSourceTests.swift */,
 				A1000000000000000000003B /* CryptoHelperTests.swift */,
 				A1000000000000000000003C /* DatabaseManagerTests.swift */,
 				A1000000000000000000003D /* PinyinHelperTests.swift */,
@@ -468,7 +463,6 @@
 				A10000000000000000000025 /* FileSearchSource.swift */,
 				A1000000000000000000002D /* SystemCommandSource.swift */,
 				A1000000000000000000002E /* CalculatorSource.swift */,
-				A1000000000000000000002F /* UnitConverterSource.swift */,
 				A10000000000000000000044 /* InMemorySearchIndex.swift */,
 				B00500000000000000000002 /* SearchCore.swift */,
 				B00600000000000000000006 /* SettingsSource.swift */,
@@ -753,7 +747,6 @@
 				C0140000000000000000000B /* OnboardingViewModelTests.swift in Sources */,
 				A10001000000000000000038 /* CalculatorSourceTests.swift in Sources */,
 				A10001000000000000000039 /* SystemCommandSourceTests.swift in Sources */,
-				A1000100000000000000003A /* UnitConverterSourceTests.swift in Sources */,
 				A1000100000000000000003B /* CryptoHelperTests.swift in Sources */,
 				A1000100000000000000003C /* DatabaseManagerTests.swift in Sources */,
 				A1000100000000000000003D /* PinyinHelperTests.swift in Sources */,
@@ -826,7 +819,6 @@
 				A10001000000000000000024 /* AppSearchSource.swift in Sources */,
 				A1000100000000000000002D /* SystemCommandSource.swift in Sources */,
 				A1000100000000000000002E /* CalculatorSource.swift in Sources */,
-				A1000100000000000000002F /* UnitConverterSource.swift in Sources */,
 				A10001000000000000000044 /* InMemorySearchIndex.swift in Sources */,
 				B00500000000000000000001 /* SearchCore.swift in Sources */,
 				B00600000000000000000005 /* SettingsSource.swift in Sources */,
