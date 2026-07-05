@@ -5,14 +5,13 @@ import os.log
 struct AssistantApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
-    @StateObject private var appState = AppState()
-
     var body: some Scene {
-        // Main menu bar commands (Settings window)
+        // Settings are managed by SettingsWindowController (design §16), not the
+        // SwiftUI Settings scene. This empty scene only satisfies the `App`
+        // requirement for an LSUIElement menu-bar app whose UI is driven by
+        // AppDelegate / AppContainer.
         Settings {
-            SettingsView()
-                .environmentObject(appState)
-                .tint(JadeColor.primary) // 全局主色注入（Design Token T-004）
+            EmptyView()
         }
     }
 }

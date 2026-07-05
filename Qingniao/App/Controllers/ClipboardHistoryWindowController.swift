@@ -1,0 +1,63 @@
+import AppKit
+import SwiftUI
+import os.log
+
+/// Manages the clipboard history window (design §16).
+///
+/// Hosts the existing `ClipboardListView`. The window is created on first show
+/// and reused afterwards (hidden, not released) to preserve state.
+@MainActor
+final class ClipboardHistoryWindowController: NSWindowController, NSWindowDelegate {
+    private let logger = Logger.app
+    private unowned let container: AppContainer
+
+    init(container: AppContainer) {
+        self.container = container
+        super.init(window: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func show() {
+        guard container.ensureOnboardingReady() else { return }
+        container.commandBarController.hide(animate: false)
+
+        if window == nil {
+            let viewModel = container.makeClipboardListViewModel()
+            let view = ClipboardListView(viewModel: viewModel)
+                .tint(JadeColor.primary) // 全局主色注入（Design Token T-004）
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 880, height: 600),
+                styleMask: [.titled, .closable, .miniaturizable, .resizable],
+                backing: .buffered,
+                defer: false
+            )
+            window.title = L10n.localized("management.page.clipboard")
+            window.contentMinSize = NSSize(width: 880, height: 600)
+            window.center()
+            window.contentView = NSHostingView(rootView: view)
+            window.isReleasedWhenClosed = false
+            window.delegate = self
+            self.window = window
+            logger.info("Clipboard history window created")
+        }
+
+        window?.makeKeyAndOrderFront(nil)
+        activateApp()
+    }
+
+    func hide() {
+        window?.orderOut(nil)
+    }
+
+    private func activateApp() {
+        if #available(macOS 14.0, *) {
+            NSApp.activate()
+        } else {
+            NSApp.activate(ignoringOtherApps: true)
+        }
+    }
+}
