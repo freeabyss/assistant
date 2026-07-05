@@ -164,13 +164,50 @@ private struct AnnotationEditorRootView: View {
     let onRequestTextInput: (CGPoint, @escaping (String?) -> Void) -> Void
 
     var body: some View {
-        VStack(spacing: 0) {
-            AnnotationTopToolbar(state: state, onUndo: onUndo, onRedo: onRedo)
-            Divider()
+        ZStack {
+            // Black canvas fills the whole window (P-05).
             AnnotationCanvasView(state: state, onRequestTextInput: onRequestTextInput)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            Divider()
-            AnnotationBottomToolbar(onCancel: onCancel, onCopy: onCopy, onSave: onSave)
+                .ignoresSafeArea()
+
+            VStack {
+                AnnotationTopToolbar(state: state)
+                    .padding(.top, JadeSpace.x4.value)
+                Spacer()
+                AnnotationBottomToolbar(
+                    state: state,
+                    onUndo: onUndo,
+                    onRedo: onRedo,
+                    onCancel: onCancel,
+                    onCopy: onCopy,
+                    onSave: onSave
+                )
+                .padding(.bottom, JadeSpace.x4.value)
+            }
         }
+        // Hidden buttons carry the ⌘C / ⌘S / ⎋ shortcuts so they fire regardless
+        // of focus. ESC is also handled by the panel's keyDown as a fallback.
+        .background(shortcutButtons)
+    }
+
+    private var shortcutButtons: some View {
+        ZStack {
+            Button(action: onCopy) { EmptyView() }
+                .keyboardShortcut("c", modifiers: .command)
+            Button(action: onSave) { EmptyView() }
+                .keyboardShortcut("s", modifiers: .command)
+            Button(action: onCancel) { EmptyView() }
+                .keyboardShortcut(.cancelAction)
+            Button(action: onUndo) { EmptyView() }
+                .keyboardShortcut("z", modifiers: .command)
+            Button(action: onRedo) { EmptyView() }
+                .keyboardShortcut("z", modifiers: [.command, .shift])
+            // 1-4 select rectangle / arrow / text / mosaic.
+            ForEach(Array(AnnotationTool.allCases.enumerated()), id: \.element) { index, tool in
+                Button { state.tool = tool } label: { EmptyView() }
+                    .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: [])
+            }
+        }
+        .opacity(0)
+        .allowsHitTesting(false)
     }
 }

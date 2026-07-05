@@ -1021,6 +1021,40 @@
         }
       }
     },
+    "annotation.tool.blur": {
+      "comment": "Blur annotation tool name (disabled until v1.3)",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blur"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模糊"
+          }
+        }
+      }
+    },
+    "annotation.tool.blur.soon": {
+      "comment": "Tooltip explaining the blur tool ships in v1.3",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coming in v1.3"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "v1.3 支持"
+          }
+        }
+      }
+    },
     "annotation.undo.help": {
       "comment": "Tooltip for Undo button",
       "localizations": {
@@ -6493,6 +6527,27 @@
             "value": "无法预览"
           }
         }
+      }
+    },
+    "screenshot.source.region": {
+      "comment": "Badge label for region capture in preview",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Region" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "区域" } }
+      }
+    },
+    "screenshot.source.window": {
+      "comment": "Badge label for window capture in preview",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Window" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "窗口" } }
+      }
+    },
+    "screenshot.source.screen": {
+      "comment": "Badge label for full-screen capture in preview",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Full Screen" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "全屏" } }
       }
     },
     "screenshot.savePanel.filename": {
