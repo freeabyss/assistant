@@ -181,3 +181,41 @@ TOK(6) 设计 token / BRAND(7) 改名一致性 / DATA(5) 数据迁移 / DI(3) Ap
 ### 未覆盖 / 待人工
 - **signing + notarytool 实跑未执行**：本地无 Developer ID Application 证书与 notarytool keychain profile，无法真正签名/公证/staple，故 `spctl --assess ... accepted` 与 done_definition 中「Release 配置签名后 spctl 返回 accepted」需在具备证书的机器上由人工用 `DEVELOPER_ID_APP=... AC_NOTARY_PROFILE=... ./build_and_run.sh release` 验证。Debug 用的是 ad-hoc 签名（flags=0x2 adhoc），不体现 hardened runtime 标志，但 ENABLE_HARDENED_RUNTIME 已写入工程，真实 Developer ID 签名时生效。
 - 白名单命令的「实机执行成功」（CMD-001/006/007/008 回归）属手工验收（需运行 App 实际点按），归 T-019 全量回归；本任务仅从代码路径 + entitlements 层面确认已解除沙盒限制。
+
+---
+
+## T-004 DesignToken 层建立（JadeColor/JadeRadius/JadeSpace/JadeFont/JadeShadow/JadeMaterial）（已完成 · 2026-07-03）
+
+### 完成内容
+新建 `Qingniao/Views/Design/` 目录，6 个 token 文件，全部按 PRD §9.2 精确取值实现，每个文件带 `#Preview` 可在 Xcode Canvas 查看：
+
+1. **JadeColor.swift**：
+   - 品牌色用 `NSColor(name:dynamicProvider:)` 实现明暗自动适配：jade500 `#0A9488`/`#2DD4BF`、jade600 `#087A70`/`#14B8A6`、jade50 `#E6F7F5`/`#0D3D39`。提供 NS 版（jade500NS 等）与 SwiftUI Color 版。
+   - semantic：primary=jade500 / primaryHover=jade600 / primaryFill=jade50（含 NS 版）。
+   - 文字色绑定系统动态色 textPrimary/Secondary/Tertiary = labelColor/.secondaryLabelColor/.tertiaryLabelColor。
+   - surface1=windowBackgroundColor、surface2=controlBackgroundColor、surface3 自定义动态色 `#ECECEE`/`#3A3A3C`（比 surface2 深/浅一档）。
+   - border 动态 rgba(0,0,0,0.08)/rgba(255,255,255,0.08)；overlay = black 0.4。
+   - status/结果类型底色直接走系统色 systemGreen/Red/Orange/Yellow/Blue/Indigo/Purple/Pink/Gray。
+   - 私有 `NSColor(srgbHex:)` 便捷初始化。
+2. **JadeRadius.swift**：sm=6/md=8/lg=12/xl=16/xxl=20（enum:CGFloat）；`.value`、`.shape`（RoundedRectangle .continuous）；View 扩展 `.jadeRadius(.lg)`、`.jadeRadiusBorder(...)`。
+3. **JadeSpace.swift**：x1=4/x2=8/x3=12/x4=16/x6=24/x8=32；View 扩展 `.jadePadding(.x3)`、`.jadePadding(.horizontal, .x2)`。
+4. **JadeFont.swift**：display 40 bold / title1 28 semibold / title2 22 semibold / title3 17 semibold / body 13 regular / callout 12 regular / subhead 11 medium / caption 10 medium / commandBarInput 20 regular（Font.system(size:weight:)）。
+5. **JadeShadow.swift**：sm(0 1px 2px 0.06)/md(0 4px 16px 0.10)/lg(0 8px 32px 0.18 + 1px border)/xl(0 24px 64px 0.28 + 1px border)；View 扩展 `.jadeShadow(.xl, radius: .xxl)`，lg/xl 自动附加 1px JadeColor.border 描边。
+6. **JadeMaterial.swift**：commandBar/pill → .ultraThinMaterial，sheet → .thinMaterial；View 扩展 `.jadeMaterial(.commandBar, radius: .xxl)`。
+
+**Assets**：新建 `Qingniao/Resources/Assets.xcassets/AccentColor.colorset/Contents.json`，Light Jade500 `#0A9488` / Dark Jade600 系 Dark 主色 `#2DD4BF`（srgb 分量）。
+
+**.tint 全局注入**：QingniaoApp.swift 的 Settings 场景、AppDelegate.swift 三处 NSHostingView rootView（OnboardingView / ManagementCenterView / SearchPanelView）均加 `.tint(JadeColor.primary)`。
+
+**Xcode 工程接入**：项目为手工维护 pbxproj（objectVersion 56，非 synchronized group），仿 Onboarding 的 SOURCE_ROOT 全路径模式，用 `F004...` 前缀 ID 手工新增 6 条 PBXBuildFile + 6 条 PBXFileReference + 新建 `Design` PBXGroup 挂到 Views group + 加入 app target Sources build phase。
+
+### 验证结果
+- `xcodebuild -project Qingniao.xcodeproj -scheme Qingniao -configuration Debug build` → **BUILD SUCCEEDED**。
+- 确认 6 个 Jade*.o 目标文件均在 DerivedData Objects-normal 下生成（未被静默排除）。
+- 仅新增文件警告：无（仅存量 Swift6 NSLock/Sendable 警告，与本任务无关）。
+
+### 留给后续 agent 的提示
+- 本任务**不改现有 View 使其改用 token**（那是 T-015），只建立 token 本身与基础扩展。
+- Swift 类型改名（AssistantError→QingniaoError 等）不在本任务，T-005/T-006 处理。
+- AccentColor.colorset 已建立，macOS 会自动将其作为 App accent；同时代码层显式 `.tint(JadeColor.primary)` 双保险，二者一致（都是 Jade 主色，明暗自适应）。
+- Preview 可在 Xcode Canvas 逐个查看：JadeColor（明暗色板）/JadeRadius/JadeSpace/JadeFont/JadeShadow/JadeMaterial。命令行 xcodebuild 无法渲染 Canvas，需人工在 Xcode 打开验证（TOK-001~006/ACC-005 的 Canvas 目视项）。

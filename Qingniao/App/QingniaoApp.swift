@@ -12,6 +12,7 @@ struct AssistantApp: App {
         Settings {
             SettingsView()
                 .environmentObject(appState)
+                .tint(JadeColor.primary) // 全局主色注入（Design Token T-004）
         }
     }
 }

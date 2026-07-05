@@ -207,6 +207,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self.startFullExperienceServices()
         }
         let view = OnboardingView(viewModel: viewModel)
+            .tint(JadeColor.primary) // 全局主色注入（Design Token T-004）
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 680, height: 520),
             styleMask: [.titled, .closable],
@@ -501,6 +502,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             settingsViewModel.select(route: route)
         }
         let view = ManagementCenterView(viewModel: settingsViewModel, clipboardViewModel: clipboardViewModel)
+            .tint(JadeColor.primary) // 全局主色注入（Design Token T-004）
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 940, height: 680),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
@@ -556,6 +558,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Set the SwiftUI content
         let searchPanelView = SearchPanelView(viewModel: searchPanelViewModel)
+            .tint(JadeColor.primary) // 全局主色注入（Design Token T-004）
         let hostingView = NSHostingView(rootView: searchPanelView)
         hostingView.translatesAutoresizingMaskIntoConstraints = false
 

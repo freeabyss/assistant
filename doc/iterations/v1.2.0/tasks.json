@@ -168,7 +168,7 @@
         "ACC-005"
       ],
       "done_definition": "所有 DesignToken 编译通过，Preview 可显示 JadeColor 明暗双模式、各 token 值与 PRD §9.2 表一致",
-      "passes": false
+      "passes": true
     },
     {
       "id": "T-005",

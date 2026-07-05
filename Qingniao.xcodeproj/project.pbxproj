@@ -96,6 +96,12 @@
 			C01400000000000000000007 /* OnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000008 /* OnboardingViewModel.swift */; };
 			C01400000000000000000009 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0140000000000000000000A /* OnboardingView.swift */; };
 			C0140000000000000000000B /* OnboardingViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0140000000000000000000C /* OnboardingViewModelTests.swift */; };
+			F00400000000000000000101 /* JadeColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000001 /* JadeColor.swift */; };
+			F00400000000000000000102 /* JadeRadius.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000002 /* JadeRadius.swift */; };
+			F00400000000000000000103 /* JadeSpace.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000003 /* JadeSpace.swift */; };
+			F00400000000000000000104 /* JadeFont.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000004 /* JadeFont.swift */; };
+			F00400000000000000000105 /* JadeShadow.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000005 /* JadeShadow.swift */; };
+			F00400000000000000000106 /* JadeMaterial.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000006 /* JadeMaterial.swift */; };
 	/* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -194,6 +200,12 @@
 			C01400000000000000000008 /* OnboardingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/ViewModels/OnboardingViewModel.swift; sourceTree = SOURCE_ROOT; };
 			C0140000000000000000000A /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Onboarding/OnboardingView.swift; sourceTree = SOURCE_ROOT; };
 			C0140000000000000000000C /* OnboardingViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QingniaoTests/OnboardingViewModelTests.swift; sourceTree = SOURCE_ROOT; };
+			F00400000000000000000001 /* JadeColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeColor.swift; sourceTree = SOURCE_ROOT; };
+			F00400000000000000000002 /* JadeRadius.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeRadius.swift; sourceTree = SOURCE_ROOT; };
+			F00400000000000000000003 /* JadeSpace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeSpace.swift; sourceTree = SOURCE_ROOT; };
+			F00400000000000000000004 /* JadeFont.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeFont.swift; sourceTree = SOURCE_ROOT; };
+			F00400000000000000000005 /* JadeShadow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeShadow.swift; sourceTree = SOURCE_ROOT; };
+			F00400000000000000000006 /* JadeMaterial.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeMaterial.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -262,6 +274,7 @@
 				A1000300000000000000001D /* RecentContent */,
 				A1000300000000000000001E /* Annotation */,
 				B01100000000000000000007 /* SearchPanel */,
+				F00400000000000000000010 /* Design */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -583,6 +596,19 @@
 				path = LaunchAtLogin;
 				sourceTree = "<group>";
 			};
+			F00400000000000000000010 /* Design */ = {
+				isa = PBXGroup;
+				children = (
+					F00400000000000000000001 /* JadeColor.swift */,
+					F00400000000000000000002 /* JadeRadius.swift */,
+					F00400000000000000000003 /* JadeSpace.swift */,
+					F00400000000000000000004 /* JadeFont.swift */,
+					F00400000000000000000005 /* JadeShadow.swift */,
+					F00400000000000000000006 /* JadeMaterial.swift */,
+				);
+				path = Design;
+				sourceTree = "<group>";
+			};
 	/* End PBXGroup section */
 
 /* Begin PBXContainerItemProxy section */
@@ -738,6 +764,12 @@
 				C01400000000000000000005 /* LaunchAtLoginService.swift in Sources */,
 				C01400000000000000000007 /* OnboardingViewModel.swift in Sources */,
 				C01400000000000000000009 /* OnboardingView.swift in Sources */,
+				F00400000000000000000101 /* JadeColor.swift in Sources */,
+				F00400000000000000000102 /* JadeRadius.swift in Sources */,
+				F00400000000000000000103 /* JadeSpace.swift in Sources */,
+				F00400000000000000000104 /* JadeFont.swift in Sources */,
+				F00400000000000000000105 /* JadeShadow.swift in Sources */,
+				F00400000000000000000106 /* JadeMaterial.swift in Sources */,
 				A10001000000000000000001 /* QingniaoApp.swift in Sources */,
 				A10001000000000000000002 /* AppDelegate.swift in Sources */,
 				A10001000000000000000003 /* AppState.swift in Sources */,
