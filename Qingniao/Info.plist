@@ -8,15 +8,15 @@
 
     <!-- App metadata -->
     <key>CFBundleName</key>
-    <string>Assistant</string>
+    <string>青鸟</string>
     <key>CFBundleDisplayName</key>
-    <string>Mac Super Assistant</string>
+    <string>Qingniao</string>
     <key>CFBundleIdentifier</key>
     <string>com.assistant.app</string>
     <key>CFBundleVersion</key>
-    <string>1</string>
+    <string>120</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.1.0</string>
+    <string>1.2.0</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleExecutable</key>
@@ -25,14 +25,16 @@
     <string>AppIcon</string>
     <key>LSMinimumSystemVersion</key>
     <string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>© 2026 青鸟 Qingniao. All rights reserved.</string>
 
     <!-- Screen recording permission description (ScreenCaptureKit) -->
     <key>NSScreenCaptureUsageInfo</key>
-    <string>Mac Super Assistant needs screen recording permission to capture screenshots.</string>
+    <string>青鸟 Qingniao needs screen recording permission to capture screenshots.</string>
 
     <!-- AppleScript automation: required for allowed built-in system commands -->
     <key>NSAppleEventsUsageDescription</key>
-    <string>Mac Super Assistant uses AppleScript only for allowed built-in commands that you explicitly trigger.</string>
+    <string>青鸟 Qingniao uses AppleScript only for allowed built-in commands that you explicitly trigger.</string>
 
     <!-- Localization -->
     <key>CFBundleLocalizations</key>
@@ -40,15 +42,5 @@
         <string>en</string>
         <string>zh-Hans</string>
     </array>
-
-    <!-- Sparkle legacy configuration retained for future release channels; MVP update checks open GitHub Releases manually. -->
-    <key>SUFeedURL</key>
-    <string>https://raw.githubusercontent.com/abyss/assistant/main/SnapVault/Resources/appcast.xml</string>
-    <key>SUPublicEDKey</key>
-    <string>REPLACE_WITH_YOUR_EDDSA_PUBLIC_KEY</string>
-    <key>SUEnableAutomaticChecks</key>
-    <false/>
-    <key>SUScheduledCheckInterval</key>
-    <integer>86400</integer>
 </dict>
 </plist>
