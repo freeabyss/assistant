@@ -499,7 +499,7 @@
         "REG-004"
       ],
       "done_definition": "⌥⌘C 打开剪贴板窗口；四类型（text/rtf/image/file）显示正确；hover 操作/快捷键/手势正常；空态正确；PreviewSheet 无崩溃",
-      "passes": false
+      "passes": true
     },
     {
       "id": "T-013",

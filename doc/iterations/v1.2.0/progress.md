@@ -546,3 +546,50 @@ AppDelegate 通过 `container.onboardingGate = { self.ensureOnboardingGate() }` 
 - **并发施工冲突**：本任务执行期间，另一 Agent 在同一工作树并行处理 T-011（CommandBar）/T-012（剪贴板 UI，`isFavorite` 特性）。T-010 的源码改动（OnboardingView/ViewModel/PermissionService/AppContainer/xcstrings/SettingsSourceTests）被对方的 commit `3e5c445`（"T-011 rename"）**顺带一起提交**进 HEAD。本 Agent 的独立 commit `7fc70c1` 仅含剩余的测试重写 + AppDelegate onComplete 标签。两部分合起来即完整 T-010，功能与测试均已闭环。
 - 对方未提交的 `isFavorite` WIP（PersistenceController/AssistantClipboardRepository/InMemorySearchIndex + Mock 未补 `toggleFavorite`）会让**工作树当前 test build 失败**，但那是 T-012 未完成状态，与 T-010 无关；隔离 worktree @HEAD 验证证明 T-010 代码本身 build+test 全绿。
 - 辅助功能按需申请的**调用点接线**（在自动粘贴/模拟快捷键等能力首次触发时调 `onDemandAccessibilityCheck()`）本任务未接（这些能力属未来功能，v1.2 无实际触发点）；PERM-OD-002 的端到端 Alert 手工验证留待有真实触发点时。
+
+---
+
+## T-012 剪贴板历史窗口（P-02 重写）+ RecentContent 改造（2026-07-06）
+
+### 状态
+✅ 完成。`xcodebuild -project Qingniao.xcodeproj -scheme Qingniao -configuration Debug build` → **BUILD SUCCEEDED**。剪贴板相关测试全绿（ClipboardListViewModelTests 4 + AssistantClipboardRepositoryTests 10 + InMemorySearchIndexTests 5 + DatabaseManagerTests 4 = 23/23）。tasks.json T-012 passes=true。
+
+### 数据层（isFavorite 全链路）
+- `PersistenceController`：ClipboardRecord 实体新增 `isFavorite`（Bool，默认 false，`shouldMigrateStoreAutomatically` 已开，轻量迁移自动加列）；`CDClipboardRecord` 加 `@NSManaged var isFavorite`。
+- `AssistantClipboardRepository`：`ClipboardRepositoryProtocol` 新增 `toggleFavorite(id:)`；`ClipboardRecordSnapshot` 加 `isFavorite`；`makeSnapshot` 回填；`cleanupExpired` 谓词改 `isPinned == NO AND isFavorite == NO`（收藏与置顶都免清理）。
+- `InMemorySearchIndex`：`SearchIndexItem` 加 `isFavorite`；两处构造器（snapshot / CDRecord）同步；`IndexingClipboardRepository` 新增 `toggleFavorite`（转发 base + upsert 索引）。
+
+### ViewModel（ClipboardListViewModel 重写）
+- `Filter` 枚举 → `SidebarSelection`（typeCases: 全部/文本/图片/富文本/文件；specialCases: 置顶/收藏；timeCases: 今天/昨天/更早）。类型段约束 index 查询的 contentType；special/time 段加载全部后按 `includes(_:)` 后置过滤（时间用 `Calendar.isDateInToday/Yesterday`）。
+- 新增：`toggleFavorite`、多选 `selectedIDs`/`selectAll`/`deleteSelected`、`previewItem`（sheet 驱动）、`enableClipboard`（写 `.clipboardEnabled=true` + post `.settingsDidChange`）、`retentionDays`/`clipboardEnabled` 运行态（`refreshRuntimeSettings` 读 SettingsService，load 时刷新）、`richTextData(for:)`。
+- 注入新增可选 `settingsService`（默认 `SettingsService(.shared)`）。订阅 `.settingsDidChange` 刷新运行态。
+
+### 视图
+- **JadeClipboardRow.swift（新）**：合并旧 `ClipboardItemRow` + `ClipboardHistoryRow`。基于 `JadeListRow` comfortable(64)，40×40 radius-md 缩略图（图片→thumbnail、文本→首字、其余→SF Symbol），主标题 lineLimit 1 + 置顶/收藏/失败角标，副信息 `类型 · 大小 · 时间`；hover 右侧 4 个 action（置顶/复制/预览/删除）。删除旧 `ClipboardItemRow.swift`（含 RTFPreviewView，无其他引用）。
+- **ClipboardHistoryView.swift（新，取代 ClipboardListView.swift）**：`NavigationSplitView`，侧栏 180pt（三段 List + `.safeAreaInset(.bottom)` 清空全部[jadeDestructive]/设置[jadeGhost]），detail = JadeTextField 搜索 + 总数 JadePill + LazyVStack(JadeClipboardRow) + Divider + 状态栏（`X 条 · 已用 X · 保留 X 天`）。空态三种（首次 tray / 关闭 hand.raised.slash+[开启] / 搜索无结果 magnifyingglass）。swipeActions（左滑收藏 .yellow / 右滑删除 .red）、contextMenu（复制/预览/置顶/收藏/删除/清空）。sheet 挂 PreviewPanel。JadeConfirmationDialog 清空确认。
+- **PreviewPanel.swift（改造）**：入参从旧 `ClipboardItem`(GRDB) → `ClipboardRecordSnapshot`，图片/RTF 走异步 provider（`.task(id:)` 懒加载）；`NSTextView` 已是 guard（保留）；删除/复制按钮换 `.jadeDestructive`/`.jadePrimary`，Finder 按钮 `.jadeSecondary`；图片 MagnificationGesture 0.5–5x 保留。
+
+### 快捷键实现清单（ClipboardHistoryView.keyboardShortcuts，隐藏按钮 + keyboardShortcut，macOS 13 兼容）
+- ⌘F 聚焦搜索框（@FocusState）；⌘A 全选（selectedIDs=全部）；↑↓ 与 j/k 移动光标；⏎ 与 ⌘C 复制选中并关闭窗口（onCopyAndClose→window.close）；空格 与 ⌘Y 打开 PreviewPanel sheet（空格在搜索框聚焦时不触发）；⌫ 删除选中（搜索聚焦时不触发）。
+- 点击行：复制并关闭窗口。
+
+### 接线
+- `ClipboardHistoryWindowController.show()`：改建 `ClipboardHistoryView`，注入 `onCopyAndClose`（window.close）+ `onOpenSettings`（settingsWindowController.show(.settings)）。
+- `SettingsView.ManagementCenterView` 剪贴板页：`ClipboardListView` → `ClipboardHistoryView`。
+- `Localizable.xcstrings`：新增 clipboard.filter.rtf/pinned/favorite/today/yesterday/earlier、clipboard.sidebar.types/special/time、clipboard.status.summary/retentionDays/retentionForever、clipboard.empty.disabled.title/enable（en + zh-Hans）。
+
+### RecentContentView 决策
+- **删/留**：无需删除。全工程（Qingniao + QingniaoTests + pbxproj）grep 无 `RecentContentView`/`RecentContentViewModel` 任何引用，文件本身也不存在（早期迭代已移除）。ClipboardHistoryView 即 P-02 唯一浏览/筛选/搜索/操作入口。
+
+### pbxproj
+- 手工 rename：A10000...012 ClipboardListView.swift→ClipboardHistoryView.swift、A10000...013 ClipboardItemRow.swift→JadeClipboardRow.swift（PBXBuildFile/PBXFileReference/PBXGroup/Sources 四处，复用原 UUID）。
+
+### commit
+- `6c8174f feat(T-012): 剪贴板历史窗口 P-02 重写 + isFavorite 数据链路`（单次 commit：因工作树被并发 T-011 Agent 占用，仅暂存本任务自有文件 + 仅含剪贴板 rename 的 pbxproj，避免混入对方 WIP）。
+
+### 留给后续 Agent 的提示（重要）
+- **并发施工**：本任务执行期间，另一 Agent 在同一工作树并行处理 **T-011（CommandBar）**，其未提交 WIP 包括 `CommandBarView.swift`(+433/-152)、`SearchPanelViewModel.swift`(+203)、`AppSearchSource.swift`、`CommandBarController.swift` 及新文件 `CommandBarHomeProvider.swift`。这些**未纳入**本次 commit，仍留在工作树未暂存，交 T-011 Agent 提交。
+- **工作树 test build 当前失败**：`CommandBarController.swift:134` 引用尚不存在的 `SearchPanelView`（T-011 把 SearchPanelView 改名 CommandBarView 的过程未完成）。该失败**属 T-011 WIP，与 T-012 无关**——本任务的 `xcodebuild build`（app target）SUCCEEDED，且剪贴板相关 test 单独跑全绿。T-011 Agent 完成 rename 后 test build 会恢复。
+- **本次 commit 的自洽性**：commit `6c8174f` 未引用任何 T-011 符号（`settingsWindowController.show`、`makeClipboardListViewModel` 在 HEAD 已存在），单独 checkout 即可 build。
+- **isFavorite 迁移**：靠 Core Data 轻量迁移自动加列（已有库升级无损）；无手写 mapping model。
+- **PreviewPanel 未做全量 Jade 迁移**：按任务约束只修强解包 + 换按钮 + 接 snapshot，T-015 会做全量样式迁移。
