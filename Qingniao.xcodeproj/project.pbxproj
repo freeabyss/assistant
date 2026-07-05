@@ -10,7 +10,7 @@
 		D01700000000000000000001 /* AnnotationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D01700000000000000000002 /* AnnotationTests.swift */; };
 			B01200000000000000000001 /* ClipboardMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01200000000000000000002 /* ClipboardMonitorTests.swift */; };
 			B01300000000000000000001 /* ClipboardListViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01300000000000000000002 /* ClipboardListViewModelTests.swift */; };
-		A10001000000000000000001 /* SnapVaultApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001; };
+		A10001000000000000000001 /* QingniaoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001; };
 		A10001000000000000000002 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002; };
 		A10001000000000000000003 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000003; };
 		A10001000000000000000004 /* DatabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000004; };
@@ -102,7 +102,7 @@
 		D01700000000000000000002 /* AnnotationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationTests.swift; sourceTree = "<group>"; };
 			B01200000000000000000002 /* ClipboardMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardMonitorTests.swift; sourceTree = "<group>"; };
 			B01300000000000000000002 /* ClipboardListViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardListViewModelTests.swift; sourceTree = "<group>"; };
-		A10000000000000000000001 /* SnapVaultApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapVaultApp.swift; sourceTree = "<group>"; };
+		A10000000000000000000001 /* QingniaoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QingniaoApp.swift; sourceTree = "<group>"; };
 		A10000000000000000000002 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A10000000000000000000003 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		A10000000000000000000004 /* DatabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManager.swift; sourceTree = "<group>"; };
@@ -128,8 +128,8 @@
 		A10000000000000000000017 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
 		A10000000000000000000018 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A10000000000000000000019 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		A1000000000000000000001A /* SnapVault.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SnapVault.entitlements; sourceTree = "<group>"; };
-		A1000000000000000000001B /* Assistant.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Assistant.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1000000000000000000001A /* Qingniao.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Qingniao.entitlements; sourceTree = "<group>"; };
+		A1000000000000000000001B /* Qingniao.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Qingniao.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1000000000000000000001C /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
 		A1000000000000000000001D /* DataCleanupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataCleanupService.swift; sourceTree = "<group>"; };
 		A1000000000000000000001E /* KeyboardShortcuts+Names.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "KeyboardShortcuts+Names.swift"; sourceTree = "<group>"; };
@@ -166,7 +166,7 @@
 		A1000000000000000000003B /* CryptoHelperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoHelperTests.swift; sourceTree = "<group>"; };
 		A1000000000000000000003C /* DatabaseManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManagerTests.swift; sourceTree = "<group>"; };
 		A1000000000000000000003D /* PinyinHelperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinyinHelperTests.swift; sourceTree = "<group>"; };
-		A1000000000000000000003E /* SnapVaultTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SnapVaultTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1000000000000000000003E /* QingniaoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = QingniaoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1000000000000000000003F /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
 		A10000000000000000000040 /* AssistantFileSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantFileSystem.swift; sourceTree = "<group>"; };
 		A10000000000000000000041 /* PersistenceControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceControllerTests.swift; sourceTree = "<group>"; };
@@ -188,12 +188,12 @@
 			B01100000000000000000004 /* SearchPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanelView.swift; sourceTree = "<group>"; };
 			B01100000000000000000006 /* AssistantClipboardSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantClipboardSource.swift; sourceTree = "<group>"; };
 			B01100000000000000000008 /* SearchPanelViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanelViewModelTests.swift; sourceTree = "<group>"; };
-			C01400000000000000000002 /* PermissionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapVault/Services/Permissions/PermissionService.swift; sourceTree = SOURCE_ROOT; };
-			C01400000000000000000004 /* HotkeyValidationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapVault/Services/Hotkey/HotkeyValidationService.swift; sourceTree = SOURCE_ROOT; };
-			C01400000000000000000006 /* LaunchAtLoginService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapVault/Services/LaunchAtLogin/LaunchAtLoginService.swift; sourceTree = SOURCE_ROOT; };
-			C01400000000000000000008 /* OnboardingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapVault/ViewModels/OnboardingViewModel.swift; sourceTree = SOURCE_ROOT; };
-			C0140000000000000000000A /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapVault/Views/Onboarding/OnboardingView.swift; sourceTree = SOURCE_ROOT; };
-			C0140000000000000000000C /* OnboardingViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapVaultTests/OnboardingViewModelTests.swift; sourceTree = SOURCE_ROOT; };
+			C01400000000000000000002 /* PermissionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Services/Permissions/PermissionService.swift; sourceTree = SOURCE_ROOT; };
+			C01400000000000000000004 /* HotkeyValidationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Services/Hotkey/HotkeyValidationService.swift; sourceTree = SOURCE_ROOT; };
+			C01400000000000000000006 /* LaunchAtLoginService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Services/LaunchAtLogin/LaunchAtLoginService.swift; sourceTree = SOURCE_ROOT; };
+			C01400000000000000000008 /* OnboardingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/ViewModels/OnboardingViewModel.swift; sourceTree = SOURCE_ROOT; };
+			C0140000000000000000000A /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Onboarding/OnboardingView.swift; sourceTree = SOURCE_ROOT; };
+			C0140000000000000000000C /* OnboardingViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QingniaoTests/OnboardingViewModelTests.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -217,13 +217,13 @@
 		A10003000000000000000001 /* Root */ = {
 			isa = PBXGroup;
 			children = (
-				A10003000000000000000002 /* Assistant */,
-				A1000300000000000000000B /* SnapVaultTests */,
+				A10003000000000000000002 /* Qingniao */,
+				A1000300000000000000000B /* QingniaoTests */,
 				A1000300000000000000000C /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		A10003000000000000000002 /* Assistant */ = {
+		A10003000000000000000002 /* Qingniao */ = {
 			isa = PBXGroup;
 			children = (
 				A10003000000000000000003 /* App */,
@@ -235,15 +235,15 @@
 				A10003000000000000000009 /* Utilities */,
 				A1000300000000000000000A /* Resources */,
 				A10000000000000000000019 /* Info.plist */,
-				A1000000000000000000001A /* SnapVault.entitlements */,
+				A1000000000000000000001A /* Qingniao.entitlements */,
 			);
-			path = SnapVault;
+			path = Qingniao;
 			sourceTree = "<group>";
 		};
 		A10003000000000000000003 /* App */ = {
 			isa = PBXGroup;
 			children = (
-				A10000000000000000000001 /* SnapVaultApp.swift */,
+				A10000000000000000000001 /* QingniaoApp.swift */,
 				A10000000000000000000002 /* AppDelegate.swift */,
 				A10000000000000000000003 /* AppState.swift */,
 			);
@@ -339,7 +339,7 @@
 			path = Resources;
 			sourceTree = "<group>";
 		};
-		A1000300000000000000000B /* SnapVaultTests */ = {
+		A1000300000000000000000B /* QingniaoTests */ = {
 			isa = PBXGroup;
 			children = (
 				D01700000000000000000002 /* AnnotationTests.swift */,
@@ -363,14 +363,14 @@
 				B01100000000000000000008 /* SearchPanelViewModelTests.swift */,
 					B01300000000000000000002 /* ClipboardListViewModelTests.swift */,
 			);
-			path = SnapVaultTests;
+			path = QingniaoTests;
 			sourceTree = "<group>";
 		};
 		A1000300000000000000000C /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A1000000000000000000001B /* Assistant.app */,
-				A1000000000000000000003E /* SnapVaultTests.xctest */,
+				A1000000000000000000001B /* Qingniao.app */,
+				A1000000000000000000003E /* QingniaoTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -591,14 +591,14 @@
 			containerPortal = A10008000000000000000001 /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = A10004000000000000000001;
-			remoteInfo = Assistant;
+			remoteInfo = Qingniao;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXNativeTarget section */
-		A10004000000000000000002 /* SnapVaultTests */ = {
+		A10004000000000000000002 /* QingniaoTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A10006000000000000000004 /* Build configuration list for PBXNativeTarget "SnapVaultTests" */;
+			buildConfigurationList = A10006000000000000000004 /* Build configuration list for PBXNativeTarget "QingniaoTests" */;
 			buildPhases = (
 				A10005000000000000000003 /* Sources */,
 				A10002000000000000000002 /* Frameworks */,
@@ -608,16 +608,16 @@
 			dependencies = (
 				A1000B000000000000000001 /* PBXTargetDependency */,
 			);
-			name = SnapVaultTests;
+			name = QingniaoTests;
 			packageProductDependencies = (
 			);
-			productName = SnapVaultTests;
-			productReference = A1000000000000000000003E /* SnapVaultTests.xctest */;
+			productName = QingniaoTests;
+			productReference = A1000000000000000000003E /* QingniaoTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		A10004000000000000000001 /* Assistant */ = {
+		A10004000000000000000001 /* Qingniao */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A10006000000000000000001 /* Build configuration list for PBXNativeTarget "Assistant" */;
+			buildConfigurationList = A10006000000000000000001 /* Build configuration list for PBXNativeTarget "Qingniao" */;
 			buildPhases = (
 				A10005000000000000000001 /* Sources */,
 				A10002000000000000000001 /* Frameworks */,
@@ -627,14 +627,14 @@
 			);
 			dependencies = (
 			);
-			name = Assistant;
+			name = Qingniao;
 			packageProductDependencies = (
 				A10007000000000000000001 /* GRDB */,
 				A10007000000000000000002 /* KeyboardShortcuts */,
 				A10007000000000000000003 /* Sparkle */,
 			);
-			productName = Assistant;
-			productReference = A1000000000000000000001B /* Assistant.app */;
+			productName = Qingniao;
+			productReference = A1000000000000000000001B /* Qingniao.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -642,7 +642,7 @@
 /* Begin PBXTargetDependency section */
 		A1000B000000000000000001 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = A10004000000000000000001 /* Assistant */;
+			target = A10004000000000000000001 /* Qingniao */;
 			targetProxy = A1000B000000000000000002 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -664,7 +664,7 @@
 					};
 				};
 			};
-			buildConfigurationList = A10006000000000000000003 /* Build configuration list for PBXProject "Assistant" */;
+			buildConfigurationList = A10006000000000000000003 /* Build configuration list for PBXProject "Qingniao" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -682,8 +682,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				A10004000000000000000001 /* Assistant */,
-				A10004000000000000000002 /* SnapVaultTests */,
+				A10004000000000000000001 /* Qingniao */,
+				A10004000000000000000002 /* QingniaoTests */,
 			);
 		};
 /* End PBXProject section */
@@ -738,7 +738,7 @@
 				C01400000000000000000005 /* LaunchAtLoginService.swift in Sources */,
 				C01400000000000000000007 /* OnboardingViewModel.swift in Sources */,
 				C01400000000000000000009 /* OnboardingView.swift in Sources */,
-				A10001000000000000000001 /* SnapVaultApp.swift in Sources */,
+				A10001000000000000000001 /* QingniaoApp.swift in Sources */,
 				A10001000000000000000002 /* AppDelegate.swift in Sources */,
 				A10001000000000000000003 /* AppState.swift in Sources */,
 				A10001000000000000000004 /* DatabaseManager.swift in Sources */,
@@ -922,20 +922,20 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = SnapVault/SnapVault.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Qingniao/Qingniao.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 120;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = SnapVault/Info.plist;
+				INFOPLIST_FILE = Qingniao/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 1.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.assistant.app;
-				PRODUCT_NAME = Assistant;
-				PRODUCT_MODULE_NAME = SnapVault;
+				PRODUCT_NAME = Qingniao;
+				PRODUCT_MODULE_NAME = Qingniao;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
@@ -945,20 +945,20 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = SnapVault/SnapVault.entitlements;
+				CODE_SIGN_ENTITLEMENTS = Qingniao/Qingniao.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 120;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = SnapVault/Info.plist;
+				INFOPLIST_FILE = Qingniao/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 1.2.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.assistant.app;
-				PRODUCT_NAME = Assistant;
-				PRODUCT_MODULE_NAME = SnapVault;
+				PRODUCT_NAME = Qingniao;
+				PRODUCT_MODULE_NAME = Qingniao;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
@@ -980,7 +980,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.assistant.app.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Assistant.app/Contents/MacOS/Assistant";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Qingniao.app/Contents/MacOS/Qingniao";
 			};
 			name = Debug;
 		};
@@ -1000,14 +1000,14 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.assistant.app.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Assistant.app/Contents/MacOS/Assistant";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Qingniao.app/Contents/MacOS/Qingniao";
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A10006000000000000000001 /* Build configuration list for PBXNativeTarget "Assistant" */ = {
+		A10006000000000000000001 /* Build configuration list for PBXNativeTarget "Qingniao" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A1000A000000000000000003 /* Debug */,
@@ -1016,7 +1016,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A10006000000000000000004 /* Build configuration list for PBXNativeTarget "SnapVaultTests" */ = {
+		A10006000000000000000004 /* Build configuration list for PBXNativeTarget "QingniaoTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A1000B000000000000000003 /* Debug */,
@@ -1025,7 +1025,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A10006000000000000000003 /* Build configuration list for PBXProject "Assistant" */ = {
+		A10006000000000000000003 /* Build configuration list for PBXProject "Qingniao" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A1000A000000000000000001 /* Debug */,

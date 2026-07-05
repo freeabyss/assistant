@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "A10004000000000000000001"
-               BuildableName = "Assistant.app"
-               BlueprintName = "SnapVault"
-               ReferencedContainer = "container:SnapVault.xcodeproj">
+               BuildableName = "Qingniao.app"
+               BlueprintName = "Qingniao"
+               ReferencedContainer = "container:Qingniao.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -34,9 +34,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "A10004000000000000000002"
-               BuildableName = "SnapVaultTests.xctest"
-               BlueprintName = "SnapVaultTests"
-               ReferencedContainer = "container:SnapVault.xcodeproj">
+               BuildableName = "QingniaoTests.xctest"
+               BlueprintName = "QingniaoTests"
+               ReferencedContainer = "container:Qingniao.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -56,9 +56,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "A10004000000000000000001"
-            BuildableName = "Assistant.app"
-            BlueprintName = "SnapVault"
-            ReferencedContainer = "container:SnapVault.xcodeproj">
+            BuildableName = "Qingniao.app"
+            BlueprintName = "Qingniao"
+            ReferencedContainer = "container:Qingniao.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -73,9 +73,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "A10004000000000000000001"
-            BuildableName = "Assistant.app"
-            BlueprintName = "SnapVault"
-            ReferencedContainer = "container:SnapVault.xcodeproj">
+            BuildableName = "Qingniao.app"
+            BlueprintName = "Qingniao"
+            ReferencedContainer = "container:Qingniao.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
