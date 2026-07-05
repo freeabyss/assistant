@@ -134,3 +134,28 @@ TOK(6) 设计 token / BRAND(7) 改名一致性 / DATA(5) 数据迁移 / DI(3) Ap
 - 待建测试文件：DesignTokenTests / BrandingConsistencyTests / DataMigrationTests / AppContainerTests / GlobalShortcutTests / HotkeyConflictDetectorTests / OnDemandPermissionTests；FileSearchSourceTests 转接线回归。
 - 可入 CI 的脚本/静态校验：版本三源、entitlements、无 Sparkle、死代码 grep、强制解包 grep、build_and_run pgrep。
 - 上线前专项：反馈邮箱 feedback@qingniao.app 可收件、qingniao.app 域名/隐私政策 URL 最终确定。
+
+---
+
+## T-001 工程与品牌改名（已完成 · 2026-07-03）
+
+### 完成内容
+1. **目录/文件 rename（git mv）**：`SnapVault/`→`Qingniao/`、`SnapVaultTests/`→`QingniaoTests/`、`SnapVault.xcodeproj`→`Qingniao.xcodeproj`、`SnapVault.entitlements`→`Qingniao.entitlements`、`SnapVaultApp.swift`→`QingniaoApp.swift`、`SnapVault.xcscheme`→`Qingniao.xcscheme`。
+2. **project.pbxproj**：target `Assistant`→`Qingniao`、`SnapVaultTests`→`QingniaoTests`；`PRODUCT_NAME` Assistant→Qingniao；`PRODUCT_MODULE_NAME` SnapVault→Qingniao；`INFOPLIST_FILE`/`CODE_SIGN_ENTITLEMENTS` 指向 `Qingniao/`；`MARKETING_VERSION` 0.1.0→1.2.0；`CURRENT_PROJECT_VERSION` 1→120；产物 `Assistant.app`→`Qingniao.app`；TEST_HOST 同步。**Bundle ID `com.assistant.app` 保留不变**。scheme 内 BuildableName/BlueprintName/container 同步。
+3. **Info.plist**：`CFBundleDisplayName`=Qingniao、`CFBundleName`=青鸟、`CFBundleShortVersionString`=1.2.0、`CFBundleVersion`=120；新增 `NSHumanReadableCopyright`（© 2026 青鸟 Qingniao）；`NSScreenCaptureUsageInfo`/`NSAppleEventsUsageDescription` 文案 Mac Super Assistant→青鸟 Qingniao；**删除 Sparkle 键** SUFeedURL/SUPublicEDKey/SUEnableAutomaticChecks/SUScheduledCheckInterval。
+4. **Swift 用户可见字符串**：AppDelegate 状态栏 accessibilityDescription→青鸟 Qingniao；ReleaseInfoService `appName`=Qingniao、版权=青鸟 Qingniao、`feedbackEmail`=feedback@qingniao.app、邮件主题=「青鸟 Qingniao 反馈」、GitHub URL→github.com/freeabyss/assistant；Localizable.xcstrings 12 处 Mac Super Assistant→青鸟 Qingniao；appcast.xml 品牌+URL 更新。
+5. **测试**：QingniaoTests 全部 `@testable import SnapVault`→`import Qingniao`；ReleaseInfoServiceTests URL/邮箱/主题断言同步更新。
+6. **build_and_run.sh**：PROJECT_NAME/SCHEME_NAME/APP_PATH→Qingniao（pgrep 用 $PROJECT_NAME 自动生效）。
+7. **Package.swift**：module Qingniao、testTarget QingniaoTests、path Qingniao/ & QingniaoTests/、exclude QingniaoApp.swift/Qingniao.entitlements。
+
+### 验证结果
+- `xcodebuild -project Qingniao.xcodeproj -scheme Qingniao -configuration Debug build` → **BUILD SUCCEEDED**。
+- 产物 Qingniao.app/Info.plist：CFBundleDisplayName=Qingniao、CFBundleName=青鸟、ShortVersion=1.2.0、Version=120、Identifier=com.assistant.app（保留）、无 Sparkle 键。
+- grep：产品源码/Info.plist/构建脚本/Package.swift 无 `Mac Super Assistant` 残留；无 `SnapVault` 残留（仅 `SnapVaultError.swift` 文件名/类型按任务约定保留）。
+
+### 留给后续 agent 的提示
+- **Swift 类型/文件名未改**：`SnapVaultError`（→QingniaoError, api.md §2.3）、`AssistantClipboardRepository`/`AssistantClipboardSource`/`AssistantFileSystem`、`AssistantApp` struct 名等品牌前缀类型仍在，按 api.md 由 T-004~T-015 逐步改，本任务未动以控制回归面。
+- Logger subsystem 仍为 `com.assistant.app`（与 Bundle ID 一致，按约定保留）。
+- entitlements 仍含 `com.apple.security.app-sandbox=true`，由 T-002 关闭。
+- 数据目录仍为 Assistant/（PersistenceController 等），由 T-003 迁移到 Qingniao/。
+- markdown 文档（README/PRIVACY/THIRD_PARTY_NOTICES/CHANGELOG）品牌未改，归 T-016；注意 ReleaseInfoServiceTests.testProjectHomepageContainsUS020... 仍断言 README 含 `feedback@assistant.app` 与旧 URL，README 改名时（T-016）需同步或该用例会失败（本任务未跑该用例；build 已通过）。
