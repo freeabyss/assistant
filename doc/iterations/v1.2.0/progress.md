@@ -487,3 +487,33 @@ AppDelegate 通过 `container.onboardingGate = { self.ensureOnboardingGate() }` 
 - **全屏截图命名**：ScreenshotService 协议方法仍是 `captureScreen()`，未改名；controller 层 `captureFullScreen()` 已是既有别名，GlobalShortcutManager 直接调它。
 - **HotkeyConflictDetector 有两个实例**：GlobalShortcutManager 持一个（用于启动期日志/刷新），SettingsViewModel 持一个（用于 UI）。二者都基于同一份 UserDefaults 持久化状态，读值一致；如需单例可后续收敛，但当前无状态共享问题（纯读 + @Published 各自驱动各自 UI）。
 - **预存在失败**：`FileSearchSourceTests` 3 处 `/var` vs `/private/var` 软链路径断言失败，属 FileSearchSource 任务遗留（工作区未提交改动），与 T-008 无关，未处理。
+
+---
+
+## T-009 文件搜索接入 FileSearchSource（2026-07-05）
+
+### 完成内容
+将 `FileSearchSource` 从旧的 Spotlight/`NSMetadataQuery` + 拼音实现重写为**固定三目录 + FileManager 一次性内存缓存**方案，并接入 `SearchService`。⌥Space 现在能搜到 `~/Desktop`、`~/Documents`、`~/Downloads` 下文件，⏎ 打开、⌘R Finder 显示、⌘C 复制路径，权重 75。
+
+### 改写/新增文件
+- `Qingniao/Services/SearchEngine/FileSearchSource.swift` — 完全重写：
+  - 默认索引根 `~/Desktop`、`~/Documents`、`~/Downloads`（`defaultRoots(home:)`，`SettingKey.fileSearchPaths` 扩展点预留，v1.2 固定）。
+  - 构造时 `Task.detached(.utility)` 后台 `FileManager.enumerator` 一次性遍历建缓存 `[FileIndexItem]`（name/path/normalizedName/normalizedPath/uti/size/mtime）；完成后发 `.fileSearchIndexReady`。首次查询若索引未就绪则懒加载 `rebuildIndex()`，不阻塞其他源（SearchService 并发 fan-out）。
+  - 排除：隐藏文件/目录（`.skipsHiddenFiles`）、bundle 包内部（`.skipsPackageDescendants`）、bundle 本体（`isPackage`）；深度上限 `maxDepth=8`；文件数上限 `maxIndexedFiles=100_000`。
+  - 匹配:大小写 + 变音符 + 全半角不敏感（folding），名称 exact/prefix/contains + 路径 contains 四档 + 最近修改加分；**无拼音**（FR-SEARCH-13）；≥2 字符触发（FR-SEARCH-17）。
+  - `FileIndexItem` 结构体取代旧 `FileInfo`；`FileSearchSourceProtocol` 契约改为 `indexedRoots` + `rebuildIndex()`（对齐 api.md §5）。
+  - 结果 `SearchResult`：title=文件名、subtitle=`~相对目录 · 大小`、icon=`.appIcon(url)`(经 NSWorkspace 取系统文件图标)、typeLabel=`searchPanel.type.file`(文件/File)、baseScore=`SourcePriority.file`=75、primary=`.openFile`、secondary=`[.revealInFinder, .copyText(path)]`。
+- `QingniaoTests/FileSearchSourceTests.swift`（新增，10 条测试，全部临时目录，不扫用户家目录）：索引三目录、搜索结果+动作、权重 75、≥2 字符触发、isEnabled 开关（用 Mock SettingsService 避免 Core Data 并发争用）、大小写/变音不敏感、prefix > contains 排序、跳过隐藏文件、不索引 bundle 内容、默认三目录。
+
+### 被并发 T-008 提交顺带纳入的改动（非本次单独 commit，但属 T-009 接线）
+以下文件在本任务执行期间被并发运行的 T-008 流程的 commit 一并提交（内容为 T-009 接线，已核对无误）：
+- `Qingniao/App/Controllers/AppContainer.swift` — 新增 `private let fileSearchSource = FileSearchSource()`；`makeSearchPanelViewModel` 里 `SettingsBackedSearchSource(..., settingKey: .fileSourceEnabled)` 包装并加入 `sources` 数组（第 5 位，clipboard 之前）。
+- `Qingniao/ViewModels/SettingsViewModel.swift` — 搜索源开关新增「文件」项（`.file` / `.fileSourceEnabled` / icon `doc`）；`resetSettingsToDefaults` 列表补 `.fileSourceEnabled`。
+- `Qingniao/Resources/Localizable.xcstrings` — 新增 `searchPanel.type.file`、`management.source.file`、`management.source.file.subtitle`（en/zh-Hans）。
+- `Qingniao.xcodeproj/project.pbxproj` — FileSearchSource.swift 补进 Qingniao target 的 PBXBuildFile + Sources 构建阶段（此前只有 group 引用，从未编译进 target，这正是它"从未被实例化"的根因之一）；FileSearchSourceTests.swift 加入 QingniaoTests target 四处接线。
+
+### 说明 / 遗留
+- `SettingKey.fileSourceEnabled` 及默认值 `"true"`、`SearchAction.openFile/.revealInFinder`、`SearchResultIcon` 渲染均已存在（T-005/前序任务已备），本次直接复用，未改 UI（SearchPanelView 仍走 `.appIcon` 分支渲染文件图标，符合"不改 UI"约束，交 T-011）。
+- v1.2 不做 FS 监听/增量索引、不做拼音、不做内容全文检索（均按约束）。
+- build Debug SUCCEEDED；xcodebuild test 全绿（142 tests, 0 failures，含新增 10 条 FileSearchSourceTests）。
+- 修复了 T-008 progress 中提到的 `FileSearchSourceTests` `/var` vs `/private/var` 软链断言问题（改为按 lastPathComponent/resolved path 比较）。
