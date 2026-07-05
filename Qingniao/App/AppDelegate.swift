@@ -75,13 +75,13 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let settingsService = SettingsService(persistence: .shared)
-        let viewModel = OnboardingViewModel(settingsService: settingsService) { [weak self] in
+        let viewModel = OnboardingViewModel(settingsService: settingsService, onComplete: { [weak self] in
             guard let self else { return }
             self.isOnboardingCompleted = true
             self.onboardingWindow?.close()
             self.onboardingWindow = nil
             self.startFullExperienceServices()
-        }
+        })
         let view = OnboardingView(viewModel: viewModel)
             .tint(JadeColor.primary) // 全局主色注入（Design Token T-004）
         let window = NSWindow(

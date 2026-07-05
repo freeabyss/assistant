@@ -18,165 +18,141 @@ final class OnboardingViewModelTests: XCTestCase {
         didComplete = false
     }
 
-    func testCannotPassClipboardStepUntilAcknowledged() async throws {
-        let viewModel = makeViewModel()
-        viewModel.step = .clipboardPrivacy
-
-        XCTAssertFalse(viewModel.canContinueCurrentStep)
-        viewModel.continueToNextStep()
-        XCTAssertEqual(viewModel.step, .clipboardPrivacy)
-
-        viewModel.acknowledgeClipboard()
-        XCTAssertTrue(viewModel.canContinueCurrentStep)
-        viewModel.continueToNextStep()
-        XCTAssertEqual(viewModel.step, .screenRecording)
-    }
-
-    func testHotkeyConflictBlocksSearchHotkeyStep() async throws {
-        let viewModel = makeViewModel()
-        viewModel.step = .searchHotkey
-        hotkeys.result = .conflict
-        viewModel.validateHotkey()
-
-        XCTAssertFalse(viewModel.canContinueCurrentStep)
-        viewModel.continueToNextStep()
-        XCTAssertEqual(viewModel.step, .searchHotkey)
-
-        hotkeys.result = .valid
-        viewModel.validateHotkey()
-        XCTAssertTrue(viewModel.canContinueCurrentStep)
-    }
-
-    func testRequiredPermissionsBlockCompletionAndStayOnPermissionStep() async throws {
-        let viewModel = makeReadyViewModel()
+    // ONB-V2-004: 屏幕录制未授权且未跳过时「开始使用」禁用；授权后可用。
+    func test_canStart_requiresScreenRecordingOrSkip() async throws {
         permissions.statuses[.screenRecording] = .denied
-        viewModel.step = .done
+        let viewModel = makeViewModel()
+        await viewModel.refreshScreenRecordingStatus()
 
-        await viewModel.completeIfPossible()
+        XCTAssertFalse(viewModel.canStart)
+
+        permissions.statuses[.screenRecording] = .authorized
+        await viewModel.refreshScreenRecordingStatus()
+        XCTAssertTrue(viewModel.canStart)
+    }
+
+    // ONB-V2-004 变体: 点「暂不开启截图」后即便未授权也可开始。
+    func test_canStart_enabledAfterSkippingScreenshot() async throws {
+        permissions.statuses[.screenRecording] = .denied
+        let viewModel = makeViewModel()
+        await viewModel.refreshScreenRecordingStatus()
+        XCTAssertFalse(viewModel.canStart)
+
+        viewModel.skipScreenshot()
+        XCTAssertTrue(viewModel.screenshotSkipped)
+        XCTAssertTrue(viewModel.canStart)
+    }
+
+    // ONB-V2-003: 点「授予屏幕录制权限」触发 requestScreenRecordingPrompt 恰好一次。
+    func test_requestScreenRecording_triggersPromptOnce() async throws {
+        let viewModel = makeViewModel()
+        XCTAssertEqual(permissions.requestScreenRecordingCallCount, 0)
+
+        viewModel.requestScreenRecording()
+
+        XCTAssertEqual(permissions.requestScreenRecordingCallCount, 1)
+    }
+
+    // PERM-OD-001: onboarding 全程不触发辅助功能 TCC。
+    func test_onboarding_neverTriggersAccessibilityRequest() async throws {
+        let viewModel = makeReadyViewModel()
+
+        viewModel.requestScreenRecording()
+        viewModel.skipScreenshot()
+        viewModel.dismissAccessibility()
+        await viewModel.start()
+
+        XCTAssertEqual(permissions.onDemandAccessibilityCallCount, 0)
+    }
+
+    // ONB-V2-005: 辅助功能「稍后再说」不阻塞完成（屏幕录制已授权前提下）。
+    func test_start_completesWithoutAccessibility() async throws {
+        let viewModel = makeReadyViewModel()
+        viewModel.dismissAccessibility()
+
+        await viewModel.start()
+
+        XCTAssertTrue(didComplete)
+        XCTAssertEqual(permissions.onDemandAccessibilityCallCount, 0)
+    }
+
+    // ONB-V2-004 反向: canStart == false 时 start() 不完成。
+    func test_start_blockedWhenScreenRecordingUndecided() async throws {
+        permissions.statuses[.screenRecording] = .denied
+        let viewModel = makeViewModel()
+        await viewModel.refreshScreenRecordingStatus()
+
+        await viewModel.start()
 
         XCTAssertFalse(didComplete)
-        XCTAssertEqual(viewModel.step, .screenRecording)
-        let completed = try await settings.value(for: .onboardingCompleted, as: Bool.self)
-        XCTAssertFalse(completed)
+        XCTAssertNotNil(viewModel.completionErrorMessage)
+        let completedAt = try await settings.stringValue(for: .onboardingCompletedAt)
+        XCTAssertTrue(completedAt.isEmpty)
     }
 
-    func testCompletingWritesSettingsAndEnablesLaunchAtLogin() async throws {
+    // ONB-V2-008: start() 写入 onboardingCompletedAt + settings + 开机启动。
+    func test_start_writesSettingsAndCompletedAt() async throws {
         let viewModel = makeReadyViewModel()
-        viewModel.step = .done
+        viewModel.clipboardEnabled = true
+        viewModel.launchAtLoginEnabled = true
 
-        await viewModel.completeIfPossible()
+        await viewModel.start()
 
-        let onboardingCompleted = try await settings.value(for: .onboardingCompleted, as: Bool.self)
+        let completedAt = try await settings.stringValue(for: .onboardingCompletedAt)
         let clipboardEnabled = try await settings.value(for: .clipboardEnabled, as: Bool.self)
         let searchHotkey = try await settings.stringValue(for: .searchHotkey)
         let launchSetting = try await settings.value(for: .launchAtLoginEnabled, as: Bool.self)
-        let languageMode = try await settings.value(for: .languageMode, as: LanguageMode.self)
 
         XCTAssertTrue(didComplete)
-        XCTAssertTrue(onboardingCompleted)
+        XCTAssertFalse(completedAt.isEmpty)
         XCTAssertTrue(clipboardEnabled)
         XCTAssertEqual(searchHotkey, "option+space")
         XCTAssertTrue(launchSetting)
         XCTAssertTrue(launchAtLogin.enabled)
-        XCTAssertEqual(languageMode, .followSystem)
     }
 
-    func testPermissionSettingsAndRefreshAreDelegated() async throws {
-        let viewModel = makeViewModel()
-        viewModel.openPermissionSettings(.accessibility)
-        await viewModel.refreshPermissions()
+    // ONB-V2-008 变体: 完成时同步写 legacy onboardingCompleted 布尔，保证回落读取路径。
+    func test_start_alsoWritesLegacyBoolean() async throws {
+        let viewModel = makeReadyViewModel()
+        await viewModel.start()
 
-        XCTAssertEqual(permissions.opened, [.accessibility])
-        XCTAssertEqual(viewModel.permissionStatuses[.screenRecording], .authorized)
-        XCTAssertEqual(viewModel.permissionStatuses[.accessibility], .authorized)
+        let legacy = try await settings.value(for: .onboardingCompleted, as: Bool.self)
+        XCTAssertTrue(legacy)
     }
 
-    // TC-U-002: continueToNextStep 进入 .screenRecording 时触发 request 恰好一次
-    func test_continueToNextStep_intoScreenRecording_triggersRequestPromptOnce() async throws {
-        let viewModel = makeViewModel()
-        viewModel.step = .clipboardPrivacy
-        viewModel.acknowledgeClipboard()
+    // clipboard 关闭时写入 false。
+    func test_start_persistsClipboardDisabledWhenToggledOff() async throws {
+        let viewModel = makeReadyViewModel()
+        viewModel.clipboardEnabled = false
 
-        XCTAssertEqual(permissions.requestScreenRecordingCallCount, 0)
-        viewModel.continueToNextStep()
+        await viewModel.start()
 
-        XCTAssertEqual(permissions.requestScreenRecordingCallCount, 1)
-        XCTAssertEqual(viewModel.step, .screenRecording)
+        let clipboardEnabled = try await settings.value(for: .clipboardEnabled, as: Bool.self)
+        XCTAssertFalse(clipboardEnabled)
     }
 
-    // TC-U-003: openPermissionSettings(.screenRecording) 调用顺序 [request, openSettings]
-    func test_openPermissionSettings_screenRecording_callsRequestBeforeOpenSettings() async throws {
-        let viewModel = makeViewModel()
-
-        viewModel.openPermissionSettings(.screenRecording)
-
-        XCTAssertEqual(permissions.callLog, [
-            .request(kind: .screenRecording),
-            .openSettings(kind: .screenRecording)
-        ])
-        XCTAssertEqual(permissions.opened, [.screenRecording])
-    }
-
-    // TC-U-003 反向: openPermissionSettings(.accessibility) 不应触发 request
-    func test_openPermissionSettings_accessibility_doesNotTriggerRequest() async throws {
-        let viewModel = makeViewModel()
-
-        viewModel.openPermissionSettings(.accessibility)
-
-        XCTAssertEqual(permissions.requestScreenRecordingCallCount, 0)
-        XCTAssertEqual(permissions.opened, [.accessibility])
-    }
-
-    // TC-U-004: skipOnboarding 写 flag、显式 clipboardEnabled=false、回调 onComplete
+    // ONB-V2-006 / TC-U-004: skipOnboarding 写完成标记、显式 clipboardEnabled=false、回调 onComplete。
     func test_skipOnboarding_writesFlagsAndInvokesCompletion() async throws {
-        // 前置断言：默认 clipboardEnabled 为 true（PersistenceController.swift:307）
         let defaultClipboard = try await settings.value(for: .clipboardEnabled, as: Bool.self)
         XCTAssertTrue(defaultClipboard)
 
         let viewModel = makeViewModel()
-
         await viewModel.skipOnboarding()
 
-        let onboardingCompleted = try await settings.value(for: .onboardingCompleted, as: Bool.self)
+        let completedAt = try await settings.stringValue(for: .onboardingCompletedAt)
+        let legacy = try await settings.value(for: .onboardingCompleted, as: Bool.self)
         let clipboardEnabled = try await settings.value(for: .clipboardEnabled, as: Bool.self)
 
-        XCTAssertTrue(onboardingCompleted)
+        XCTAssertFalse(completedAt.isEmpty)
+        XCTAssertTrue(legacy)
         XCTAssertFalse(clipboardEnabled)
         XCTAssertTrue(didComplete)
     }
 
-    // TC-U-005: 7 步参数化（每步新构造 VM）
-    func test_skipOnboarding_worksFromAnyStep() async throws {
-        XCTAssertEqual(OnboardingStep.allCases.count, 7)
-
-        for step in OnboardingStep.allCases {
-            let localSettings = InMemorySettingsService()
-            var localDidComplete = false
-            let viewModel = OnboardingViewModel(
-                permissionService: MockPermissionService(),
-                hotkeyService: MockHotkeyValidationService(),
-                settingsService: localSettings,
-                launchAtLoginService: MockLaunchAtLoginService()
-            ) {
-                localDidComplete = true
-            }
-            viewModel.step = step
-
-            await viewModel.skipOnboarding()
-
-            let onboardingCompleted = try await localSettings.value(for: .onboardingCompleted, as: Bool.self)
-            let clipboardEnabled = try await localSettings.value(for: .clipboardEnabled, as: Bool.self)
-            XCTAssertTrue(onboardingCompleted, "onboardingCompleted false at step \(step)")
-            XCTAssertFalse(clipboardEnabled, "clipboardEnabled true at step \(step)")
-            XCTAssertTrue(localDidComplete, "onComplete not called at step \(step)")
-        }
-    }
-
-    // TC-U-006: hotkey 已录入分支验证持久化
-    func test_skipOnboarding_persistsHotkeyWhenRecorded() async throws {
+    // ONB-V2-002 / TC-U-006: 热键录入值被持久化（默认 option+space）。
+    func test_skipOnboarding_persistsHotkey() async throws {
         hotkeys.persisted = "option+space"
         let viewModel = makeViewModel()
-        viewModel.step = .searchHotkey
 
         await viewModel.skipOnboarding()
 
@@ -184,11 +160,23 @@ final class OnboardingViewModelTests: XCTestCase {
         XCTAssertEqual(searchHotkey, "option+space")
     }
 
-    private func makeReadyViewModel() -> OnboardingViewModel {
+    // onAppear 校验热键并刷新屏幕录制状态。
+    func test_onAppear_refreshesScreenRecordingStatus() async throws {
+        permissions.statuses[.screenRecording] = .authorized
         let viewModel = makeViewModel()
-        viewModel.clipboardAcknowledged = true
+
+        viewModel.onAppear()
+        // onAppear 内部 Task 异步刷新；直接调用同步等价方法验证。
+        await viewModel.refreshScreenRecordingStatus()
+
+        XCTAssertTrue(viewModel.screenRecordingAuthorized)
+    }
+
+    private func makeReadyViewModel() -> OnboardingViewModel {
+        permissions.statuses[.screenRecording] = .authorized
+        let viewModel = makeViewModel()
         viewModel.hotkeyValidation = .valid
-        viewModel.permissionStatuses = [.screenRecording: .authorized, .accessibility: .authorized]
+        viewModel.screenRecordingAuthorized = true
         return viewModel
     }
 

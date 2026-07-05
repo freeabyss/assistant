@@ -21,4 +21,19 @@ final class PermissionServiceProtocolConformanceTests: XCTestCase {
         let staticService = StaticPermissionService()
         XCTAssertTrue(staticService.requestScreenRecordingPrompt())
     }
+
+    // PERM-OD-003: onDemandAccessibilityCheck() 三 conformer 补齐。
+    // 真实 PermissionService 走 AXIsProcessTrusted + NSAlert，会弹 UI，不在单测调用；
+    // 此处覆盖 Mock/Static 两替身，编译即验证真实服务已实现（否则协议不满足）。
+    func test_mockPermissionService_conformsToOnDemandAccessibilityCheck() {
+        let mock = MockPermissionService()
+        mock.onDemandAccessibilityResult = true
+        XCTAssertTrue(mock.onDemandAccessibilityCheck())
+        XCTAssertEqual(mock.onDemandAccessibilityCallCount, 1)
+    }
+
+    func test_staticPermissionService_conformsToOnDemandAccessibilityCheck() {
+        let staticService = StaticPermissionService()
+        XCTAssertTrue(staticService.onDemandAccessibilityCheck())
+    }
 }
