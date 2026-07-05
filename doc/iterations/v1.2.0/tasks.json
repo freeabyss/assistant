@@ -451,7 +451,7 @@
         "REG-003"
       ],
       "done_definition": "⌥Space 唤起命令栏符合 P-01 规范；空态显示最近+收藏；⌘1-6 切源生效；计算器结果首行；危险命令二次确认；ESC/点外关闭",
-      "passes": false
+      "passes": true
     },
     {
       "id": "T-012",

@@ -593,3 +593,63 @@ AppDelegate 通过 `container.onboardingGate = { self.ensureOnboardingGate() }` 
 - **本次 commit 的自洽性**：commit `6c8174f` 未引用任何 T-011 符号（`settingsWindowController.show`、`makeClipboardListViewModel` 在 HEAD 已存在），单独 checkout 即可 build。
 - **isFavorite 迁移**：靠 Core Data 轻量迁移自动加列（已有库升级无损）；无手写 mapping model。
 - **PreviewPanel 未做全量 Jade 迁移**：按任务约束只修强解包 + 换按钮 + 接 snapshot，T-015 会做全量样式迁移。
+
+---
+
+## T-011 Command Bar 重写（P-01，presentation, P0）（2026-07-03）
+
+### 状态
+✅ 完成。隔离 worktree（基于 HEAD，避免并发 T-012 未提交改动干扰）内 `xcodebuild -project Qingniao.xcodeproj -scheme Qingniao -configuration Debug build/test` → **BUILD SUCCEEDED / TEST SUCCEEDED（148 tests, 0 failures）**。tasks.json T-011 passes=true。
+
+### 文件 rename
+- `Qingniao/Views/SearchPanel/SearchPanelView.swift` → `CommandBarView.swift`（git mv + pbxproj 四处同步：PBXBuildFile/PBXFileReference/group/Sources，UUID B011...0003/0004 复用，仅改 path/注释）。
+- `SearchPanelView`(struct) → `CommandBarView`；`SearchPanelResultRow` → `CommandBarResultRow`。
+- **ViewModel 保留原名 `SearchPanelViewModel`**（扩展而非改名，减少 4 处引用面 + 测试改动；类型仍是命令栏后端）。
+
+### 新增文件
+- `Qingniao/Services/SearchEngine/CommandBarHomeProvider.swift` — 空态 home 内容聚合器（薄只读）：
+  - `recentResults(limit:)`：读 `UsageStatRepository.recentlyUsed`（按 `lastUsedAt` 降序），按 targetType 解析为 app（经 AppSource.index 拿当前 path/名）/命令（catalog 查表）result；过量取 3×limit 容忍已卸载 app/未知命令。
+  - `favoriteResults(limit:)`：`clipboardRepository.fetchHistory` 取 `isPinned` 记录（v1.2 D-036 只做置顶，无 favorites/tags；**注意**：working tree 里并发 T-012 给 snapshot 加了 `isFavorite`，本 provider 为对齐 HEAD 基线只依赖 `isPinned`，T-012 落地后可加 `|| isFavorite`）。
+  - `CommandBarHomeProviding` 协议 + `StubHomeProvider` 测试替身。
+  - pbxproj C011 前缀接线（4 处）。
+
+### 改写文件
+- `Qingniao/ViewModels/SearchPanelViewModel.swift`：
+  - `CommandBarSource`(⌘1-6 枚举 all/app/command/clipboard/file/settings) + `activeSource` + `visibleResults`(按源过滤，calculator 归 all)。
+  - home：`recentResults/favoriteResults/hasHomeContent/loadHomeContent()`；`open()` 触发加载；空 query searchNow 也刷新 home。
+  - 危险命令：`isDangerous`(clearClipboardHistory/restartFinder/restartDock)、`trigger`(危险→`pendingDangerResult`,否则执行)、`confirmPendingDanger/cancelPendingDanger`。
+  - `copyCurrentValue()`(⌘C：copyText/openFile/revealInFinder/app path/clipboard title→pasteboard,不执行,toast「已复制」)；`clearInput()`(⌘K)；`openSettings()`(⌘,)；`isCalculatorTopResult`(calculator 且 visibleResults 首行)。
+  - **init 参数顺序**：`onOpenSettings` 放 `onClose` **之前**，保证尾随闭包仍绑定 `onClose`（否则 `SearchPanelViewModelTests.testConfirmSelection...` 的 `didClose` 尾随闭包会误绑到 onOpenSettings → 该测试一度红）。
+- `Qingniao/Services/SearchEngine/AppSearchSource.swift`：`UsageStatRepositoryProtocol` + `UsageStatRepository` 新增 `recentlyUsed(limit:)`。
+- `Qingniao/App/Controllers/AppContainer.swift`：`makeSearchPanelViewModel` 注入 `CommandBarHomeProvider` + `onOpenSettings`(settingsWindowController.show(route:.settings))。
+- `Qingniao/Views/SearchPanel/CommandBarView.swift`：全新 P-01 Jade 视图（见下）。
+- `Qingniao/App/Controllers/CommandBarController.swift`：NSPanel 680 宽 / 动态高 120-560 / y+120 居中；`titleVisibility=.hidden`、`titlebarAppearsTransparent=true`、`isOpaque=false`、`backgroundColor=.clear`、`isMovableByWindowBackground=true`、加 `.nonactivatingPanel`；圆角/material 交给 SwiftUI（`jadeMaterial(.commandBar, radius:.xxl)` + `jadeShadow(.xl)`），去掉旧 layer.cornerRadius=12。hosts `CommandBarView`。
+- `Qingniao/Views/Components/AutoFocusTextField.swift`：仅更新注释（CommandBarView 改用原生 TextField + @FocusState）。
+- `QingniaoTests/SearchPanelViewModelTests.swift`：+5 测试（切源过滤 / 危险命令二次确认 / ⌘C 复制不执行 / 计算器首行 / home 加载），+import AppKit。
+
+### P-01 UI 要点（CommandBarView）
+- VStack(spacing 0)：48px 输入框（jade 放大镜 focus 主色、commandBarInput 20pt、ProgressView/清空）→ Divider(border) → content → Divider → 44px hint bar；`.frame(width: 680)`。
+- 结果行 44px：32×32 类型图标底（类型色 15%，PRD §9.2.9：app blue/command purple/calculator jade/convert pink/settings indigo/clipboard orange/file green），title3 主标题 + subhead 副标题 + 类型 badge（类型色 15% 底）+ ⏎；选中 `JadeColor.primaryFill` + `JadeRadius.lg` + 图标转主色。
+- 空态两 section（最近使用/收藏，subhead 标题）；无结果 magnifyingglass + 「未找到匹配项」+「尝试换个关键词或检查搜索源设置」(§9.7)；home 全空 fallback sparkles+placeholder。
+- ⌘1-6/⌘K/⌘C/⌘, 用隐藏 `Button().keyboardShortcut(...)` 层（opacity 0 / 不 hit test / a11y hidden）——**优先 SwiftUI .keyboardShortcut 而非 NSView 拦截**；↑↓⏎⎋ + Tab 唯一前缀补全仍走保留的 `KeyEventHandler`。
+- 危险命令 ⏎ → `jadeConfirmationDialog`（标题=命令名、confirm「确认执行」、message「此操作可能不可撤销…」）。
+
+### ⌘1-6 实现方式
+`CommandBarView.shortcutButtons`：`ForEach(CommandBarSource.allCases)` 生成 6 个隐藏 Button，`.keyboardShortcut(KeyEquivalent("\(rawValue)"), modifiers: .command)` → `viewModel.selectSource(source)` 设 `activeSource`，`visibleResults` 计算属性据此过滤（`CommandBarSource.matches`）。sources 无需 controller 额外传入——过滤在 ViewModel 层对既有 `results` 做，`SearchService` 仍聚合全部源。
+
+### 空态「最近/收藏」数据来源
+- 最近使用：Core Data `CDUsageStat`（app 启动/命令执行的 useCount + lastUsedAt，本地记录，FR-SEARCH-10/10a），`recentlyUsed` 按 lastUsedAt 降序，解析回 app（AppSource 索引取当前 path）/命令（catalog）。
+- 收藏：`AssistantClipboardRepository.fetchHistory` 的 `isPinned` 剪贴板记录（置顶排前）。
+
+### commit（4 次 + 本次记录）
+1. `refactor(T-011): rename SearchPanelView.swift → CommandBarView.swift`
+2. `feat(T-011): 命令栏 ViewModel 扩展 + 最近/收藏 home provider`
+3. `feat(T-011): CommandBarView P-01 Jade 重写 + NSPanel 680/20px/毛玻璃`
+4. `docs(T-011): 更新 AutoFocusTextField 注释`
+
+### 留给后续 agent 的重点提示
+- **⚠️ 并发 T-012（剪贴板重写）在 working tree 有未提交改动**（ClipboardListView→ClipboardHistoryView、ClipboardItemRow→JadeClipboardRow，pbxproj 已在 HEAD 引用新名，但新 .swift 文件未提交 + AssistantClipboardRepository 加了 snapshot.isFavorite）。**主仓 xcodebuild 当前会因这些未提交文件失败**——这不是 T-011 的问题。本任务的 build/test 是在**基于 HEAD 的隔离 worktree**里把「我的文件 + T-012 working-tree 文件」一起 copy 进去验证通过的（148 tests 0 fail）。T-012 提交后主仓即可正常 build。
+- Localizable.xcstrings 的全部 `commandBar.*` key（placeholder/section.recent/favorites/noResults.*/source.*/danger.*/hint/enter/copied/indexing）**HEAD 已存在**（早前任务预置），本任务未改 xcstrings（我一度重排后又 `git checkout` 还原，零改动）。
+- `isCalculatorTopResult` 依据「calculator 源且排在 visibleResults 首行」判定（未新增 SearchResult flag，靠 SearchService 现有排序把 calculator matchScore=30 顶上去）。
+- Tab 补全为「唯一标题前缀匹配」补全；未做多结果公共前缀补全。
+- Loading：输入框内 `isLoading` 显示 ProgressView；FileSearchSource 索引态未单独在命令栏画 ProgressView（可后续接 `.fileSearchIndexReady` 通知），`commandBar.indexing` key 已备。
