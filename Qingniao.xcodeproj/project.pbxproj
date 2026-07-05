@@ -44,6 +44,7 @@
 		A1000100000000000000001B /* KeyboardShortcuts+Names.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001E; };
 		A1000100000000000000001C /* appcast.xml in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001F; };
 		A10001000000000000000024 /* AppSearchSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000024; };
+		A10001000000000000000025 /* FileSearchSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000025; };
 		A1000100000000000000002D /* SystemCommandSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002D; };
 		A1000100000000000000002E /* CalculatorSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002E; };
 		A10001000000000000000026 /* ScreenshotService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000026; };
@@ -82,6 +83,7 @@
 		B00600000000000000000009 /* SearchTextMatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0060000000000000000000A; };
 		B01000000000000000000001 /* SettingsServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01000000000000000000002; };
 		B00700000000000000000001 /* AppSearchSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00700000000000000000002; };
+		F00900000000000000000001 /* FileSearchSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00900000000000000000002; };
 					B01100000000000000000001 /* SearchPanelViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01100000000000000000002; };
 			B01100000000000000000003 /* SearchPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01100000000000000000004; };
 			B01100000000000000000005 /* AssistantClipboardSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01100000000000000000006; };
@@ -89,10 +91,13 @@
 
 			C01400000000000000000001 /* PermissionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000002 /* PermissionService.swift */; };
 			C01400000000000000000003 /* HotkeyValidationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000004 /* HotkeyValidationService.swift */; };
+			C01400000000000000000021 /* GlobalShortcutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000020 /* GlobalShortcutManager.swift */; };
+			C01400000000000000000023 /* HotkeyConflictDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000022 /* HotkeyConflictDetector.swift */; };
 			C01400000000000000000005 /* LaunchAtLoginService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000006 /* LaunchAtLoginService.swift */; };
 			C01400000000000000000007 /* OnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000008 /* OnboardingViewModel.swift */; };
 			C01400000000000000000009 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0140000000000000000000A /* OnboardingView.swift */; };
 			C0140000000000000000000B /* OnboardingViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0140000000000000000000C /* OnboardingViewModelTests.swift */; };
+			C01400000000000000000025 /* HotkeyConflictDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000024 /* HotkeyConflictDetectorTests.swift */; };
 			F00400000000000000000101 /* JadeColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000001 /* JadeColor.swift */; };
 			F00400000000000000000102 /* JadeRadius.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000002 /* JadeRadius.swift */; };
 			F00400000000000000000103 /* JadeSpace.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000003 /* JadeSpace.swift */; };
@@ -187,6 +192,7 @@
 		B0060000000000000000000A /* SearchTextMatcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchTextMatcherTests.swift; sourceTree = "<group>"; };
 		B01000000000000000000002 /* SettingsServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsServiceTests.swift; sourceTree = "<group>"; };
 		B00700000000000000000002 /* AppSearchSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSearchSourceTests.swift; sourceTree = "<group>"; };
+		F00900000000000000000002 /* FileSearchSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchSourceTests.swift; sourceTree = "<group>"; };
 		E01800000000000000000002 /* ReleaseInfoServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseInfoServiceTests.swift; sourceTree = "<group>"; };
 					B01100000000000000000002 /* SearchPanelViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanelViewModel.swift; sourceTree = "<group>"; };
 			B01100000000000000000004 /* SearchPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanelView.swift; sourceTree = "<group>"; };
@@ -194,10 +200,13 @@
 			B01100000000000000000008 /* SearchPanelViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanelViewModelTests.swift; sourceTree = "<group>"; };
 			C01400000000000000000002 /* PermissionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Services/Permissions/PermissionService.swift; sourceTree = SOURCE_ROOT; };
 			C01400000000000000000004 /* HotkeyValidationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Services/Hotkey/HotkeyValidationService.swift; sourceTree = SOURCE_ROOT; };
+			C01400000000000000000020 /* GlobalShortcutManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Services/Hotkey/GlobalShortcutManager.swift; sourceTree = SOURCE_ROOT; };
+			C01400000000000000000022 /* HotkeyConflictDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Services/Hotkey/HotkeyConflictDetector.swift; sourceTree = SOURCE_ROOT; };
 			C01400000000000000000006 /* LaunchAtLoginService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Services/LaunchAtLogin/LaunchAtLoginService.swift; sourceTree = SOURCE_ROOT; };
 			C01400000000000000000008 /* OnboardingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/ViewModels/OnboardingViewModel.swift; sourceTree = SOURCE_ROOT; };
 			C0140000000000000000000A /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Onboarding/OnboardingView.swift; sourceTree = SOURCE_ROOT; };
 			C0140000000000000000000C /* OnboardingViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QingniaoTests/OnboardingViewModelTests.swift; sourceTree = SOURCE_ROOT; };
+			C01400000000000000000024 /* HotkeyConflictDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QingniaoTests/HotkeyConflictDetectorTests.swift; sourceTree = SOURCE_ROOT; };
 			F00400000000000000000001 /* JadeColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeColor.swift; sourceTree = SOURCE_ROOT; };
 			F00400000000000000000002 /* JadeRadius.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeRadius.swift; sourceTree = SOURCE_ROOT; };
 			F00400000000000000000003 /* JadeSpace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeSpace.swift; sourceTree = SOURCE_ROOT; };
@@ -375,6 +384,7 @@
 			children = (
 				D01700000000000000000002 /* AnnotationTests.swift */,
 					C0140000000000000000000C /* OnboardingViewModelTests.swift */,
+					C01400000000000000000024 /* HotkeyConflictDetectorTests.swift */,
 				A10000000000000000000038 /* CalculatorSourceTests.swift */,
 				A10000000000000000000039 /* SystemCommandSourceTests.swift */,
 				A1000000000000000000003B /* CryptoHelperTests.swift */,
@@ -390,6 +400,7 @@
 				B0060000000000000000000A /* SearchTextMatcherTests.swift */,
 				B01000000000000000000002 /* SettingsServiceTests.swift */,
 				B00700000000000000000002 /* AppSearchSourceTests.swift */,
+				F00900000000000000000002 /* FileSearchSourceTests.swift */,
 					E01800000000000000000002 /* ReleaseInfoServiceTests.swift */,
 				B01100000000000000000008 /* SearchPanelViewModelTests.swift */,
 					B01300000000000000000002 /* ClipboardListViewModelTests.swift */,
@@ -605,6 +616,8 @@
 				isa = PBXGroup;
 				children = (
 					C01400000000000000000004 /* HotkeyValidationService.swift */,
+					C01400000000000000000020 /* GlobalShortcutManager.swift */,
+					C01400000000000000000022 /* HotkeyConflictDetector.swift */,
 				);
 				path = Hotkey;
 				sourceTree = "<group>";
@@ -755,6 +768,7 @@
 			files = (
 				D01700000000000000000001 /* AnnotationTests.swift in Sources */,
 				C0140000000000000000000B /* OnboardingViewModelTests.swift in Sources */,
+				C01400000000000000000025 /* HotkeyConflictDetectorTests.swift in Sources */,
 				A10001000000000000000038 /* CalculatorSourceTests.swift in Sources */,
 				A10001000000000000000039 /* SystemCommandSourceTests.swift in Sources */,
 				A1000100000000000000003B /* CryptoHelperTests.swift in Sources */,
@@ -770,6 +784,7 @@
 				B00600000000000000000009 /* SearchTextMatcherTests.swift in Sources */,
 				B01000000000000000000001 /* SettingsServiceTests.swift in Sources */,
 				B00700000000000000000001 /* AppSearchSourceTests.swift in Sources */,
+				F00900000000000000000001 /* FileSearchSourceTests.swift in Sources */,
 					E01801000000000000000002 /* ReleaseInfoServiceTests.swift in Sources */,
 					B01100000000000000000009 /* SearchPanelViewModelTests.swift in Sources */,
 					B01300000000000000000001 /* ClipboardListViewModelTests.swift in Sources */,
@@ -782,6 +797,8 @@
 			files = (
 				C01400000000000000000001 /* PermissionService.swift in Sources */,
 				C01400000000000000000003 /* HotkeyValidationService.swift in Sources */,
+				C01400000000000000000021 /* GlobalShortcutManager.swift in Sources */,
+				C01400000000000000000023 /* HotkeyConflictDetector.swift in Sources */,
 				C01400000000000000000005 /* LaunchAtLoginService.swift in Sources */,
 				C01400000000000000000007 /* OnboardingViewModel.swift in Sources */,
 				C01400000000000000000009 /* OnboardingView.swift in Sources */,
@@ -834,6 +851,7 @@
 				A1000100000000000000001A /* DataCleanupService.swift in Sources */,
 				A1000100000000000000001B /* KeyboardShortcuts+Names.swift in Sources */,
 				A10001000000000000000024 /* AppSearchSource.swift in Sources */,
+				A10001000000000000000025 /* FileSearchSource.swift in Sources */,
 				A1000100000000000000002D /* SystemCommandSource.swift in Sources */,
 				A1000100000000000000002E /* CalculatorSource.swift in Sources */,
 				A10001000000000000000044 /* InMemorySearchIndex.swift in Sources */,
