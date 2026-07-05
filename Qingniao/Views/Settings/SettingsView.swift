@@ -184,15 +184,16 @@ struct ManagementSettingsPage: View {
                 )
 
                 section(L10n.localized("management.settings.shortcuts")) {
-                    shortcutRow(L10n.localized("management.shortcuts.search"), recorder: KeyboardShortcuts.Recorder(for: .togglePanel))
-                    shortcutRow(L10n.localized("management.shortcuts.captureRegion"), recorder: KeyboardShortcuts.Recorder(for: .captureRegion))
-                    shortcutRow(L10n.localized("management.shortcuts.captureWindow"), recorder: KeyboardShortcuts.Recorder(for: .captureWindow))
+                    shortcutRow(L10n.localized("management.shortcuts.search"), name: .togglePanel, recorder: KeyboardShortcuts.Recorder(for: .togglePanel))
+                    shortcutRow(L10n.localized("management.shortcuts.captureRegion"), name: .captureRegion, recorder: KeyboardShortcuts.Recorder(for: .captureRegion))
+                    shortcutRow(L10n.localized("management.shortcuts.captureWindow"), name: .captureWindow, recorder: KeyboardShortcuts.Recorder(for: .captureWindow))
+                    shortcutRow(L10n.localized("management.shortcuts.captureFullscreen"), name: .captureFullscreen, recorder: KeyboardShortcuts.Recorder(for: .captureFullscreen))
+                    shortcutRow(L10n.localized("management.shortcuts.clipboardHistory"), name: .openClipboardHistory, recorder: KeyboardShortcuts.Recorder(for: .openClipboardHistory))
+                    shortcutRow(L10n.localized("management.shortcuts.openSettings"), name: .openSettings, recorder: KeyboardShortcuts.Recorder(for: .openSettings))
                     HStack {
                         Spacer()
                         Button(L10n.localized("settings.restoreDefaults")) {
-                            KeyboardShortcuts.reset(.togglePanel)
-                            KeyboardShortcuts.reset(.captureRegion)
-                            KeyboardShortcuts.reset(.captureWindow)
+                            viewModel.resetAllShortcutsToDefaults()
                         }
                     }
                 }
@@ -281,12 +282,23 @@ struct ManagementSettingsPage: View {
         }
     }
 
-    private func shortcutRow<R: View>(_ label: String, recorder: R) -> some View {
-        HStack {
-            Text(label)
-                .frame(width: 170, alignment: .leading)
-            recorder
-            Spacer()
+    private func shortcutRow<R: View>(_ label: String, name: KeyboardShortcuts.Name, recorder: R) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(label)
+                    .frame(width: 170, alignment: .leading)
+                recorder
+                    .onChange(of: KeyboardShortcuts.getShortcut(for: name)) { _ in
+                        viewModel.refreshShortcutConflicts()
+                    }
+                Spacer()
+            }
+            if let message = viewModel.conflictMessage(for: name) {
+                Label(message, systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundColor(.red)
+                    .padding(.leading, 170)
+            }
         }
     }
 }

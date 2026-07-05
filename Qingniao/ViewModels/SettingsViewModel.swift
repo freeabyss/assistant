@@ -65,6 +65,7 @@ final class SettingsViewModel: ObservableObject {
     private let notificationCenter: NotificationCenter
     private let userDefaults: UserDefaults
     private let dataManagementService: DataManagementService
+    private let conflictDetector: HotkeyConflictDetector
     private let logger = Logger.app
 
     @Published var selectedPage: ManagementCenterPage = .overview
@@ -92,6 +93,11 @@ final class SettingsViewModel: ObservableObject {
     @Published var showResetAllDataConfirmation = false
     @Published var showResetAllDataRestartAlert = false
     @Published var isResettingAllData = false
+
+    /// v1.2 (T-008): per-shortcut conflict warnings surfaced to the settings
+    /// shortcut rows (T-013 UI binds to these). Empty when no conflicts. Keyed by
+    /// the `KeyboardShortcuts.Name`; the value is a localized, user-facing message.
+    @Published var conflictWarnings: [KeyboardShortcuts.Name: String] = [:]
 
     var enabledSourceNames: String {
         let names = sourceToggles.filter(\.isEnabled).map(\.title)
@@ -123,6 +129,7 @@ final class SettingsViewModel: ObservableObject {
         SearchSourceToggle(id: .command, settingKey: .commandSourceEnabled, title: L10n.localized("management.source.command"), subtitle: L10n.localized("management.source.command.subtitle"), iconName: "terminal", isEnabled: true),
         SearchSourceToggle(id: .calculator, settingKey: .calculatorSourceEnabled, title: L10n.localized("management.source.calculator"), subtitle: L10n.localized("management.source.calculator.subtitle"), iconName: "function", isEnabled: true),
         SearchSourceToggle(id: .settings, settingKey: .settingsSourceEnabled, title: L10n.localized("management.source.settings"), subtitle: L10n.localized("management.source.settings.subtitle"), iconName: "gearshape", isEnabled: true),
+        SearchSourceToggle(id: .file, settingKey: .fileSourceEnabled, title: L10n.localized("management.source.file"), subtitle: L10n.localized("management.source.file.subtitle"), iconName: "doc", isEnabled: true),
         SearchSourceToggle(id: .clipboard, settingKey: .clipboardShowInSearch, title: L10n.localized("management.source.clipboard"), subtitle: L10n.localized("management.source.clipboard.subtitle"), iconName: "clipboard", isEnabled: true)
     ]
 
@@ -133,7 +140,8 @@ final class SettingsViewModel: ObservableObject {
         launchAtLoginService: LaunchAtLoginServiceProtocol = LaunchAtLoginService(),
         notificationCenter: NotificationCenter = .default,
         userDefaults: UserDefaults = .standard,
-        dataManagementService: DataManagementService = DataManagementService()
+        dataManagementService: DataManagementService = DataManagementService(),
+        conflictDetector: HotkeyConflictDetector = HotkeyConflictDetector()
     ) {
         self.settingsService = settingsService
         self.blacklistRepository = blacklistRepository
@@ -142,12 +150,14 @@ final class SettingsViewModel: ObservableObject {
         self.notificationCenter = notificationCenter
         self.userDefaults = userDefaults
         self.dataManagementService = dataManagementService
+        self.conflictDetector = conflictDetector
     }
 
     func load() async {
         await loadSettings()
         await reloadBlacklist()
         await refreshPermissions()
+        refreshShortcutConflicts()
     }
 
     func select(route: SettingsRoute) {
@@ -194,6 +204,7 @@ final class SettingsViewModel: ObservableObject {
                 .commandSourceEnabled,
                 .calculatorSourceEnabled,
                 .settingsSourceEnabled,
+                .fileSourceEnabled,
                 .clipboardShowInSearch,
                 .clipboardEnabled,
                 .clipboardRetention,
@@ -213,6 +224,34 @@ final class SettingsViewModel: ObservableObject {
 
     func updateScreenshotDirectory(_ directory: URL) {
         screenshotSaveDirectory = directory
+    }
+
+    // MARK: - Shortcut conflict detection (T-008)
+
+    /// Re-scan all managed global shortcuts and publish per-name conflict
+    /// warnings. Call after `load()`, after a recorder change, or after reset.
+    func refreshShortcutConflicts() {
+        conflictDetector.scan()
+        conflictWarnings = conflictDetector.conflictMessages
+    }
+
+    /// Whether the given shortcut currently conflicts with a system or internal
+    /// binding. T-013 uses this to color the row red / show a warning.
+    func isShortcutConflict(_ name: KeyboardShortcuts.Name) -> Bool {
+        conflictDetector.conflictingNames.contains(name)
+    }
+
+    /// Localized conflict message for a shortcut, or `nil` when there is none.
+    func conflictMessage(for name: KeyboardShortcuts.Name) -> String? {
+        conflictWarnings[name]
+    }
+
+    /// "重置为默认": reset every managed global shortcut to its default binding,
+    /// then refresh conflict state.
+    func resetAllShortcutsToDefaults() {
+        KeyboardShortcuts.reset(KeyboardShortcuts.Name.managedGlobalShortcuts)
+        refreshShortcutConflicts()
+        statusMessage = L10n.localized("management.shortcuts.reset")
     }
 
     // MARK: - Data page actions (T-003 / T-013)

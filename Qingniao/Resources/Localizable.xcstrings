@@ -6002,6 +6002,108 @@
         }
       }
     },
+    "management.shortcuts.captureFullscreen": {
+      "comment": "T-008 global shortcut label",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture Full Screen"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全屏截图"
+          }
+        }
+      }
+    },
+    "management.shortcuts.clipboardHistory": {
+      "comment": "T-008 global shortcut label",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Clipboard History"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开剪贴板历史"
+          }
+        }
+      }
+    },
+    "management.shortcuts.openSettings": {
+      "comment": "T-008 global shortcut label",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开设置"
+          }
+        }
+      }
+    },
+    "management.shortcuts.conflict.system": {
+      "comment": "T-008 shortcut conflicts with an enabled macOS shortcut",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This shortcut conflicts with a system shortcut. Reset to defaults or record a different one."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "该快捷键与系统快捷键冲突,建议重置为默认或重新录制。"
+          }
+        }
+      }
+    },
+    "management.shortcuts.conflict.internal": {
+      "comment": "T-008 shortcut duplicates another Qingniao shortcut",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This shortcut is already used by another Qingniao action. Reset to defaults or record a different one."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "该快捷键已被青鸟其他功能占用,建议重置为默认或重新录制。"
+          }
+        }
+      }
+    },
+    "management.shortcuts.reset": {
+      "comment": "T-008 status after resetting shortcuts",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shortcuts reset to defaults"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快捷键已重置为默认"
+          }
+        }
+      }
+    },
     "management.settings.sources": {
       "comment": "US-015 management center",
       "localizations": {
@@ -8208,6 +8310,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "退出"
+          }
+        }
+      }
+    },
+    "searchPanel.type.file": {
+      "comment": "US-012 file search result badge",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "File"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件"
+          }
+        }
+      }
+    },
+    "management.source.file": {
+      "comment": "US-012 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Files"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件"
+          }
+        }
+      }
+    },
+    "management.source.file.subtitle": {
+      "comment": "US-012 management center",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search files in Desktop, Documents and Downloads."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在桌面、文稿和下载目录中搜索文件。"
           }
         }
       }
