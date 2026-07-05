@@ -4,10 +4,12 @@ import os.log
 
 // MARK: - Toolbar Action
 
-/// Actions a user can trigger from the US-016 screenshot preview toolbar.
+/// Actions a user can trigger from the P-05 screenshot preview toolbar.
 enum ScreenshotToolbarAction {
     case copy
     case save
+    /// ⌥-click on Save (or explicit "save as") — opens an NSSavePanel.
+    case saveAs
     case annotate
     case cancel
     case dismiss
@@ -15,16 +17,14 @@ enum ScreenshotToolbarAction {
 
 // MARK: - ScreenshotToolbarController
 
-/// Presents a screenshot preview with a compact floating toolbar.
+/// Presents a screenshot preview with a floating pill toolbar (P-05).
 ///
-/// US-016 scope is intentionally narrow:
 /// - capture result is previewed in-memory;
 /// - Copy writes PNG/TIFF data to the system pasteboard, allowing the normal
 ///   clipboard monitor to persist it into history;
-/// - Save writes PNG directly to ~/Pictures/Screenshots with the required
-///   timestamp name and does not touch the pasteboard/history;
-/// - Annotate is an entry point reserved for US-017 and does not implement
-///   annotation tools here;
+/// - Save writes PNG to the user-configured directory (default `~/Desktop`,
+///   D-032) with the required timestamp name; ⌥-click opens an NSSavePanel;
+/// - Annotate opens the P-05 annotation editor;
 /// - Cancel/ESC discards the in-memory screenshot and closes the preview.
 @MainActor
 final class ScreenshotToolbarController {
@@ -150,6 +150,21 @@ final class ScreenshotToolbarController {
                 logger.error("Screenshot save failed: \(error.localizedDescription, privacy: .public)")
                 viewModel.showToast(L10n.localized("screenshot.toast.saveFailed", error.localizedDescription))
             }
+        case .saveAs:
+            guard let url = presentSavePanel(defaultDate: result.captureDate) else {
+                return  // user cancelled the panel; keep preview open
+            }
+            do {
+                try result.imageData.write(to: url, options: .atomic)
+                logger.info("Screenshot saved via panel to \(url.path, privacy: .public)")
+                viewModel.showToast(L10n.localized("screenshot.toast.saved", url.deletingLastPathComponent().path))
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+                    self?.dismiss(reason: .action)
+                }
+            } catch {
+                logger.error("Screenshot save-as failed: \(error.localizedDescription, privacy: .public)")
+                viewModel.showToast(L10n.localized("screenshot.toast.saveFailed", error.localizedDescription))
+            }
         case .annotate:
             presentAnnotationEditor(result: result, viewModel: viewModel)
         case .cancel, .dismiss:
@@ -213,9 +228,7 @@ final class ScreenshotToolbarController {
     @discardableResult
     private func savePNG(_ pngData: Data, date: Date) throws -> URL {
         let fileManager = FileManager.default
-        let pictures = fileManager.urls(for: .picturesDirectory, in: .userDomainMask).first
-            ?? fileManager.homeDirectoryForCurrentUser.appendingPathComponent("Pictures", isDirectory: true)
-        let directory = pictures.appendingPathComponent("Screenshots", isDirectory: true)
+        let directory = configuredSaveDirectory()
         try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
 
         let formatter = DateFormatter()
@@ -227,6 +240,47 @@ final class ScreenshotToolbarController {
         }
         try pngData.write(to: url, options: .atomic)
         logger.info("Screenshot saved to \(url.path, privacy: .public)")
+        return url
+    }
+
+    /// P-05 / D-032: the user-configured screenshot directory, defaulting to
+    /// `~/Desktop`. Read synchronously from Core Data so the save path is ready
+    /// the moment the user hits ⌘S; falls back to `~/Desktop` on any failure.
+    private func configuredSaveDirectory() -> URL {
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        let fallback = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first
+            ?? home.appendingPathComponent("Desktop", isDirectory: true)
+
+        let context = PersistenceController.shared.viewContext
+        var stored: String?
+        context.performAndWait {
+            let request = CDAppSetting.fetchRequest()
+            request.fetchLimit = 1
+            request.predicate = NSPredicate(format: "key == %@", SettingKey.screenshotSaveDirectory.rawValue)
+            stored = try? context.fetch(request).first?.value
+        }
+        guard let raw = stored?.trimmingCharacters(in: .whitespacesAndNewlines), !raw.isEmpty else {
+            return fallback
+        }
+        return URL(fileURLWithPath: (raw as NSString).expandingTildeInPath, isDirectory: true)
+    }
+
+    /// P-05: ⌥-click on Save presents an NSSavePanel seeded with the default
+    /// directory and timestamped filename. Returns nil if the user cancels.
+    private func presentSavePanel(defaultDate: Date) -> URL? {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "yyyy-MM-dd HH.mm.ss"
+
+        let panel = NSSavePanel()
+        panel.title = L10n.localized("screenshot.savePanel.title")
+        panel.allowedContentTypes = [.png]
+        panel.canCreateDirectories = true
+        panel.directoryURL = configuredSaveDirectory()
+        panel.nameFieldStringValue = L10n.localized("screenshot.savePanel.filename", formatter.string(from: defaultDate))
+
+        let response = panel.runModal()
+        guard response == .OK, let url = panel.url else { return nil }
         return url
     }
 
@@ -294,85 +348,85 @@ private struct ScreenshotPreviewView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            VStack(spacing: 0) {
-                previewHeader
-                Divider().opacity(0.35)
-                ZStack {
-                    Color.black.opacity(0.82)
-                    if let image {
-                        Image(nsImage: image)
-                            .resizable()
-                            .interpolation(.high)
-                            .scaledToFit()
-                            .padding(24)
-                    } else {
-                        Label(L10n.localized("screenshot.preview.unavailable"), systemImage: "exclamationmark.triangle")
-                            .foregroundColor(.white)
-                    }
+            // Image canvas fills the panel; the toolbar floats above it.
+            ZStack(alignment: .topLeading) {
+                Color.black.opacity(0.8)  // P-05 canvas backing
+                if let image {
+                    Image(nsImage: image)
+                        .resizable()
+                        .interpolation(.high)
+                        .scaledToFit()
+                        .padding(JadeSpace.x6.value)
+                } else {
+                    Label(L10n.localized("screenshot.preview.unavailable"), systemImage: "exclamationmark.triangle")
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                Divider().opacity(0.35)
-                toolbar
+
+                sourceBadge
+                    .padding(JadeSpace.x3.value)
             }
-            .background(
-                VisualEffectBlur(material: .hudWindow, blendingMode: .behindWindow)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(Color.white.opacity(0.12), lineWidth: 0.75)
-            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(JadeMaterial.commandBar.material)
+            .clipShape(JadeRadius.xxl.shape)
+            .jadeShadow(.xl, radius: .xxl)
+
+            floatingToolbar
+                .padding(.bottom, JadeSpace.x6.value)
 
             if let toast = viewModel.toastMessage {
-                // T-007: migrated to the unified JadeToast component
-                // (JadeToast replaced ToastView.swift). The preview is a
-                // standalone NSHostingView, so we render JadeToast directly
-                // rather than via the `.jadeToast` modifier (auto-dismiss is
-                // already handled by ScreenshotPreviewViewModel.showToast).
+                // T-007: unified JadeToast. The preview is a standalone
+                // NSHostingView, so render JadeToast directly (auto-dismiss is
+                // handled by ScreenshotPreviewViewModel.showToast).
                 JadeToast(toast, variant: .info)
-                    .padding(.bottom, JadeSpace.x8.value)
+                    .padding(.bottom, JadeSpace.x8.value * 2)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .frame(minWidth: 520, minHeight: 380)
     }
 
-    private var previewHeader: some View {
-        HStack(spacing: 10) {
+    /// Non-interactive badge (top-left) showing the capture source type.
+    private var sourceBadge: some View {
+        HStack(spacing: JadeSpace.x1.value) {
             Image(systemName: iconName(for: viewModel.result.sourceType))
-                .font(.system(size: 15, weight: .semibold))
-            Text(L10n.localized("screenshot.preview.title"))
-                .font(.system(size: 13, weight: .semibold))
-            Text("\(viewModel.result.width) × \(viewModel.result.height)")
-                .font(.system(size: 12, weight: .regular, design: .monospaced))
-                .foregroundColor(.secondary)
-            Spacer()
-            Text(L10n.localized("screenshot.preview.escHint"))
-                .font(.system(size: 11))
-                .foregroundColor(.secondary)
+                .font(.system(size: 11, weight: .semibold))
+            Text(sourceLabel(for: viewModel.result.sourceType))
+                .font(JadeFont.caption)
+            Text("\(viewModel.result.width)×\(viewModel.result.height)")
+                .font(.system(size: 10, weight: .regular, design: .monospaced))
+                .opacity(0.75)
         }
-        .padding(.horizontal, 16)
-        .frame(height: 42)
+        .foregroundColor(.white)
+        .padding(.horizontal, JadeSpace.x3.value)
+        .padding(.vertical, JadeSpace.x2.value)
+        .background(Color.black.opacity(0.55), in: Capsule(style: .continuous))
     }
 
-    private var toolbar: some View {
-        HStack(spacing: 8) {
+    private var floatingToolbar: some View {
+        HStack(spacing: JadeSpace.x1.value) {
             ToolbarButton(systemName: "doc.on.doc", label: L10n.localized("screenshot.toolbar.copy")) {
                 onAction(.copy)
             }
             ToolbarButton(systemName: "square.and.arrow.down", label: L10n.localized("screenshot.toolbar.save")) {
-                onAction(.save)
+                // ⌥-click → NSSavePanel; plain click → save to default directory.
+                if NSEvent.modifierFlags.contains(.option) {
+                    onAction(.saveAs)
+                } else {
+                    onAction(.save)
+                }
             }
-            ToolbarButton(systemName: "pencil", label: L10n.localized("screenshot.toolbar.annotate")) {
+            ToolbarButton(systemName: "pencil.tip", label: L10n.localized("screenshot.toolbar.annotate")) {
                 onAction(.annotate)
             }
-            ToolbarButton(systemName: "xmark", label: L10n.localized("screenshot.toolbar.cancel"), tint: .red) {
+            ToolbarButton(systemName: "xmark", label: L10n.localized("screenshot.toolbar.cancel"), tint: JadeColor.danger) {
                 onAction(.cancel)
             }
         }
-        .padding(.horizontal, 12)
-        .frame(height: 62)
-        .background(Color.black.opacity(0.16))
+        .padding(JadeSpace.x2.value)
+        .background(JadeMaterial.pill.material, in: Capsule(style: .continuous))
+        .overlay(Capsule(style: .continuous).strokeBorder(JadeColor.border, lineWidth: 1))
+        .jadeShadow(.md, radius: .xl)
     }
 
     private func iconName(for source: CaptureSource) -> String {
@@ -380,6 +434,14 @@ private struct ScreenshotPreviewView: View {
         case .region: return "crop"
         case .window: return "macwindow"
         case .screen: return "rectangle.inset.filled"
+        }
+    }
+
+    private func sourceLabel(for source: CaptureSource) -> String {
+        switch source {
+        case .region: return L10n.localized("screenshot.source.region")
+        case .window: return L10n.localized("screenshot.source.window")
+        case .screen: return L10n.localized("screenshot.source.screen")
         }
     }
 }
@@ -398,37 +460,17 @@ private struct ToolbarButton: View {
                 Image(systemName: systemName)
                     .font(.system(size: 15, weight: .medium))
                 Text(label)
-                    .font(.system(size: 10, weight: .regular))
+                    .font(JadeFont.caption)
             }
-            .foregroundColor(tint ?? .primary)
-            .frame(width: 72, height: 46)
+            .foregroundColor(tint ?? JadeColor.textPrimary)
+            .frame(width: 72, height: 40)
             .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(hovering ? Color.primary.opacity(0.12) : Color.clear)
+                RoundedRectangle(cornerRadius: JadeRadius.md.value, style: .continuous)
+                    .fill(hovering ? JadeColor.surface3 : Color.clear)
             )
         }
         .buttonStyle(.plain)
         .help(label)
         .onHover { hovering = $0 }
-    }
-}
-
-// MARK: - Visual Effect Helper
-
-private struct VisualEffectBlur: NSViewRepresentable {
-    let material: NSVisualEffectView.Material
-    let blendingMode: NSVisualEffectView.BlendingMode
-
-    func makeNSView(context: Context) -> NSVisualEffectView {
-        let view = NSVisualEffectView()
-        view.material = material
-        view.blendingMode = blendingMode
-        view.state = .active
-        return view
-    }
-
-    func updateNSView(_ view: NSVisualEffectView, context: Context) {
-        view.material = material
-        view.blendingMode = blendingMode
     }
 }
