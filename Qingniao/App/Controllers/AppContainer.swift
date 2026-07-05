@@ -39,6 +39,7 @@ final class AppContainer: NSObject {
     private let appSearchSource = AppSearchSource()
     private let systemCommandSource = SystemCommandSource()
     private let calculatorSearchSource = CalculatorSource()
+    private let fileSearchSource = FileSearchSource()
 
     // MARK: - Window / status controllers (lazy, resolved on demand)
 
@@ -47,6 +48,10 @@ final class AppContainer: NSObject {
     private(set) lazy var clipboardHistoryWindowController = ClipboardHistoryWindowController(container: self)
     private(set) lazy var settingsWindowController = SettingsWindowController(container: self)
     private(set) lazy var screenshotWindowController = ScreenshotWindowController(container: self)
+
+    /// v1.2 (T-008): unified global-shortcut registrar. Owns the six rebindable
+    /// hotkeys and the basic conflict detector surfaced to the settings page.
+    private(set) lazy var globalShortcutManager = GlobalShortcutManager(container: self)
 
     /// Onboarding gate. Returns `true` when the full experience is unlocked.
     /// While onboarding is pending the AppDelegate installs a closure that
@@ -279,6 +284,7 @@ final class AppContainer: NSObject {
         let appSource = SettingsBackedSearchSource(source: appSearchSource, settingsService: settingsService, settingKey: .appSourceEnabled)
         let commandSource = SettingsBackedSearchSource(source: systemCommandSource, settingsService: settingsService, settingKey: .commandSourceEnabled)
         let calculatorSource = SettingsBackedSearchSource(source: calculatorSearchSource, settingsService: settingsService, settingKey: .calculatorSourceEnabled)
+        let fileSource = SettingsBackedSearchSource(source: fileSearchSource, settingsService: settingsService, settingKey: .fileSourceEnabled)
         let clipboardSource = AssistantClipboardSource(queryService: clipboardQueryService, settingsService: settingsService)
         let settingsSource = SettingsSource(settingsService: settingsService)
         let usageStore = UsageStatRepository()
@@ -296,7 +302,7 @@ final class AppContainer: NSObject {
             resourceStore: resourceStore
         )
         let service = SearchService(
-            sources: [appSource, commandSource, calculatorSource, settingsSource, clipboardSource],
+            sources: [appSource, commandSource, calculatorSource, settingsSource, fileSource, clipboardSource],
             usageStore: usageStore,
             blacklistChecker: blacklistChecker,
             actionExecutor: actionExecutor

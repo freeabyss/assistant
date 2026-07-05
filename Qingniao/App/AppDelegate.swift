@@ -1,6 +1,5 @@
 import Cocoa
 import SwiftUI
-import KeyboardShortcuts
 import os.log
 
 /// AppKit lifecycle delegate. In v1.2 (T-006) this is reduced to lifecycle
@@ -62,20 +61,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     @MainActor
     private func startFullExperienceServices() {
         container.startFullExperienceServices()
-        registerGlobalShortcuts()
-    }
-
-    private func registerGlobalShortcuts() {
-        KeyboardShortcuts.onKeyUp(for: .togglePanel) { [weak self] in
-            Task { @MainActor in self?.container.commandBarController.toggle() }
-        }
-        KeyboardShortcuts.onKeyUp(for: .captureRegion) { [weak self] in
-            Task { @MainActor in self?.container.screenshotWindowController.captureRegion() }
-        }
-        KeyboardShortcuts.onKeyUp(for: .captureWindow) { [weak self] in
-            Task { @MainActor in self?.container.screenshotWindowController.captureWindow() }
-        }
-        logger.info("Global shortcuts registered: togglePanel, captureRegion, captureWindow")
+        container.globalShortcutManager.setupShortcuts()
     }
 
     // MARK: - Onboarding
