@@ -16,8 +16,9 @@ extension Notification.Name {
 /// A custom NSTextField wrapper that can programmatically become first responder.
 /// Used instead of SwiftUI's TextField for reliable keyboard focus in borderless windows.
 ///
-/// Relocated from the removed `MenuBarView.swift` (T-005); consumed by
-/// `SearchPanelView`.
+/// Relocated from the removed `MenuBarView.swift` (T-005). Retained as a reusable
+/// focus-driving text field; the T-011 `CommandBarView` uses a native SwiftUI
+/// `TextField` with `@FocusState` instead.
 struct AutoFocusTextField: NSViewRepresentable {
     @Binding var text: String
     let placeholder: String
