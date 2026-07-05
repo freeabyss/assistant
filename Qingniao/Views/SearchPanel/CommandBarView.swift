@@ -1,231 +1,380 @@
 import AppKit
 import SwiftUI
 
-struct SearchPanelView: View {
+/// P-01 命令栏根视图（T-011）。
+///
+/// 契约来源：PRD §9.4 P-01、FR-UI-COMMAND-BAR、§9.6 快捷键、§9.7 空态；
+/// architecture/design.md §3.2（Search 模块）。
+///
+/// - 680 宽、动态高（外层 `CommandBarController` 控制窗口高度）。
+/// - 顶部 48px 输入框（jade 放大镜 + 20pt 输入 + 清空）。
+/// - 空查询：最近使用 + 收藏两个 section（各最多 5 条）。
+/// - 有查询：结果列表（最多 12 条，⌘1-6 过滤），计算器/换算结果固定首行高亮。
+/// - 底部 44px hint bar。
+/// - 危险命令 ⏎ 触发 `JadeConfirmationDialog` 二次确认。
+///
+/// 所有颜色 / 字号 / 圆角 / 间距走 Jade token；用户可见字符串走 xcstrings。
+struct CommandBarView: View {
     @ObservedObject var viewModel: SearchPanelViewModel
+    @FocusState private var isInputFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
-            searchBar
-                .padding(.horizontal, 18)
-                .padding(.top, 18)
-                .padding(.bottom, viewModel.hasQuery ? 10 : 18)
+            inputBar
+                .frame(height: 48)
+                .padding(.horizontal, JadeSpace.x4.value)
 
-            if viewModel.hasQuery {
-                resultsList
-                    .frame(maxHeight: .infinity)
-                    .padding(.horizontal, 10)
-                    .padding(.bottom, 10)
-            } else {
-                emptyState
-                    .frame(maxHeight: .infinity)
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 22)
-            }
+            Divider().overlay(JadeColor.border)
+
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            Divider().overlay(JadeColor.border)
+
+            hintBar
+                .frame(height: 44)
         }
-        .frame(width: 640, height: viewModel.hasQuery ? 560 : 156)
-        .background(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color(NSColor.windowBackgroundColor).opacity(0.98))
-                .shadow(color: Color.black.opacity(0.28), radius: 28, y: 14)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-        )
+        .frame(width: 680)
+        .background(shortcutButtons)
         .background(
             KeyEventHandler(
                 onUpArrow: { viewModel.moveUp() },
                 onDownArrow: { viewModel.moveDown() },
                 onReturn: { viewModel.confirmSelection() },
                 onEscape: { viewModel.close() },
-                onTab: {}
+                onTab: { completeUniquePrefix() }
             )
             .allowsHitTesting(false)
         )
-        .onReceive(NotificationCenter.default.publisher(for: .focusSearchField)) { _ in }
+        .jadeMaterial(.commandBar, radius: .xxl)
+        .jadeShadow(.xl, radius: .xxl)
+        .onReceive(NotificationCenter.default.publisher(for: .focusSearchField)) { _ in
+            isInputFocused = true
+        }
+        .jadeConfirmationDialog(
+            LocalizedStringKey(viewModel.pendingDangerResult?.title ?? "commandBar.danger.confirmTitle"),
+            isPresented: Binding(
+                get: { viewModel.pendingDangerResult != nil },
+                set: { if !$0 { viewModel.cancelPendingDanger() } }
+            ),
+            confirmTitle: "commandBar.danger.confirmTitle",
+            cancelTitle: "commandBar.danger.cancel",
+            message: "commandBar.danger.message",
+            onConfirm: { viewModel.confirmPendingDanger() }
+        )
         .toast(message: viewModel.toastMessage, isShowing: viewModel.showToast)
     }
 
-    private var searchBar: some View {
-        HStack(spacing: 14) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundColor(.secondary.opacity(0.7))
+    // MARK: - Input bar
 
-            AutoFocusTextField(
-                text: $viewModel.query,
-                placeholder: L10n.localized("searchPanel.placeholder")
-            )
-            .frame(height: 30)
+    private var inputBar: some View {
+        HStack(spacing: JadeSpace.x3.value) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(isInputFocused ? JadeColor.primary : JadeColor.textSecondary)
+                .accessibilityHidden(true)
+
+            TextField(text: $viewModel.query) {
+                Text(L10n.localized("commandBar.placeholder"))
+            }
+            .textFieldStyle(.plain)
+            .font(JadeFont.commandBarInput)
+            .foregroundStyle(JadeColor.textPrimary)
+            .focused($isInputFocused)
+            .onSubmit { viewModel.confirmSelection() }
 
             if viewModel.isLoading {
                 ProgressView()
-                    .scaleEffect(0.7)
-                    .frame(width: 18, height: 18)
+                    .controlSize(.small)
+                    .frame(width: 20, height: 20)
             } else if !viewModel.query.isEmpty {
                 Button {
-                    viewModel.query = ""
+                    viewModel.clearInput()
+                    isInputFocused = true
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 16))
-                        .foregroundColor(.secondary.opacity(0.55))
+                        .font(.system(size: 18))
+                        .foregroundStyle(JadeColor.textTertiary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(Text("commandBar.source.all"))
             }
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 14)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color(NSColor.controlBackgroundColor))
-        )
     }
 
-    private var emptyState: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "return")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundColor(.secondary.opacity(0.6))
-            Text(L10n.localized("searchPanel.emptyHint"))
-                .font(.system(size: 13))
-                .foregroundColor(.secondary)
-            Spacer()
-            Text("ESC")
-                .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                .foregroundColor(.secondary.opacity(0.6))
-                .padding(.horizontal, 7)
-                .padding(.vertical, 3)
-                .background(Color.secondary.opacity(0.10), in: RoundedRectangle(cornerRadius: 5))
+    // MARK: - Content
+
+    @ViewBuilder
+    private var content: some View {
+        if viewModel.hasQuery {
+            if viewModel.visibleResults.isEmpty && !viewModel.isLoading {
+                noResultsState
+            } else {
+                resultsList
+            }
+        } else {
+            homeState
         }
     }
+
+    // MARK: - Search results
 
     private var resultsList: some View {
-        Group {
-            if viewModel.results.isEmpty && !viewModel.isLoading {
-                VStack(spacing: 8) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 28))
-                        .foregroundColor(.secondary.opacity(0.45))
-                    Text(L10n.localized("searchPanel.noResults"))
-                        .font(.system(size: 13))
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack(spacing: 4) {
-                            ForEach(Array(viewModel.results.enumerated()), id: \.element.id) { index, result in
-                                SearchPanelResultRow(
-                                    result: result,
-                                    isSelected: index == viewModel.selectedIndex
-                                )
-                                .id(result.id)
-                                .onTapGesture {
-                                    viewModel.select(result)
-                                    Task { await viewModel.execute(result) }
-                                }
-                            }
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: JadeSpace.x1.value) {
+                    ForEach(viewModel.visibleResults) { result in
+                        CommandBarResultRow(
+                            result: result,
+                            isSelected: result.id == viewModel.selectedResult?.id,
+                            isDangerous: viewModel.isDangerous(result)
+                        )
+                        .id(result.id)
+                        .onTapGesture {
+                            viewModel.select(result)
+                            viewModel.trigger(result)
                         }
-                        .padding(.vertical, 4)
                     }
-                    .onChange(of: viewModel.selectedIndex) { _ in
-                        if let selected = viewModel.selectedResult {
-                            withAnimation(.easeInOut(duration: 0.12)) {
-                                proxy.scrollTo(selected.id, anchor: .center)
-                            }
-                        }
+                }
+                .padding(.horizontal, JadeSpace.x2.value)
+                .padding(.vertical, JadeSpace.x2.value)
+            }
+            .onChange(of: viewModel.selectedIndex) { _ in
+                if let selected = viewModel.selectedResult {
+                    withAnimation(.easeInOut(duration: 0.12)) {
+                        proxy.scrollTo(selected.id, anchor: .center)
                     }
                 }
             }
+        }
+    }
+
+    // MARK: - Home (empty query)
+
+    @ViewBuilder
+    private var homeState: some View {
+        if viewModel.hasHomeContent {
+            ScrollView {
+                VStack(alignment: .leading, spacing: JadeSpace.x3.value) {
+                    if !viewModel.recentResults.isEmpty {
+                        homeSection(titleKey: "commandBar.section.recent", results: viewModel.recentResults)
+                    }
+                    if !viewModel.favoriteResults.isEmpty {
+                        homeSection(titleKey: "commandBar.section.favorites", results: viewModel.favoriteResults)
+                    }
+                }
+                .padding(.horizontal, JadeSpace.x2.value)
+                .padding(.vertical, JadeSpace.x3.value)
+            }
+        } else {
+            homeEmptyState
+        }
+    }
+
+    private func homeSection(titleKey: String, results: [SearchResult]) -> some View {
+        VStack(alignment: .leading, spacing: JadeSpace.x1.value) {
+            Text(L10n.localized(titleKey))
+                .font(JadeFont.subhead)
+                .foregroundStyle(JadeColor.textSecondary)
+                .padding(.horizontal, JadeSpace.x3.value)
+                .padding(.top, JadeSpace.x1.value)
+
+            ForEach(results) { result in
+                CommandBarResultRow(
+                    result: result,
+                    isSelected: false,
+                    isDangerous: viewModel.isDangerous(result)
+                )
+                .onTapGesture { viewModel.trigger(result) }
+            }
+        }
+    }
+
+    private var homeEmptyState: some View {
+        VStack(spacing: JadeSpace.x2.value) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 30))
+                .foregroundStyle(JadeColor.textTertiary)
+                .accessibilityHidden(true)
+            Text(L10n.localized("commandBar.placeholder"))
+                .font(JadeFont.callout)
+                .foregroundStyle(JadeColor.textSecondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(JadeSpace.x6.value)
+    }
+
+    // MARK: - No-results state (PRD §9.7)
+
+    private var noResultsState: some View {
+        VStack(spacing: JadeSpace.x2.value) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 30))
+                .foregroundStyle(JadeColor.textTertiary)
+                .accessibilityHidden(true)
+            Text(L10n.localized("commandBar.noResults.title"))
+                .font(JadeFont.title3)
+                .foregroundStyle(JadeColor.textPrimary)
+            Text(L10n.localized("commandBar.noResults.subtitle"))
+                .font(JadeFont.callout)
+                .foregroundStyle(JadeColor.textSecondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(JadeSpace.x6.value)
+    }
+
+    // MARK: - Hint bar
+
+    private var hintBar: some View {
+        Text(L10n.localized("commandBar.hint"))
+            .font(JadeFont.caption)
+            .foregroundStyle(JadeColor.textTertiary)
+            .frame(maxWidth: .infinity)
+            .accessibilityHidden(true)
+    }
+
+    // MARK: - Keyboard shortcuts (⌘1-6 / ⌘K / ⌘C / ⌘,)
+
+    private var shortcutButtons: some View {
+        ZStack {
+            ForEach(CommandBarSource.allCases) { source in
+                Button("") { viewModel.selectSource(source) }
+                    .keyboardShortcut(KeyEquivalent(Character("\(source.rawValue)")), modifiers: .command)
+            }
+            Button("") { viewModel.clearInput(); isInputFocused = true }
+                .keyboardShortcut("k", modifiers: .command)
+            Button("") { viewModel.copyCurrentValue() }
+                .keyboardShortcut("c", modifiers: .command)
+            Button("") { viewModel.openSettings() }
+                .keyboardShortcut(",", modifiers: .command)
+        }
+        .opacity(0)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+
+    /// Tab 补全：当输入是当前结果标题的唯一前缀时补全为完整标题。
+    private func completeUniquePrefix() {
+        let trimmed = viewModel.query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let prefixMatches = viewModel.visibleResults.filter {
+            $0.title.lowercased().hasPrefix(trimmed.lowercased())
+        }
+        if prefixMatches.count == 1, let unique = prefixMatches.first {
+            viewModel.query = unique.title
         }
     }
 }
 
-struct SearchPanelResultRow: View {
+// MARK: - Result row
+
+/// P-01 结果行（T-011）。44px 高、32×32 类型图标、主/副标题、右侧 type badge + ⏎。
+struct CommandBarResultRow: View {
     let result: SearchResult
     let isSelected: Bool
+    let isDangerous: Bool
 
     var body: some View {
-        HStack(spacing: 12) {
-            iconView
+        HStack(spacing: JadeSpace.x3.value) {
+            iconTile
 
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 1) {
                 Text(result.title)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.primary)
+                    .font(JadeFont.title3)
+                    .foregroundStyle(JadeColor.textPrimary)
                     .lineLimit(1)
-                Text(result.subtitle ?? "")
-                    .font(.system(size: 12))
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
+                if let subtitle = result.subtitle, !subtitle.isEmpty {
+                    Text(subtitle)
+                        .font(JadeFont.subhead)
+                        .foregroundStyle(JadeColor.textSecondary)
+                        .lineLimit(1)
+                }
             }
 
-            Spacer(minLength: 12)
+            Spacer(minLength: JadeSpace.x3.value)
 
-            Text(result.typeLabel)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(typeColor)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
-                .background(typeColor.opacity(0.12), in: Capsule())
+            if isDangerous {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(JadeColor.warning)
+                    .accessibilityLabel(Text("commandBar.danger.confirmTitle"))
+            }
 
-            Text("⏎")
-                .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                .foregroundColor(.secondary.opacity(0.7))
-                .frame(width: 24)
+            typeBadge
+
+            Text(L10n.localized("commandBar.enter"))
+                .font(JadeFont.caption)
+                .foregroundStyle(isSelected ? JadeColor.primary : JadeColor.textTertiary)
+                .frame(width: 20)
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 10)
-        .background(isSelected ? Color.accentColor.opacity(0.16) : Color.clear, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .padding(.horizontal, JadeSpace.x3.value)
+        .frame(height: 44)
+        .background(
+            isSelected ? JadeColor.primaryFill : Color.clear,
+            in: JadeRadius.lg.shape
+        )
         .contentShape(Rectangle())
     }
 
+    // 类型 badge：前景类型色 + 15% 底（PRD §9.2.9），走 Jade token。
+    private var typeBadge: some View {
+        Text(result.typeLabel)
+            .font(JadeFont.caption)
+            .fontWeight(.medium)
+            .foregroundStyle(typeColor)
+            .padding(.horizontal, JadeSpace.x2.value)
+            .padding(.vertical, 2)
+            .background(typeColor.opacity(0.15), in: JadeRadius.sm.shape)
+    }
+
+    // 32×32 类型图标底（PRD §9.2.9：类型底色 15% + 前景同色）。
     @ViewBuilder
-    private var iconView: some View {
+    private var iconTile: some View {
         switch result.icon {
         case .appIcon(let url):
             Image(nsImage: NSWorkspace.shared.icon(forFile: url.path))
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 30, height: 30)
+                .frame(width: 32, height: 32)
         case .systemSymbol(let name):
-            symbolIcon(name)
+            symbolTile(name)
         case .thumbnail, .none:
-            symbolIcon("sparkles")
+            symbolTile("sparkles")
         }
     }
 
-    private func symbolIcon(_ name: String) -> some View {
+    private func symbolTile(_ name: String) -> some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(typeColor.opacity(0.14))
-                .frame(width: 34, height: 34)
+            RoundedRectangle(cornerRadius: JadeRadius.md.value, style: .continuous)
+                .fill(typeColor.opacity(0.15))
             Image(systemName: name)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(typeColor)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(isSelected ? JadeColor.primary : typeColor)
         }
+        .frame(width: 32, height: 32)
     }
 
+    // PRD §9.2.9 类型配色：app blue / command purple / calculator jade /
+    // convert pink / settings indigo / clipboard orange / file green。
     private var typeColor: Color {
         switch result.sourceID {
-        case .app:
-            return .blue
-        case .command:
-            return .purple
+        case .app: return JadeColor.blue
+        case .command: return JadeColor.purple
         case .calculator:
-            return result.typeLabel == L10n.localized("searchPanel.type.convert") ? .pink : .green
-        case .settings:
-            return .indigo
-        case .clipboard:
-            return .orange
-        default:
-            return .secondary
+            return result.typeLabel == L10n.localized("searchPanel.type.convert") ? JadeColor.pink : JadeColor.primary
+        case .settings: return JadeColor.indigo
+        case .clipboard: return JadeColor.orange
+        case .file: return JadeColor.green
+        default: return JadeColor.gray
         }
     }
 }
 
 #Preview {
-    SearchPanelView(viewModel: SearchPanelViewModel(searchService: SearchService(sources: [])))
+    CommandBarView(viewModel: SearchPanelViewModel(searchService: SearchService(sources: [])))
+        .frame(height: 420)
+        .padding(40)
+        .background(LinearGradient(colors: [.teal, .blue], startPoint: .top, endPoint: .bottom))
 }

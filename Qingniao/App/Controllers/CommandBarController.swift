@@ -11,10 +11,10 @@ final class FloatingCommandPanel: NSPanel {
 
 /// Owns the Command Bar floating `NSPanel` (design §2.5 / §16).
 ///
-/// Behaviour preserved from the original AppDelegate implementation:
-/// ⌥Space toggles, ⎋ / click-outside / app-switch dismisses (via resign-key +
-/// local event monitor). The hosted SwiftUI content is the existing
-/// `SearchPanelView`; the Jade-styled rewrite is deferred to T-011.
+/// Behaviour: ⌥Space toggles, ⎋ / click-outside / app-switch dismisses (via
+/// resign-key + local event monitor). The hosted SwiftUI content is the Jade
+/// `CommandBarView` (P-01, T-011): 680 wide, dynamic height, centred with a
+/// +120 y-offset.
 @MainActor
 final class CommandBarController: NSObject {
     private let logger = Logger.app
@@ -25,6 +25,10 @@ final class CommandBarController: NSObject {
     private var searchStateCancellable: AnyCancellable?
     private var localEventMonitor: Any?
     private var isClosingPanel = false
+
+    private static let panelWidth: CGFloat = 680
+    private static let collapsedHeight: CGFloat = 120
+    private static let expandedHeight: CGFloat = 560
 
     init(container: AppContainer) {
         self.container = container
@@ -55,8 +59,8 @@ final class CommandBarController: NSObject {
             return
         }
 
-        let panelWidth: CGFloat = 640
-        let panelHeight: CGFloat = 156
+        let panelWidth: CGFloat = Self.panelWidth
+        let panelHeight: CGFloat = Self.collapsedHeight
         if let screen = NSScreen.main {
             let frame = screen.visibleFrame
             let x = frame.midX - panelWidth / 2
@@ -100,24 +104,29 @@ final class CommandBarController: NSObject {
 
     private func createPanel() {
         let panel = FloatingCommandPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 640, height: 156),
-            styleMask: [.borderless],
+            contentRect: NSRect(x: 0, y: 0, width: Self.panelWidth, height: Self.collapsedHeight),
+            styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
         )
 
         panel.isFloatingPanel = true
-        panel.isMovableByWindowBackground = false
+        panel.isMovableByWindowBackground = true
         panel.level = .floating
         panel.hidesOnDeactivate = false
         panel.animationBehavior = .utilityWindow
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.titleVisibility = .hidden
+        panel.titlebarAppearsTransparent = true
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = true
+        // The rounded corners + material come from the SwiftUI CommandBarView
+        // (radius-xxl 20 + ultraThinMaterial); the panel background is fully
+        // transparent so the material shows through.
         panel.contentView?.wantsLayer = true
-        panel.contentView?.layer?.cornerRadius = 12
-        panel.contentView?.layer?.masksToBounds = true
+        panel.contentView?.layer?.backgroundColor = NSColor.clear.cgColor
+        panel.contentView?.layer?.masksToBounds = false
 
         let viewModel = container.makeSearchPanelViewModel { [weak self] in
             self?.hide()
@@ -131,9 +140,9 @@ final class CommandBarController: NSObject {
                 self?.resizePanel(isActive: isActive)
             }
 
-        let searchPanelView = SearchPanelView(viewModel: viewModel)
+        let commandBarView = CommandBarView(viewModel: viewModel)
             .tint(JadeColor.primary) // 全局主色注入（Design Token T-004）
-        let hostingView = NSHostingView(rootView: searchPanelView)
+        let hostingView = NSHostingView(rootView: commandBarView)
         hostingView.translatesAutoresizingMaskIntoConstraints = false
 
         panel.contentView?.addSubview(hostingView)
@@ -159,8 +168,8 @@ final class CommandBarController: NSObject {
 
     private func resizePanel(isActive: Bool) {
         guard let panel, panel.isVisible else { return }
-        let targetHeight: CGFloat = isActive ? 560 : 156
-        let panelWidth: CGFloat = 640
+        let targetHeight: CGFloat = isActive ? Self.expandedHeight : Self.collapsedHeight
+        let panelWidth: CGFloat = Self.panelWidth
 
         let newFrame: NSRect
         if let screen = NSScreen.main {
