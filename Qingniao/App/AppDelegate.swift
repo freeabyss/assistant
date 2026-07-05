@@ -266,7 +266,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         statusMenu = makeStatusMenu()
 
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "sparkles", accessibilityDescription: "Mac Super Assistant")
+            button.image = NSImage(systemSymbolName: "sparkles", accessibilityDescription: "青鸟 Qingniao")
             button.image?.isTemplate = true
             button.action = #selector(statusItemClicked(_:))
             button.target = self

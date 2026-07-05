@@ -1,5 +1,5 @@
 import XCTest
-@testable import SnapVault
+@testable import Qingniao
 
 final class SearchBlacklistRepositoryTests: XCTestCase {
     func testAddListContainsAndRemoveConcreteResult() async throws {

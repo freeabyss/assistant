@@ -4699,13 +4699,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Welcome to Mac Super Assistant"
+            "value": "Welcome to 青鸟 Qingniao"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "欢迎使用 Mac Super Assistant"
+            "value": "欢迎使用 青鸟 Qingniao"
           }
         }
       }
@@ -5566,13 +5566,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mac Super Assistant"
+            "value": "青鸟 Qingniao"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mac Super Assistant"
+            "value": "青鸟 Qingniao"
           }
         }
       }
@@ -7351,13 +7351,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mac Super Assistant is a local-first macOS efficiency center for search, clipboard history, screenshots, commands, and settings."
+            "value": "青鸟 Qingniao is a local-first macOS efficiency center for search, clipboard history, screenshots, commands, and settings."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mac Super Assistant 是本地优先的 macOS 效率中心，聚合搜索、剪贴板历史、截图、命令和设置。"
+            "value": "青鸟 Qingniao 是本地优先的 macOS 效率中心，聚合搜索、剪贴板历史、截图、命令和设置。"
           }
         }
       }
@@ -7589,13 +7589,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mac Super Assistant does not upload, sync, or use your clipboard history, screenshots, settings, usage records, or feedback text to train models. There is no account system or cloud sync in the MVP."
+            "value": "青鸟 Qingniao does not upload, sync, or use your clipboard history, screenshots, settings, usage records, or feedback text to train models. There is no account system or cloud sync in the MVP."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mac Super Assistant 不会上传、同步剪贴板历史、截图、设置、使用记录或反馈文本，也不会用这些数据训练模型。MVP 不包含账号系统或云同步。"
+            "value": "青鸟 Qingniao 不会上传、同步剪贴板历史、截图、设置、使用记录或反馈文本，也不会用这些数据训练模型。MVP 不包含账号系统或云同步。"
           }
         }
       }
@@ -7997,13 +7997,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mac Super Assistant"
+            "value": "青鸟 Qingniao"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mac Super Assistant"
+            "value": "青鸟 Qingniao"
           }
         }
       }
@@ -8082,13 +8082,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "About Mac Super Assistant"
+            "value": "About 青鸟 Qingniao"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "关于 Mac Super Assistant"
+            "value": "关于 青鸟 Qingniao"
           }
         }
       }

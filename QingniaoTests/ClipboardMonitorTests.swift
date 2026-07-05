@@ -1,6 +1,6 @@
 import AppKit
 import XCTest
-@testable import SnapVault
+@testable import Qingniao
 
 final class ClipboardMonitorTests: XCTestCase {
     func testPollEmitsPlainTextEventAndDeduplicatesRecentHashes() async throws {

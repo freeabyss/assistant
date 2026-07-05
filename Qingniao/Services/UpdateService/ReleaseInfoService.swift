@@ -55,7 +55,7 @@ struct BundleAboutInfoProvider: AboutInfoProviderProtocol {
         let year = Calendar.current.component(.year, from: Date())
 
         return AboutInfo(
-            appName: displayName ?? bundleName ?? "Mac Super Assistant",
+            appName: displayName ?? bundleName ?? "Qingniao",
             version: version ?? "0.1.0",
             buildNumber: build ?? "1",
             homepageURL: ReleaseLinks.homepageURL,
@@ -63,17 +63,17 @@ struct BundleAboutInfoProvider: AboutInfoProviderProtocol {
             releasesURL: ReleaseLinks.releasesURL,
             thirdPartyLicensesURL: ReleaseLinks.thirdPartyLicensesURL,
             feedbackEmail: ReleaseLinks.feedbackEmail,
-            copyright: "© \(year) Mac Super Assistant. All rights reserved."
+            copyright: "© \(year) 青鸟 Qingniao. All rights reserved."
         )
     }
 }
 
 enum ReleaseLinks {
-    static let homepageURL = URL(string: "https://github.com/abyss/assistant")!
-    static let privacyPolicyURL = URL(string: "https://github.com/abyss/assistant/blob/main/PRIVACY.md")!
-    static let releasesURL = URL(string: "https://github.com/abyss/assistant/releases")!
-    static let thirdPartyLicensesURL = URL(string: "https://github.com/abyss/assistant/blob/main/THIRD_PARTY_NOTICES.md")!
-    static let feedbackEmail = "feedback@assistant.app"
+    static let homepageURL = URL(string: "https://github.com/freeabyss/assistant")!
+    static let privacyPolicyURL = URL(string: "https://github.com/freeabyss/assistant/blob/main/PRIVACY.md")!
+    static let releasesURL = URL(string: "https://github.com/freeabyss/assistant/releases")!
+    static let thirdPartyLicensesURL = URL(string: "https://github.com/freeabyss/assistant/blob/main/THIRD_PARTY_NOTICES.md")!
+    static let feedbackEmail = "feedback@qingniao.app"
 }
 
 struct FeedbackEmailService: FeedbackServiceProtocol {
@@ -88,7 +88,7 @@ struct FeedbackEmailService: FeedbackServiceProtocol {
         components.scheme = "mailto"
         components.path = recipient
         components.queryItems = [
-            URLQueryItem(name: "subject", value: "Mac Super Assistant Feedback"),
+            URLQueryItem(name: "subject", value: "青鸟 Qingniao 反馈"),
             URLQueryItem(name: "body", value: emailBody(context: context))
         ]
 
@@ -115,7 +115,7 @@ struct FeedbackEmailService: FeedbackServiceProtocol {
         - macOS version: \(context.macOSVersion)
         - Error summary: \(summary)
 
-        Privacy note: this email is sent only after you confirm it in your mail app. Mac Super Assistant does not attach clipboard history, screenshots, files, or automatic crash logs.
+        Privacy note: this email is sent only after you confirm it in your mail app. 青鸟 Qingniao does not attach clipboard history, screenshots, files, or automatic crash logs.
         """
     }
 }

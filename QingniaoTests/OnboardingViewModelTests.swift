@@ -1,6 +1,6 @@
 import XCTest
 import KeyboardShortcuts
-@testable import SnapVault
+@testable import Qingniao
 
 @MainActor
 final class OnboardingViewModelTests: XCTestCase {

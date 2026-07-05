@@ -1,5 +1,5 @@
 import XCTest
-@testable import SnapVault
+@testable import Qingniao
 import AppKit
 
 final class AnnotationTests: XCTestCase {

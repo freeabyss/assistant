@@ -1,5 +1,5 @@
 import XCTest
-@testable import SnapVault
+@testable import Qingniao
 
 final class SettingsServiceTests: XCTestCase {
     private var tempDirectory: URL!

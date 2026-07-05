@@ -1,15 +1,15 @@
 import XCTest
-@testable import SnapVault
+@testable import Qingniao
 
 final class ReleaseInfoServiceTests: XCTestCase {
     func testReleaseLinksAreCanonicalProjectHomepageAssets() {
         let info = BundleAboutInfoProvider(bundle: .main).info
 
-        XCTAssertEqual(info.homepageURL.absoluteString, "https://github.com/abyss/assistant")
-        XCTAssertEqual(info.privacyPolicyURL.absoluteString, "https://github.com/abyss/assistant/blob/main/PRIVACY.md")
-        XCTAssertEqual(info.releasesURL.absoluteString, "https://github.com/abyss/assistant/releases")
-        XCTAssertEqual(info.thirdPartyLicensesURL.absoluteString, "https://github.com/abyss/assistant/blob/main/THIRD_PARTY_NOTICES.md")
-        XCTAssertEqual(info.feedbackEmail, "feedback@assistant.app")
+        XCTAssertEqual(info.homepageURL.absoluteString, "https://github.com/freeabyss/assistant")
+        XCTAssertEqual(info.privacyPolicyURL.absoluteString, "https://github.com/freeabyss/assistant/blob/main/PRIVACY.md")
+        XCTAssertEqual(info.releasesURL.absoluteString, "https://github.com/freeabyss/assistant/releases")
+        XCTAssertEqual(info.thirdPartyLicensesURL.absoluteString, "https://github.com/freeabyss/assistant/blob/main/THIRD_PARTY_NOTICES.md")
+        XCTAssertEqual(info.feedbackEmail, "feedback@qingniao.app")
     }
 
     func testProjectHomepageContainsUS020ProductPageMaterialAndScopeGuards() throws {
@@ -60,7 +60,7 @@ final class ReleaseInfoServiceTests: XCTestCase {
 
         let absolute = url.absoluteString.removingPercentEncoding ?? url.absoluteString
         XCTAssertTrue(absolute.hasPrefix("mailto:support@example.com?"))
-        XCTAssertTrue(absolute.contains("Mac Super Assistant Feedback"))
+        XCTAssertTrue(absolute.contains("青鸟 Qingniao 反馈"))
         XCTAssertTrue(absolute.contains("App version: 0.1.0 (7)"))
         XCTAssertTrue(absolute.contains("macOS version: Version 15.0"))
         XCTAssertTrue(absolute.contains("Error summary: Screenshot failed"))

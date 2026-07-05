@@ -1,5 +1,5 @@
 import XCTest
-@testable import SnapVault
+@testable import Qingniao
 
 // 采用 review.md 推荐的策略 A + spy 方式一（注入 UpdateCheckServiceProtocol）。
 //

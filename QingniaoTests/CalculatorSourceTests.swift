@@ -1,6 +1,6 @@
 import AppKit
 import XCTest
-@testable import SnapVault
+@testable import Qingniao
 
 final class CalculatorSourceTests: XCTestCase {
     func testEvaluatesArithmeticExpressionWithPrecedenceAndDecimals() async throws {

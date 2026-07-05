@@ -1,6 +1,6 @@
 import CoreData
 import XCTest
-@testable import SnapVault
+@testable import Qingniao
 
 final class AssistantClipboardRepositoryTests: XCTestCase {
     private var tempDirectory: URL!

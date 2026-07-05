@@ -1,5 +1,5 @@
 import XCTest
-@testable import SnapVault
+@testable import Qingniao
 
 @MainActor
 final class PermissionServiceProtocolConformanceTests: XCTestCase {

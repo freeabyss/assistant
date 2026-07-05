@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Assistant Appcast Feed
+  Qingniao Appcast Feed
   ======================
   This is a template appcast.xml for Sparkle update checks.
 
@@ -13,7 +13,7 @@
   3. Build the .zip or .dmg archive of your new release.
 
   4. Sign the archive:
-     ./bin/sign_update path/to/Assistant.zip
+     ./bin/sign_update path/to/Qingniao.zip
 
   5. Copy the signature output and fill in the `sparkle:edSignature` attribute.
 
@@ -24,8 +24,8 @@
 -->
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
     <channel>
-        <title>Mac Super Assistant</title>
-        <link>https://github.com/abyss/assistant/releases</link>
+        <title>青鸟 Qingniao</title>
+        <link>https://github.com/freeabyss/assistant/releases</link>
         <description>Most recent changes with links to manual GitHub Releases downloads.</description>
         <language>en</language>
 
@@ -34,7 +34,7 @@
             <description><![CDATA[
                 <h3>Initial Release</h3>
                 <ul>
-                    <li>Menu bar Assistant shell</li>
+                    <li>Menu bar Qingniao shell</li>
                     <li>Unified search entry</li>
                     <li>Clipboard history</li>
                     <li>Screenshot tools</li>
@@ -44,7 +44,7 @@
             <pubDate><!-- Thu, 05 Jun 2026 00:00:00 +0000 --></pubDate>
             <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
             <enclosure
-                url="https://github.com/abyss/assistant/releases/download/v0.1.0/Assistant-0.1.0.zip"
+                url="https://github.com/freeabyss/assistant/releases/download/v0.1.0/Qingniao-0.1.0.zip"
                 sparkle:version="1"
                 sparkle:shortVersionString="0.1.0"
                 sparkle:edSignature="REPLACE_WITH_EDDSA_SIGNATURE"
