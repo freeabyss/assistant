@@ -710,3 +710,46 @@ AppDelegate 通过 `container.onboardingGate = { self.ensureOnboardingGate() }` 
 3. `feat(T-014): P-05 截图预览工具条改悬浮 pill + ⌥保存到指定目录`
 4. `feat(T-014): P-05 标注编辑器顶/底栏改悬浮 pill + 快捷键补齐`
 5. `docs(T-014): tasks.json passes=true + progress 记录`（本提交）
+
+---
+
+## T-013 设置/管理中心（P-03）：NavigationSplitView 新布局 + 11 页
+
+### 完成内容
+- **ManagementCenterPage 重构**（`ViewModels/SettingsViewModel.swift`）：从 5 页（overview/clipboard/settings/permissions/about）扩为 **11 页**：overview / clipboard / shortcuts / screenshot / searchSources / appearance / permissions / data / updates / about / feedback。新增 `ManagementSidebarSection`（top / core「核心功能」/ system「系统」）+ `pages(in:)` 分组，每页带 SF Symbol 图标（doc.on.clipboard / keyboard / camera.viewfinder / paintpalette / externaldrive / arrow.clockwise / envelope 等）。
+- **SettingsViewModel 增强**：
+  - `appearanceMode`（绑 SettingKey.appearanceMode）+ `updateAppearanceMode()` 即时持久化 + `preferredColorScheme` 供根视图 `.preferredColorScheme` 读；`loadSettings/saveSettings/reset` 均纳入 appearanceMode。
+  - 概览统计：`usageDaysCount / averageDailyLaunches / clipboardItemCount / screenshotItemCount`，来自 `clipboardRepository.fetchHistory`（截图数 = image 类型计数）+ UserDefaults 首次启动日期/启动计数（缺省返回 0）。
+  - `storageUsageBytes` + `storageUsageText`（ByteCountFormatter），来自 `clipboardRepository.storageUsage()`。
+  - `sidebarFilter`（⌘F 侧栏搜索过滤）、`autoCheckUpdates`。
+  - 新增依赖注入参数 `clipboardRepository: ClipboardRepositoryProtocol = ClipboardRepository()`。
+  - `select(route:)` 重映射：hotkey→shortcuts、screenshot→screenshot、searchSources→searchSources、settings→overview。
+- **SettingsView.swift 完全重写**（NavigationSplitView，侧栏 200px、`.listStyle(.sidebar)`、Section header）。共享布局原语 `SettingsScrollPage / SettingsHeader / SettingsSection`（surface2 + JadeRadius.lg + padding16）、`JadeSwitchRow`（Jade tinted Toggle）、`AppIconView`（NSApp.applicationIconImage 回退 SF Symbol `bird` jade）。
+  - 各页均用 Jade 组件：JadeButton(.primary/.secondary/.destructive/.ghost)、JadeTextField、HotkeyRecorder、StatCard、jadeConfirmationDialog。
+  - 保留 `BlacklistManagementSection`、`PrivacyPolicySheet`（Jade 化）。
+  - ⌘F 聚焦侧栏搜索（`.focusSettingsSearch` 通知）、⌘W/⎋ 关闭窗口。
+- **AppContainer**：`handleOpenManagementCenter` 的 page→route switch 更新为 11 页。
+- **本地化**：`Resources/Localizable.xcstrings` 新增 **75** 个 key（en + zh-Hans 全译），覆盖侧栏分组、页标题/副标题、概览统计、外观、截图选项、搜索源、数据页（存储/重置/重启）、更新、关于系统信息、反馈表单。
+
+### 完整实现 vs 占位
+- **完整实现**：概览统计卡片、外观模式切换（存储 + 根视图 preferredColorScheme）、快捷键录制+冲突行内警告+重置、截图默认目录选择、搜索源开关、权限状态+打开系统设置、数据页存储占用/保留期/打开目录/清空所有数据(确认弹窗+重启提示)、更新检查(跳 GitHub Releases)、关于(隐私 sheet/第三方声明/系统信息)、反馈(mailto feedback@qingniao.app，主题「青鸟 Qingniao 反馈」)。
+- **占位（v1.3 项）**：截图 JPG 格式（disabled + tooltip「暂不支持 JPG」）；数据「导出数据…」（disabled + tooltip「v1.3 支持」）；文件搜索目录（固定三目录 ~/Desktop、~/Documents、~/Downloads，disabled + 「v1.3 可配置」）；外观 AccentColor 自定义（仅显示 jade 色块 + note）。
+- **能力预留（@AppStorage，效果后续 T 处理）**：截图后「复制到剪贴板/播放声音/包含窗口阴影」；外观「减小动态效果」（T-017 a11y 接入实际效果）。
+
+### build / test
+- `xcodebuild -scheme Qingniao -configuration Debug build` → **BUILD SUCCEEDED**。
+- `xcodebuild ... test` → **TEST SUCCEEDED**（148 tests，0 failures），SettingsSourceTests/SettingsServiceTests 全通过（SettingsViewModel 构造签名新增可选 clipboardRepository 参数，向后兼容）。
+
+### 文件改动
+- 未新增源文件 → **无 pbxproj 改动**（全部落在已注册的 SettingsView.swift / SettingsViewModel.swift / AppContainer.swift / Localizable.xcstrings）。
+
+### 提示后续 Agent
+- 外观动态切换：已存 appearanceMode 并在设置窗口根视图 `.preferredColorScheme` 生效；**其他窗口**（CommandBar/Clipboard/Onboarding）尚未统一读取该偏好，若需全 App 生效，T-015/T-017 应在各 HostingView 根注入 `preferredColorScheme`。
+- 概览「日均启动」依赖 UserDefaults `usage.launchCount`：目前**无处 +1**，需要 AppDelegate 启动时自增该 key 才有非零值（当前恒为 0，符合「没有就返回 0」）。
+- 截图后选项/减小动态效果为 @AppStorage 预留，ScreenshotService/动画层尚未消费。
+
+### commit 列表（branch main）
+1. `feat(T-013): expand ManagementCenterPage to 11 pages + settings VM stats/appearance`
+2. `feat(T-013): rewrite SettingsView as NavigationSplitView management center (P-03)`
+3. `i18n(T-013): add 75 settings/management-center strings (en + zh-Hans)`
+4. `docs(T-013): tasks.json passes=true + progress 记录`（本提交）
