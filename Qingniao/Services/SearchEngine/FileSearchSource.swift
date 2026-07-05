@@ -3,52 +3,108 @@ import AppKit
 import UniformTypeIdentifiers
 import os.log
 
-/// File information extracted from Spotlight metadata.
-struct FileInfo {
+/// A single indexed file entry held in the in-memory cache.
+///
+/// The cache is intentionally lightweight: we keep the display name, absolute
+/// path, pre-normalized name/path (for case- and diacritic-insensitive matching),
+/// the UTI, size, and modification date. Icons are resolved lazily by the UI via
+/// `SearchResultIcon.appIcon(url)` (`NSWorkspace.shared.icon(forFile:)`), so we do
+/// not retain `NSImage` instances in the index.
+struct FileIndexItem: Hashable {
     let name: String
     let path: URL
-    let contentType: String       // UTI type
+    /// Folded (case/diacritic/width-insensitive, lowercased) file name.
+    let normalizedName: String
+    /// Folded absolute path, used for path-substring matching.
+    let normalizedPath: String
+    let contentType: String
     let size: Int64
     let modifiedDate: Date
-    let icon: NSImage?
 }
 
-/// Protocol for file search source.
+/// File search source contract (design §3.2 / api.md §5).
+///
+/// v1.2 indexes a fixed set of user directories (`~/Desktop`, `~/Documents`,
+/// `~/Downloads`) once, in the background, into an in-memory cache. FS-watching /
+/// incremental indexing is deferred to V1.x.
 protocol FileSearchSourceProtocol: SearchSource {
-    /// Set the search scope (default: user home directory).
-    func setSearchScope(_ paths: [URL])
+    /// Default index roots: `~/Desktop`, `~/Documents`, `~/Downloads`.
+    var indexedRoots: [URL] { get }
 
-    /// Set file type filters (UTI types).
-    func setFileTypes(_ types: [String])
+    /// Rebuild the in-memory file index from `indexedRoots`.
+    func rebuildIndex() async
 }
 
-/// Search source for local files via Spotlight (NSMetadataQuery).
+/// Search source for local files under the user's common directories.
 ///
-/// Uses the system Spotlight index to search for files by name and content.
-/// Searches are performed on the main RunLoop (required by NSMetadataQuery)
-/// with a configurable timeout to avoid blocking.
-///
-/// - Note: v1.2 T-005 ported this source from the removed `UnifiedSearchSource`
-///   protocol onto the Assistant `SearchSource` protocol. The full wiring into
-///   `SearchService` (weight 75, index warm-up) is completed in T-009.
+/// - Scope: `~/Desktop`, `~/Documents`, `~/Downloads` (fixed in v1.2; the
+///   `SettingKey.fileSearchPaths` extension point is reserved for V1.x).
+/// - Indexing: a one-shot `FileManager.enumerator` walk on a background queue at
+///   construction time, cached in memory. No FS monitoring in v1.2.
+/// - Matching: case- and diacritic-insensitive substring match on the file name
+///   or absolute path. No pinyin (FR-SEARCH-13), no content full-text search.
+/// - Trigger: at least 2 characters (FR-SEARCH-FILE-7 / FR-SEARCH-17).
+/// - Weight: `SourcePriority.file` = 75 (FR-SEARCH-11).
+/// - Actions: ⏎ open with the default app, ⌘R reveal in Finder, ⌘C copy the path.
 final class FileSearchSource: FileSearchSourceProtocol {
     let id: SearchSourceID = .file
     let displayName = "Files"
     let isEnabledInSearch = true
+    let indexedRoots: [URL]
 
     private let logger = Logger.search
+    private let fileManager: FileManager
+    private let homeDirectory: URL
 
-    /// Spotlight query timeout in seconds.
-    private let timeout: TimeInterval = 5.0
+    /// Upper bound on cached files to keep memory and scan time bounded. A typical
+    /// user's three folders stay well under this; the cap protects pathological
+    /// cases (e.g. a huge Downloads tree).
+    private let maxIndexedFiles: Int
 
-    /// Custom search scopes. If empty, defaults to user home directory.
-    private var searchScopePaths: [URL] = []
+    /// Maximum recursion depth relative to each root.
+    private let maxDepth: Int
 
-    /// File type UTI filters. If empty, no type filtering is applied.
-    private var fileTypes: [String] = []
+    /// Per-source result cap.
+    private let resultLimit: Int
 
-    /// Default result limit when the protocol variant is used.
-    private let defaultLimit = SearchService.defaultResultLimit
+    private let lock = NSLock()
+    private var items: [FileIndexItem] = []
+    private var isReady = false
+
+    // MARK: - Init
+
+    init(
+        roots: [URL] = FileSearchSource.defaultRoots(),
+        fileManager: FileManager = .default,
+        homeDirectory: URL = FileManager.default.homeDirectoryForCurrentUser,
+        maxIndexedFiles: Int = 100_000,
+        maxDepth: Int = 8,
+        resultLimit: Int = SearchService.defaultResultLimit,
+        autoBuildIndex: Bool = true
+    ) {
+        self.indexedRoots = roots.map { $0.standardizedFileURL }
+        self.fileManager = fileManager
+        self.homeDirectory = homeDirectory.standardizedFileURL
+        self.maxIndexedFiles = maxIndexedFiles
+        self.maxDepth = maxDepth
+        self.resultLimit = resultLimit
+
+        if autoBuildIndex {
+            Task.detached(priority: .utility) { [weak self] in
+                await self?.rebuildIndex()
+                NotificationCenter.default.post(name: .fileSearchIndexReady, object: nil)
+            }
+        }
+    }
+
+    /// Default index roots derived from the user's home directory.
+    static func defaultRoots(home: URL = FileManager.default.homeDirectoryForCurrentUser) -> [URL] {
+        [
+            home.appendingPathComponent("Desktop", isDirectory: true),
+            home.appendingPathComponent("Documents", isDirectory: true),
+            home.appendingPathComponent("Downloads", isDirectory: true)
+        ]
+    }
 
     // MARK: - SearchSource
 
@@ -57,457 +113,236 @@ final class FileSearchSource: FileSearchSourceProtocol {
     }
 
     func search(query: String) async -> [SearchResult] {
-        (try? await searchFiles(query: query, limit: defaultLimit)) ?? []
-    }
-
-    private func searchFiles(query: String, limit: Int) async throws -> [SearchResult] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return [] }
+        guard trimmed.count >= 2 else { return [] }
 
-        logger.info("FileSearchSource.search() query='\(trimmed, privacy: .public)' limit=\(limit)")
-
-        // Spotlight: literal name + content match (no pinyin support server-side).
-        var fileResults = await performSpotlightSearch(query: trimmed, limit: limit)
-
-        // Client-side pinyin rerank: only meaningful when the query is plain
-        // ASCII (potential pinyin/initials) and we got back files whose display
-        // names contain CJK characters.
-        let queryLower = trimmed.lowercased()
-        let isPinyinCandidate = isASCIIQuery(queryLower)
-
-        // When the user types pinyin, Spotlight's literal predicate often
-        // misses CJK-named files. Augment the result set by scanning a small
-        // recent-files window from common scopes and pinyin-matching client
-        // side. We keep this strictly bounded (max 200 candidates) so cost
-        // stays in the tens of ms range.
-        if isPinyinCandidate {
-            let augmented = await augmentWithPinyinScan(query: queryLower, existing: fileResults, limit: limit)
-            fileResults.append(contentsOf: augmented)
+        // Warm up the index lazily on first query if the background build has not
+        // finished. Other sources are unaffected because SearchService fans out
+        // concurrently.
+        if !readySnapshot() {
+            await rebuildIndex()
         }
 
-        let results = fileResults.map { fileInfo -> SearchResult in
-            var relevanceScore = computeRelevanceScore(fileInfo: fileInfo, query: trimmed)
-            if isPinyinCandidate {
-                // Apply a pinyin bonus when the file's display name pinyin/initials
-                // match the query. Bonus is below literal name-prefix (0.7) so
-                // exact matches still win.
-                let bonus = pinyinScoreBonus(name: fileInfo.name, query: queryLower)
-                if bonus > 0 {
-                    relevanceScore = min(relevanceScore + bonus, 0.95)
-                }
-            }
-            let subtitle = buildSubtitle(fileInfo: fileInfo)
+        let normalizedQuery = Self.normalize(trimmed)
+        guard !normalizedQuery.isEmpty else { return [] }
 
-            return SearchResult(
-                id: SearchResultID(rawValue: "file:\(fileInfo.path.path)"),
-                sourceID: .file,
-                title: fileInfo.name,
-                subtitle: subtitle,
-                icon: .appIcon(fileInfo.path),
-                typeLabel: "File",
-                baseScore: SourcePriority.file,
-                matchScore: relevanceScore * 30,
-                usageScore: 0,
-                primaryAction: .openFile(fileInfo.path),
-                secondaryActions: [.revealInFinder(fileInfo.path), .copyText(fileInfo.path.path)]
-            )
-        }
-        .sorted { $0.finalScore > $1.finalScore }
+        let snapshot = itemsSnapshot()
 
-        logger.info("FileSearchSource found \(results.count) results for '\(trimmed, privacy: .public)' (pinyinCandidate=\(isPinyinCandidate))")
-        return Array(results.prefix(limit))
-    }
-
-    // MARK: - FileSearchSourceProtocol
-
-    func setSearchScope(_ paths: [URL]) {
-        searchScopePaths = paths
-        logger.info("FileSearchSource.setSearchScope() paths=\(paths.map(\.path).joined(separator: ", "), privacy: .public)")
-    }
-
-    func setFileTypes(_ types: [String]) {
-        fileTypes = types
-        logger.info("FileSearchSource.setFileTypes() types=\(types.joined(separator: ", "), privacy: .public)")
-    }
-
-    // MARK: - Spotlight Query
-
-    /// Perform a Spotlight search using NSMetadataQuery.
-    ///
-    /// NSMetadataQuery must be started on a RunLoop, so we dispatch to the main thread.
-    /// Results are collected via the didFinishGathering notification with a timeout fallback.
-    private func performSpotlightSearch(query: String, limit: Int) async -> [FileInfo] {
-        return await withCheckedContinuation { continuation in
-            // NSMetadataQuery requires RunLoop.main
-            DispatchQueue.main.async { [self] in
-                self.executeQuery(query: query, limit: limit, continuation: continuation)
-            }
-        }
-    }
-
-    /// Execute the NSMetadataQuery on the main RunLoop.
-    private func executeQuery(query: String, limit: Int, continuation: CheckedContinuation<[FileInfo], Never>) {
-        let metadataQuery = NSMetadataQuery()
-
-        // Configure search scope
-        if searchScopePaths.isEmpty {
-            metadataQuery.searchScopes = [NSMetadataQueryUserHomeScope]
-        } else {
-            metadataQuery.searchScopes = searchScopePaths.map(\.path)
+        var scored: [(item: FileIndexItem, match: Double)] = []
+        scored.reserveCapacity(min(snapshot.count, resultLimit * 4))
+        for item in snapshot {
+            guard let match = matchScore(item: item, query: normalizedQuery) else { continue }
+            scored.append((item, match))
         }
 
-        // Build predicate: search file name and content
-        let namePredicate = NSPredicate(format: "kMDItemDisplayName CONTAINS[cd] %@", query)
-        let contentPredicate = NSPredicate(format: "kMDItemTextContent CONTAINS[cd] %@", query)
-        var compoundPredicate = NSCompoundPredicate(orPredicateWithSubpredicates: [namePredicate, contentPredicate])
-
-        // Apply file type filter if configured
-        if !fileTypes.isEmpty {
-            let typePredicates = fileTypes.map { NSPredicate(format: "kMDItemContentType == %@", $0) }
-            let typeFilter = NSCompoundPredicate(orPredicateWithSubpredicates: typePredicates)
-            compoundPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [compoundPredicate, typeFilter])
+        // Rank by match quality (prefix > contains > path), then by recency.
+        scored.sort { lhs, rhs in
+            if lhs.match != rhs.match { return lhs.match > rhs.match }
+            return lhs.item.modifiedDate > rhs.item.modifiedDate
         }
 
-        metadataQuery.predicate = compoundPredicate
-
-        // Sort by relevance
-        metadataQuery.sortDescriptors = [
-            NSSortDescriptor(key: NSMetadataQueryResultContentRelevanceAttribute as String, ascending: false)
-        ]
-
-        var didResume = false
-        let lock = NSLock()
-
-        func safeResume(with results: [FileInfo]) {
-            lock.lock()
-            defer { lock.unlock() }
-            guard !didResume else { return }
-            didResume = true
-            continuation.resume(returning: results)
-        }
-
-        // Observe query completion
-        let observer = NotificationCenter.default.addObserver(
-            forName: .NSMetadataQueryDidFinishGathering,
-            object: metadataQuery,
-            queue: .main
-        ) { [weak self] _ in
-            metadataQuery.disableUpdates()
-            metadataQuery.stop()
-
-            let results = self?.processResults(metadataQuery, limit: limit) ?? []
-            safeResume(with: results)
-        }
-
-        // Start the query on the current RunLoop
-        let started = metadataQuery.start()
-        if !started {
-            logger.warning("FileSearchSource: NSMetadataQuery failed to start")
-            NotificationCenter.default.removeObserver(observer)
-            safeResume(with: [])
-            return
-        }
-
-        // Timeout protection: if Spotlight doesn't respond, return empty results
-        DispatchQueue.main.asyncAfter(deadline: .now() + timeout) { [weak self] in
-            if metadataQuery.isGathering {
-                self?.logger.warning("FileSearchSource: Spotlight query timed out after \(self?.timeout ?? 0)s")
-                metadataQuery.stop()
-            }
-            safeResume(with: [])
-        }
-    }
-
-    // MARK: - Result Processing
-
-    /// Extract FileInfo objects from NSMetadataQuery results.
-    private func processResults(_ query: NSMetadataQuery, limit: Int) -> [FileInfo] {
-        guard let items = query.results as? [NSMetadataItem] else { return [] }
-
-        var results: [FileInfo] = []
-
-        for metadataItem in items.prefix(limit) {
-            guard let fileInfo = extractFileInfo(from: metadataItem) else { continue }
-            results.append(fileInfo)
-        }
-
+        let results = scored.prefix(resultLimit).map { makeResult(item: $0.item, matchScore: $0.match) }
+        logger.info("FileSearchSource '\(trimmed, privacy: .public)': \(results.count) results (index=\(snapshot.count))")
         return results
     }
 
-    /// Extract a FileInfo from a single NSMetadataItem.
-    private func extractFileInfo(from item: NSMetadataItem) -> FileInfo? {
-        // File name (required)
-        guard let name = item.value(forAttribute: kMDItemDisplayName as String) as? String,
-              !name.isEmpty else {
-            return nil
+    // MARK: - Indexing
+
+    func rebuildIndex() async {
+        let start = CFAbsoluteTimeGetCurrent()
+        var indexed: [FileIndexItem] = []
+        var seen = Set<String>()
+
+        for root in indexedRoots {
+            if indexed.count >= maxIndexedFiles { break }
+            scan(root: root, into: &indexed, seen: &seen)
         }
 
-        // File path (required)
-        guard let pathString = item.value(forAttribute: kMDItemPath as String) as? String,
-              !pathString.isEmpty else {
+        lock.lock()
+        items = indexed
+        isReady = true
+        lock.unlock()
+
+        let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1000
+        logger.info("FileSearchSource indexed \(indexed.count) files in \(String(format: "%.1f", elapsed))ms")
+    }
+
+    /// Enumerate a single root directory, appending regular files to `indexed`.
+    ///
+    /// Excludes hidden files/directories, package (bundle) contents, and the
+    /// bundles themselves (e.g. `.app`, `.pkg`). Enforces `maxDepth` and the
+    /// global `maxIndexedFiles` cap.
+    private func scan(root: URL, into indexed: inout [FileIndexItem], seen: inout Set<String>) {
+        var isDirectory: ObjCBool = false
+        guard fileManager.fileExists(atPath: root.path, isDirectory: &isDirectory), isDirectory.boolValue else {
+            return
+        }
+
+        let keys: [URLResourceKey] = [
+            .isRegularFileKey,
+            .isDirectoryKey,
+            .isPackageKey,
+            .fileSizeKey,
+            .contentModificationDateKey,
+            .contentTypeKey,
+            .nameKey
+        ]
+
+        guard let enumerator = fileManager.enumerator(
+            at: root,
+            includingPropertiesForKeys: keys,
+            options: [.skipsHiddenFiles, .skipsPackageDescendants]
+        ) else {
+            return
+        }
+
+        while let url = enumerator.nextObject() as? URL {
+            if indexed.count >= maxIndexedFiles { break }
+
+            // Depth guard relative to the root.
+            if enumerator.level > maxDepth {
+                enumerator.skipDescendants()
+                continue
+            }
+
+            let values = try? url.resourceValues(forKeys: Set(keys))
+
+            // Skip bundles/packages entirely (their contents are already skipped).
+            if values?.isPackage == true { continue }
+
+            // Only index regular files (directories are traversed but not indexed).
+            guard values?.isRegularFile == true else { continue }
+
+            let standardizedPath = url.standardizedFileURL.path
+            guard seen.insert(standardizedPath).inserted else { continue }
+
+            let name = values?.name ?? url.lastPathComponent
+            let size = Int64(values?.fileSize ?? 0)
+            let modified = values?.contentModificationDate ?? Date.distantPast
+            let uti = values?.contentType?.identifier ?? "public.data"
+
+            indexed.append(FileIndexItem(
+                name: name,
+                path: url,
+                normalizedName: Self.normalize(name),
+                normalizedPath: Self.normalize(standardizedPath),
+                contentType: uti,
+                size: size,
+                modifiedDate: modified
+            ))
+        }
+    }
+
+    // MARK: - Matching
+
+    /// Returns a match score in the 0–30 band (aligned with the other sources'
+    /// `matchScore`) or `nil` if the item does not match the query.
+    ///
+    /// Tiers (name matching wins over path matching):
+    /// - exact name: 30
+    /// - name prefix: 24
+    /// - name contains: 18
+    /// - path contains: 10
+    /// A small recency bonus (0–4) breaks ties toward recently modified files.
+    private func matchScore(item: FileIndexItem, query: String) -> Double? {
+        let base: Double
+        if item.normalizedName == query {
+            base = 30
+        } else if item.normalizedName.hasPrefix(query) {
+            base = 24
+        } else if item.normalizedName.contains(query) {
+            base = 18
+        } else if item.normalizedPath.contains(query) {
+            base = 10
+        } else {
             return nil
         }
-        let path = URL(fileURLWithPath: pathString)
+        return base + recencyBonus(for: item.modifiedDate)
+    }
 
-        // UTI content type
-        let contentType = item.value(forAttribute: kMDItemContentType as String) as? String ?? "public.data"
+    private func recencyBonus(for date: Date) -> Double {
+        let days = Date().timeIntervalSince(date) / 86_400
+        if days < 1 { return 4 }
+        if days < 7 { return 3 }
+        if days < 30 { return 1 }
+        return 0
+    }
 
-        // File size
-        let size = (item.value(forAttribute: kMDItemFSSize as String) as? NSNumber)?.int64Value ?? 0
+    // MARK: - Result building
 
-        // Modification date
-        let modifiedDate = item.value(forAttribute: kMDItemContentModificationDate as String) as? Date ?? Date()
-
-        // File icon from NSWorkspace
-        let icon = NSWorkspace.shared.icon(forFile: path.path)
-
-        return FileInfo(
-            name: name,
-            path: path,
-            contentType: contentType,
-            size: size,
-            modifiedDate: modifiedDate,
-            icon: icon
+    private func makeResult(item: FileIndexItem, matchScore: Double) -> SearchResult {
+        SearchResult(
+            id: SearchResultID(rawValue: "file:\(item.path.path)"),
+            sourceID: .file,
+            title: item.name,
+            subtitle: subtitle(for: item),
+            icon: .appIcon(item.path),
+            typeLabel: L10n.localized("searchPanel.type.file"),
+            baseScore: SourcePriority.file,
+            matchScore: matchScore,
+            usageScore: 0,
+            primaryAction: .openFile(item.path),
+            secondaryActions: [.revealInFinder(item.path), .copyText(item.path.path)]
         )
     }
 
-    // MARK: - Scoring
+    /// Human-readable subtitle: the file's location relative to the home directory
+    /// (e.g. `~/Downloads`), followed by size and relative modification time.
+    private func subtitle(for item: FileIndexItem) -> String {
+        var parts: [String] = [displayLocation(for: item.path)]
 
-    /// Compute a relevance score (0-1) for a file result.
-    ///
-    /// Scoring factors:
-    /// - Name match quality (prefix match > contains match)
-    /// - Recency (more recently modified files score higher)
-    private func computeRelevanceScore(fileInfo: FileInfo, query: String) -> Double {
-        let queryLower = query.lowercased()
-        let nameLower = fileInfo.name.lowercased()
-
-        // Name match quality (0-0.7)
-        var nameScore: Double = 0
-        if nameLower.hasPrefix(queryLower) {
-            nameScore = 0.7  // Prefix match: highest priority
-        } else if nameLower.contains(queryLower) {
-            nameScore = 0.5  // Contains match
-        } else {
-            // Matched via content, not file name
-            nameScore = 0.2
-        }
-
-        // Recency bonus (0-0.3): files modified within 7 days get full bonus
-        let daysSinceModified = Date().timeIntervalSince(fileInfo.modifiedDate) / 86400
-        let recencyScore: Double
-        if daysSinceModified < 1 {
-            recencyScore = 0.3
-        } else if daysSinceModified < 7 {
-            recencyScore = 0.2
-        } else if daysSinceModified < 30 {
-            recencyScore = 0.1
-        } else {
-            recencyScore = 0.0
-        }
-
-        return min(nameScore + recencyScore, 1.0)
-    }
-
-    // MARK: - Subtitle
-
-    /// Build a human-readable subtitle for a file result.
-    private func buildSubtitle(fileInfo: FileInfo) -> String {
-        var parts: [String] = []
-
-        // File kind from UTI
-        if let kind = UTType(fileInfo.contentType)?.localizedDescription {
-            parts.append(kind)
-        }
-
-        // File size
-        if fileInfo.size > 0 {
+        if item.size > 0 {
             let formatter = ByteCountFormatter()
             formatter.allowedUnits = [.useKB, .useMB, .useGB]
             formatter.countStyle = .file
-            parts.append(formatter.string(fromByteCount: fileInfo.size))
+            parts.append(formatter.string(fromByteCount: item.size))
         }
-
-        // Relative modification time
-        parts.append(relativeTimeString(from: fileInfo.modifiedDate))
 
         return parts.joined(separator: " · ")
     }
 
-    /// Format a date as a relative time string (e.g. "2h ago", "3d ago").
-    private func relativeTimeString(from date: Date) -> String {
-        let interval = Date().timeIntervalSince(date)
-
-        if interval < 60 {
-            return NSLocalizedString("Just now", comment: "")
-        } else if interval < 3600 {
-            let minutes = Int(interval / 60)
-            return String(format: NSLocalizedString("%dm ago", comment: ""), minutes)
-        } else if interval < 86400 {
-            let hours = Int(interval / 3600)
-            return String(format: NSLocalizedString("%dh ago", comment: ""), hours)
-        } else {
-            let days = Int(interval / 86400)
-            return String(format: NSLocalizedString("%dd ago", comment: ""), days)
+    /// Location label for the parent directory, abbreviated with `~` when inside
+    /// the home directory.
+    private func displayLocation(for url: URL) -> String {
+        let parent = url.deletingLastPathComponent().standardizedFileURL
+        let parentPath = parent.path
+        let homePath = homeDirectory.path
+        if parentPath == homePath {
+            return "~"
         }
+        if parentPath.hasPrefix(homePath + "/") {
+            return "~" + parentPath.dropFirst(homePath.count)
+        }
+        return parentPath
     }
 
-    // MARK: - Pinyin Augmentation
+    // MARK: - Snapshot helpers
 
-    /// True if the query is plain ASCII — i.e. it could be pinyin/initials.
-    private func isASCIIQuery(_ query: String) -> Bool {
-        for scalar in query.unicodeScalars where scalar.value > 127 {
-            return false
-        }
-        return !query.isEmpty
+    private func readySnapshot() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return isReady
     }
 
-    /// Compute a bonus score for files whose display name pinyin or initials
-    /// match the query.
-    ///
-    /// Bonus tiers (mirrors AppSearchSource):
-    /// - Pinyin prefix: +0.5
-    /// - Initials match: +0.4
-    /// - Pinyin contains: +0.3
-    /// - No CJK characters in name → 0 (literal matching already applies)
-    private func pinyinScoreBonus(name: String, query: String) -> Double {
-        // Skip pure-ASCII names: literal contains/prefix already handled.
-        guard containsCJK(name) else { return 0 }
-
-        let pinyin = PinyinHelper.toPinyin(name)
-        if pinyin.hasPrefix(query) { return 0.5 }
-
-        let initials = PinyinHelper.toInitials(name)
-        if !initials.isEmpty && initials.hasPrefix(query) { return 0.4 }
-
-        if pinyin.contains(query) { return 0.3 }
-
-        return 0
+    private func itemsSnapshot() -> [FileIndexItem] {
+        lock.lock()
+        defer { lock.unlock() }
+        return items
     }
 
-    /// Scan the user's most-frequented directories for CJK-named files that
-    /// match the pinyin query but were missed by Spotlight's literal predicate.
-    ///
-    /// Strategy:
-    /// 1. Pick a small set of scopes (~/Desktop, ~/Documents, ~/Downloads or
-    ///    the configured `searchScopePaths`).
-    /// 2. Take the most-recently-modified ~200 entries.
-    /// 3. Pinyin-match client side.
-    /// 4. Skip anything already in `existing` (dedup by absolute path).
-    ///
-    /// Bounded cost: enumeration is shallow (top-level), no recursion into
-    /// subdirectories, so even on large folders this stays sub-50ms.
-    private func augmentWithPinyinScan(
-        query: String,
-        existing: [FileInfo],
-        limit: Int
-    ) async -> [FileInfo] {
-        let existingPaths = Set(existing.map { $0.path.path })
-        let scopes: [URL]
-        if searchScopePaths.isEmpty {
-            let home = FileManager.default.homeDirectoryForCurrentUser
-            scopes = [
-                home.appendingPathComponent("Desktop"),
-                home.appendingPathComponent("Documents"),
-                home.appendingPathComponent("Downloads"),
-            ]
-        } else {
-            scopes = searchScopePaths
-        }
+    // MARK: - Normalization
 
-        return await Task.detached(priority: .userInitiated) { [scopes, existingPaths, query, limit] in
-            FileSearchSource.scanScopesForPinyin(
-                scopes: scopes,
-                query: query,
-                excluding: existingPaths,
-                limit: limit
-            )
-        }.value
+    static func normalize(_ value: String) -> String {
+        value
+            .folding(options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive], locale: .current)
+            .lowercased()
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
+}
 
-    /// Detached worker — kept static so it doesn't capture `self`.
-    private static func scanScopesForPinyin(
-        scopes: [URL],
-        query: String,
-        excluding: Set<String>,
-        limit: Int
-    ) -> [FileInfo] {
-        let fm = FileManager.default
-        var candidates: [(URL, Date)] = []
-        let perScopeCap = 200
+// MARK: - Notification Names
 
-        for scope in scopes {
-            guard let contents = try? fm.contentsOfDirectory(
-                at: scope,
-                includingPropertiesForKeys: [.contentModificationDateKey, .isRegularFileKey],
-                options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants]
-            ) else { continue }
-
-            for url in contents.prefix(perScopeCap) {
-                let values = try? url.resourceValues(forKeys: [.contentModificationDateKey, .isRegularFileKey])
-                guard values?.isRegularFile == true else { continue }
-                let mtime = values?.contentModificationDate ?? Date.distantPast
-                candidates.append((url, mtime))
-            }
-        }
-
-        // Sort newest-first then truncate
-        candidates.sort { $0.1 > $1.1 }
-        let pool = candidates.prefix(perScopeCap * 3)
-
-        var results: [FileInfo] = []
-        for (url, mtime) in pool {
-            if results.count >= limit { break }
-            if excluding.contains(url.path) { continue }
-            let name = url.lastPathComponent
-            // Only consider CJK-named files (otherwise Spotlight already covered)
-            guard containsCJKStatic(name) else { continue }
-
-            let pinyin = PinyinHelper.toPinyin(name)
-            let initials = PinyinHelper.toInitials(name)
-            let matches = pinyin.contains(query) || initials.hasPrefix(query)
-            guard matches else { continue }
-
-            let size: Int64
-            if let s = (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize {
-                size = Int64(s)
-            } else {
-                size = 0
-            }
-            let contentType: String
-            if let uti = (try? url.resourceValues(forKeys: [.contentTypeKey]))?.contentType?.identifier {
-                contentType = uti
-            } else {
-                contentType = "public.data"
-            }
-            let icon = NSWorkspace.shared.icon(forFile: url.path)
-
-            results.append(FileInfo(
-                name: name,
-                path: url,
-                contentType: contentType,
-                size: size,
-                modifiedDate: mtime,
-                icon: icon
-            ))
-        }
-        return results
-    }
-
-    /// Return true if any scalar in `s` is outside the ASCII range
-    /// (cheap proxy for "contains CJK / non-Latin characters").
-    private func containsCJK(_ s: String) -> Bool {
-        for scalar in s.unicodeScalars where scalar.value > 127 {
-            return true
-        }
-        return false
-    }
-
-    /// Static version of `containsCJK` for use in detached workers.
-    private static func containsCJKStatic(_ s: String) -> Bool {
-        for scalar in s.unicodeScalars where scalar.value > 127 {
-            return true
-        }
-        return false
-    }
+extension Notification.Name {
+    /// Posted when the file search index is first built.
+    static let fileSearchIndexReady = Notification.Name("com.assistant.fileSearchIndexReady")
 }
