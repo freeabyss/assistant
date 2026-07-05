@@ -26,8 +26,11 @@
 - [x] ① 需求分析 —— doc/prd.md（直接修订，commit e41dc56）
 - [x] ② 产品设计 —— doc/prd.md（直接修订，Gate 1 通过 2026-07-03，commit 510d857）
 - [x] ③ 架构设计 —— doc/architecture/*.md（直接修订，commit e9c448f）
-- [x] ④ 架构自审 —— doc/iterations/v1.2.0/architecture/review.md（APPROVED_WITH_MINOR_FIXES，0 阻塞），Gate 2 待审阅
-- [ ] ⑤ 开发测试
+- [x] ④ 架构自审 —— doc/iterations/v1.2.0/architecture/review.md（APPROVED_WITH_MINOR_FIXES，0 阻塞），Gate 2 通过 by @user 2026-07-05
+- [x] ⑤.1 测试用例生成与评审 —— doc/test/cases.md 新增 98 条 TC，review APPROVED（0 阻塞），commit b404c0f
+- [x] ⑤.2 任务拆解 —— doc/iterations/v1.2.0/tasks.json（19 任务：P0×12/P1×4/P2×3），Gate 3 auto 模式跳过
+- [ ] ⑤.3 单任务开发闭环（进行中：T-001 开始）
+- [ ] ⑤.4 开 PR
 - [ ] ⑥ 上线部署
 
 ## 关键节点
@@ -36,3 +39,6 @@
 - 2026-07-03 PRD 重写完成（commit e41dc56），进入 Gate 1
 - 2026-07-03 PRD UI 设计语言补全（commit 510d857），Gate 1 通过 by @user
 - 2026-07-03 架构设计完成（design.md v17 / api.md v3 / db.md v3），架构自审 APPROVED（0 阻塞，6 改善），commit e9c448f，进入 Gate 2
+- 2026-07-05 Gate 2 通过 by @user（"ok"）；模式切换为 auto（用户：后续操作自动批准）
+- 2026-07-05 测试用例 98 条 + 用例评审 APPROVED（0 阻塞，4 改善），commit b404c0f
+- 2026-07-05 任务拆解完成（19 任务），进入 ⑤.3 开发
