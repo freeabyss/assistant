@@ -128,15 +128,19 @@ final class ScreenshotOverlayView: NSView {
     }
 
     /// Draw the dimension text (width x height) below the selection rectangle.
+    ///
+    /// P-04 / T-014: Jade-style pill — black 0.7 background, white caption text,
+    /// radius-md (8pt). The AppKit overlay is hand-drawn (NSBezierPath), so the
+    /// Jade tokens are mirrored here as literals rather than SwiftUI values.
     private func drawDimensions(for rect: NSRect) {
-        let dimensionText = "\(Int(rect.width)) x \(Int(rect.height))"
+        let dimensionText = "\(Int(rect.width)) × \(Int(rect.height))"
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.monospacedSystemFont(ofSize: 13, weight: .medium),
+            .font: NSFont.systemFont(ofSize: 11, weight: .medium),
             .foregroundColor: NSColor.white,
         ]
 
         let textSize = dimensionText.size(withAttributes: attributes)
-        let padding: CGFloat = 6
+        let padding: CGFloat = 8
         let backgroundSize = NSSize(
             width: textSize.width + padding * 2,
             height: textSize.height + padding
@@ -150,11 +154,11 @@ final class ScreenshotOverlayView: NSView {
             height: backgroundSize.height
         )
 
-        // Draw background pill
+        // Draw background pill (radius-md = 8pt, Jade token)
         let backgroundPath = NSBezierPath(
             roundedRect: labelRect,
-            xRadius: 4,
-            yRadius: 4
+            xRadius: 8,
+            yRadius: 8
         )
         NSColor.black.withAlphaComponent(0.7).set()
         backgroundPath.fill()
@@ -440,10 +444,13 @@ final class WindowCaptureOverlayView: NSView {
         NSColor.clear.set()
         targetFrame.fill(using: .copy)
 
-        // Draw a colored border around the target window
-        NSColor.systemBlue.withAlphaComponent(0.9).set()
+        // P-04 / T-014: highlight the target window with Jade 20% fill + Jade 2pt border.
+        JadeColor.primaryNS.withAlphaComponent(0.2).setFill()
+        NSBezierPath(rect: targetFrame).fill()
+
+        JadeColor.primaryNS.set()
         let borderPath = NSBezierPath(rect: targetFrame)
-        borderPath.lineWidth = 3
+        borderPath.lineWidth = 2
         borderPath.stroke()
 
         // Draw hint text below the window
