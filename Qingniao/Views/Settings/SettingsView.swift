@@ -3,7 +3,11 @@ import KeyboardShortcuts
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// US-015 Management Center: overview, clipboard history, settings, permissions.
+/// P-03 Settings / Management Center.
+///
+/// A `NavigationSplitView` with a 200pt sectioned sidebar (Overview / 核心功能 /
+/// 系统) and eleven detail pages. All surfaces, spacing, radius, and typography go
+/// through Jade Design Tokens (T-004) and the shared Jade component library (T-007).
 struct SettingsView: View {
     @StateObject private var viewModel = SettingsViewModel()
     @StateObject private var clipboardViewModel = ClipboardListViewModel()
@@ -14,18 +18,26 @@ struct SettingsView: View {
     }
 }
 
+// MARK: - Root split view
+
 struct ManagementCenterView: View {
     @ObservedObject var viewModel: SettingsViewModel
     @ObservedObject var clipboardViewModel: ClipboardListViewModel
 
+    @FocusState private var sidebarSearchFocused: Bool
+
     var body: some View {
         NavigationSplitView {
             sidebar
+                .navigationSplitViewColumnWidth(200)
         } detail: {
             detail
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color(NSColor.windowBackgroundColor))
+                .background(JadeColor.surface1)
         }
+        .tint(JadeColor.primary)
+        .preferredColorScheme(viewModel.preferredColorScheme)
+        .background(keyboardShortcuts)
         .task { await viewModel.load() }
         .onReceive(NotificationCenter.default.publisher(for: .openManagementCenter)) { notification in
             if let route = notification.object as? SettingsRoute {
@@ -49,231 +61,362 @@ struct ManagementCenterView: View {
         } message: {
             Text(L10n.localized("management.language.restart.message"))
         }
+        .alert(L10n.localized("management.data.restart.title"), isPresented: $viewModel.showResetAllDataRestartAlert) {
+            Button(L10n.localized("management.data.restart.quit")) { NSApp.terminate(nil) }
+        } message: {
+            Text(L10n.localized("management.data.restart.message"))
+        }
     }
 
+    // MARK: Sidebar
+
     private var sidebar: some View {
-        List(selection: $viewModel.selectedPage) {
-            Section(L10n.localized("management.title")) {
-                ForEach(ManagementCenterPage.allCases) { page in
-                    Label(page.title, systemImage: page.iconName)
-                        .tag(page)
+        VStack(spacing: JadeSpace.x2.value) {
+            JadeTextField(
+                "management.sidebar.searchPlaceholder",
+                text: $viewModel.sidebarFilter,
+                icon: Image(systemName: "magnifyingglass")
+            )
+            .focused($sidebarSearchFocused)
+            .padding(.horizontal, JadeSpace.x2.value)
+            .padding(.top, JadeSpace.x2.value)
+
+            List(selection: $viewModel.selectedPage) {
+                if viewModel.sidebarFilter.isEmpty {
+                    ForEach(ManagementSidebarSection.allCases) { section in
+                        let pages = ManagementCenterPage.pages(in: section)
+                        if let header = section.header {
+                            Section(header) { rows(for: pages) }
+                        } else {
+                            Section { rows(for: pages) }
+                        }
+                    }
+                } else {
+                    Section { rows(for: filteredPages) }
                 }
             }
+            .listStyle(.sidebar)
         }
-        .navigationSplitViewColumnWidth(min: 180, ideal: 210, max: 240)
+        .background(JadeColor.surface1)
+        .onReceive(NotificationCenter.default.publisher(for: .focusSettingsSearch)) { _ in
+            sidebarSearchFocused = true
+        }
     }
+
+    private var filteredPages: [ManagementCenterPage] {
+        let needle = viewModel.sidebarFilter.lowercased()
+        return ManagementCenterPage.allCases.filter { $0.title.lowercased().contains(needle) }
+    }
+
+    private func rows(for pages: [ManagementCenterPage]) -> some View {
+        ForEach(pages) { page in
+            Label(page.title, systemImage: page.iconName)
+                .tag(page)
+        }
+    }
+
+    // MARK: Detail router
 
     @ViewBuilder
     private var detail: some View {
         switch viewModel.selectedPage {
         case .overview:
-            ManagementOverviewView(viewModel: viewModel)
+            OverviewPage(viewModel: viewModel)
         case .clipboard:
-            ClipboardHistoryView(viewModel: clipboardViewModel)
-        case .settings:
-            ManagementSettingsPage(viewModel: viewModel)
+            ClipboardSettingsPage(viewModel: viewModel)
+        case .shortcuts:
+            ShortcutsPage(viewModel: viewModel)
+        case .screenshot:
+            ScreenshotPage(viewModel: viewModel)
+        case .searchSources:
+            SearchSourcesPage(viewModel: viewModel)
+        case .appearance:
+            AppearancePage(viewModel: viewModel)
         case .permissions:
-            PermissionsManagementPage(viewModel: viewModel)
+            PermissionsPage(viewModel: viewModel)
+        case .data:
+            DataPage(viewModel: viewModel)
+        case .updates:
+            UpdatesPage(viewModel: viewModel)
         case .about:
-            AboutManagementPage()
+            AboutPage()
+        case .feedback:
+            FeedbackPage()
+        }
+    }
+
+    // ⌘W / ⎋ close, ⌘F focus search.
+    private var keyboardShortcuts: some View {
+        ZStack {
+            Button("") { NSApp.keyWindow?.performClose(nil) }
+                .keyboardShortcut("w", modifiers: .command)
+            Button("") { NSApp.keyWindow?.performClose(nil) }
+                .keyboardShortcut(.cancelAction)
+            Button("") { NotificationCenter.default.post(name: .focusSettingsSearch, object: nil) }
+                .keyboardShortcut("f", modifiers: .command)
+        }
+        .opacity(0)
+        .frame(width: 0, height: 0)
+        .accessibilityHidden(true)
+    }
+}
+
+extension Notification.Name {
+    /// Posted by ⌘F to focus the settings sidebar search field.
+    static let focusSettingsSearch = Notification.Name("com.assistant.focusSettingsSearch")
+}
+
+// MARK: - 1. Overview
+
+private struct OverviewPage: View {
+    @ObservedObject var viewModel: SettingsViewModel
+
+    private let about = BundleAboutInfoProvider().info
+
+    var body: some View {
+        SettingsScrollPage {
+            VStack(spacing: JadeSpace.x6.value) {
+                header
+                statGrid
+                commonSettings
+            }
+        }
+    }
+
+    private var header: some View {
+        VStack(spacing: JadeSpace.x3.value) {
+            AppIconView(size: 96, radius: .xl)
+            VStack(spacing: JadeSpace.x1.value) {
+                Text("青鸟 Qingniao")
+                    .font(JadeFont.title1)
+                    .foregroundStyle(JadeColor.textPrimary)
+                Text(L10n.localized("management.overview.versionLine", about.version, about.buildNumber))
+                    .font(JadeFont.callout)
+                    .foregroundStyle(JadeColor.textSecondary)
+                Text(about.copyright)
+                    .font(JadeFont.caption)
+                    .foregroundStyle(JadeColor.textTertiary)
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var statGrid: some View {
+        LazyVGrid(columns: [GridItem(.flexible(), spacing: JadeSpace.x3.value),
+                            GridItem(.flexible(), spacing: JadeSpace.x3.value)],
+                  spacing: JadeSpace.x3.value) {
+            StatCard(icon: Image(systemName: "calendar"),
+                     title: "management.overview.stat.days",
+                     value: "\(viewModel.usageDaysCount)")
+            StatCard(icon: Image(systemName: "bolt"),
+                     title: "management.overview.stat.dailyLaunches",
+                     value: "\(viewModel.averageDailyLaunches)", tint: JadeColor.info)
+            StatCard(icon: Image(systemName: "doc.on.clipboard"),
+                     title: "management.overview.stat.clips",
+                     value: "\(viewModel.clipboardItemCount)", tint: JadeColor.success)
+            StatCard(icon: Image(systemName: "camera.viewfinder"),
+                     title: "management.overview.stat.screenshots",
+                     value: "\(viewModel.screenshotItemCount)", tint: JadeColor.orange)
+        }
+    }
+
+    private var commonSettings: some View {
+        SettingsSection("management.overview.common") {
+            JadeSwitchRow(L10n.localized("settings.launchAtLogin"), isOn: launchBinding)
+            Divider().overlay(JadeColor.border)
+            VStack(alignment: .leading, spacing: JadeSpace.x2.value) {
+                Text(L10n.localized("management.page.appearance"))
+                    .font(JadeFont.body)
+                    .foregroundStyle(JadeColor.textPrimary)
+                Picker("", selection: appearanceBinding) {
+                    ForEach(AppearanceMode.allCases, id: \.self) { mode in
+                        Text(appearanceTitle(mode)).tag(mode)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+            }
+            Divider().overlay(JadeColor.border)
+            JadeSwitchRow(L10n.localized("management.overview.autoCheckUpdates"), isOn: $viewModel.autoCheckUpdates)
+        }
+    }
+
+    private var launchBinding: Binding<Bool> {
+        Binding(get: { viewModel.launchAtLoginEnabled },
+                set: { viewModel.launchAtLoginEnabled = $0; Task { await viewModel.saveSettings() } })
+    }
+
+    private var appearanceBinding: Binding<AppearanceMode> {
+        Binding(get: { viewModel.appearanceMode },
+                set: { viewModel.updateAppearanceMode($0) })
+    }
+
+    private func appearanceTitle(_ mode: AppearanceMode) -> String {
+        switch mode {
+        case .system: return L10n.localized("management.appearance.system")
+        case .light: return L10n.localized("management.appearance.light")
+        case .dark: return L10n.localized("management.appearance.dark")
         }
     }
 }
 
-struct ManagementOverviewView: View {
+// MARK: - 2. Clipboard
+
+private struct ClipboardSettingsPage: View {
     @ObservedObject var viewModel: SettingsViewModel
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                pageHeader(
-                    title: L10n.localized("management.overview.title"),
-                    subtitle: L10n.localized("management.overview.subtitle"),
-                    icon: "sparkles"
-                )
+        SettingsScrollPage {
+            SettingsHeader(page: .clipboard, subtitle: "management.clipboard.subtitle")
 
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 230), spacing: 14)], spacing: 14) {
-                    OverviewCard(
-                        title: L10n.localized("management.overview.quickEntries"),
-                        value: L10n.localized("management.overview.quickEntries.value"),
-                        subtitle: L10n.localized("management.overview.quickEntries.subtitle"),
-                        icon: "square.grid.2x2"
-                    )
-                    OverviewCard(
-                        title: L10n.localized("management.overview.permissions"),
-                        value: viewModel.permissionSummary,
-                        subtitle: L10n.localized("management.overview.permissions.subtitle"),
-                        icon: "lock.shield"
-                    )
-                    OverviewCard(
-                        title: L10n.localized("management.overview.sources"),
-                        value: viewModel.enabledSourceNames,
-                        subtitle: L10n.localized("management.overview.sources.subtitle"),
-                        icon: "magnifyingglass"
-                    )
-                    OverviewCard(
-                        title: L10n.localized("management.overview.hotkey"),
-                        value: viewModel.searchHotkeyDescription,
-                        subtitle: L10n.localized("management.overview.hotkey.subtitle"),
-                        icon: "keyboard"
-                    )
-                }
-
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(L10n.localized("management.overview.actions"))
-                        .font(.headline)
-                    HStack(spacing: 10) {
-                        quickButton(.clipboard)
-                        quickButton(.settings)
-                        quickButton(.permissions)
-                    }
-                }
-            }
-            .padding(24)
-        }
-    }
-
-    private func quickButton(_ page: ManagementCenterPage) -> some View {
-        Button {
-            viewModel.select(page: page)
-        } label: {
-            Label(page.title, systemImage: page.iconName)
-        }
-    }
-}
-
-struct OverviewCard: View {
-    let title: String
-    let value: String
-    let subtitle: String
-    let icon: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Image(systemName: icon)
-                    .font(.title3)
-                    .foregroundColor(.accentColor)
-                Spacer()
-            }
-            Text(title)
-                .font(.headline)
-            Text(value)
-                .font(.system(size: 18, weight: .semibold))
-                .lineLimit(2)
-            Text(subtitle)
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-    }
-}
-
-struct ManagementSettingsPage: View {
-    @ObservedObject var viewModel: SettingsViewModel
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                pageHeader(
-                    title: L10n.localized("management.settings.title"),
-                    subtitle: L10n.localized("management.settings.subtitle"),
-                    icon: "slider.horizontal.3"
-                )
-
-                section(L10n.localized("management.settings.shortcuts")) {
-                    shortcutRow(L10n.localized("management.shortcuts.search"), name: .togglePanel, recorder: KeyboardShortcuts.Recorder(for: .togglePanel))
-                    shortcutRow(L10n.localized("management.shortcuts.captureRegion"), name: .captureRegion, recorder: KeyboardShortcuts.Recorder(for: .captureRegion))
-                    shortcutRow(L10n.localized("management.shortcuts.captureWindow"), name: .captureWindow, recorder: KeyboardShortcuts.Recorder(for: .captureWindow))
-                    shortcutRow(L10n.localized("management.shortcuts.captureFullscreen"), name: .captureFullscreen, recorder: KeyboardShortcuts.Recorder(for: .captureFullscreen))
-                    shortcutRow(L10n.localized("management.shortcuts.clipboardHistory"), name: .openClipboardHistory, recorder: KeyboardShortcuts.Recorder(for: .openClipboardHistory))
-                    shortcutRow(L10n.localized("management.shortcuts.openSettings"), name: .openSettings, recorder: KeyboardShortcuts.Recorder(for: .openSettings))
-                    HStack {
-                        Spacer()
-                        Button(L10n.localized("settings.restoreDefaults")) {
-                            viewModel.resetAllShortcutsToDefaults()
-                        }
-                    }
-                }
-
-                section(L10n.localized("management.settings.sources")) {
-                    ForEach($viewModel.sourceToggles) { $source in
-                        Toggle(isOn: $source.isEnabled) {
-                            Label {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(source.title)
-                                    Text(source.subtitle)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                            } icon: {
-                                Image(systemName: source.iconName)
-                            }
-                        }
-                    }
-                }
-
-                section(L10n.localized("management.settings.clipboard")) {
-                    Toggle(isOn: $viewModel.clipboardEnabled) {
-                        Text(L10n.localized("management.clipboard.enabled"))
-                    }
-
-                    Picker(L10n.localized("management.clipboard.retention"), selection: $viewModel.clipboardRetention) {
+            SettingsSection("management.settings.clipboard") {
+                JadeSwitchRow(L10n.localized("management.clipboard.enabled"), isOn: clipboardEnabledBinding)
+                Divider().overlay(JadeColor.border)
+                VStack(alignment: .leading, spacing: JadeSpace.x2.value) {
+                    Text(L10n.localized("management.clipboard.retention"))
+                        .font(JadeFont.body)
+                    Picker("", selection: retentionBinding) {
                         ForEach(SettingsViewModel.retentionOptions, id: \.self) { retention in
                             Text(viewModel.retentionTitle(retention)).tag(retention)
                         }
                     }
+                    .labelsHidden()
                     .pickerStyle(.segmented)
                 }
+            }
 
-                section(L10n.localized("management.settings.screenshot")) {
-                    HStack {
-                        Text(L10n.localized("management.screenshot.saveDirectory"))
-                        Spacer()
-                        Text(viewModel.screenshotSaveDirectory.path)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                        Button(L10n.localized("management.screenshot.choose")) {
-                            viewModel.showDirectoryImporter = true
-                        }
-                    }
-                }
+            BlacklistManagementSection(viewModel: viewModel)
+        }
+    }
 
-                section(L10n.localized("management.settings.system")) {
-                    Toggle(isOn: $viewModel.launchAtLoginEnabled) {
-                        Text(L10n.localized("settings.launchAtLogin"))
-                    }
+    private var clipboardEnabledBinding: Binding<Bool> {
+        Binding(get: { viewModel.clipboardEnabled },
+                set: { viewModel.clipboardEnabled = $0; Task { await viewModel.saveSettings() } })
+    }
 
-                    Picker(L10n.localized("settings.language"), selection: $viewModel.languageMode) {
-                        ForEach(SettingsViewModel.languageOptions, id: \.self) { language in
-                            Text(viewModel.languageTitle(language)).tag(language)
-                        }
-                    }
-                }
+    private var retentionBinding: Binding<ClipboardRetention> {
+        Binding(get: { viewModel.clipboardRetention },
+                set: { viewModel.clipboardRetention = $0; Task { await viewModel.saveSettings() } })
+    }
+}
 
-                BlacklistManagementSection(viewModel: viewModel)
+// MARK: - 3. Shortcuts
 
-                HStack {
-                    if let status = viewModel.statusMessage {
-                        Label(status, systemImage: "checkmark.circle.fill")
-                            .font(.caption)
-                            .foregroundColor(.green)
-                    }
-                    Spacer()
-                    Button(L10n.localized("settings.restoreDefaults")) {
-                        Task { await viewModel.resetSettingsToDefaults() }
-                    }
-                    Button(L10n.localized("settings.save")) {
-                        Task { await viewModel.saveSettings() }
-                    }
-                    .keyboardShortcut(.defaultAction)
+private struct ShortcutsPage: View {
+    @ObservedObject var viewModel: SettingsViewModel
+
+    private struct Row: Identifiable {
+        let id = UUID()
+        let label: String
+        let name: KeyboardShortcuts.Name
+    }
+
+    private var rows: [Row] {
+        [
+            Row(label: L10n.localized("management.shortcuts.search"), name: .togglePanel),
+            Row(label: L10n.localized("management.shortcuts.captureRegion"), name: .captureRegion),
+            Row(label: L10n.localized("management.shortcuts.captureWindow"), name: .captureWindow),
+            Row(label: L10n.localized("management.shortcuts.captureFullscreen"), name: .captureFullscreen),
+            Row(label: L10n.localized("management.shortcuts.clipboardHistory"), name: .openClipboardHistory),
+            Row(label: L10n.localized("management.shortcuts.openSettings"), name: .openSettings)
+        ]
+    }
+
+    var body: some View {
+        SettingsScrollPage {
+            SettingsHeader(page: .shortcuts, subtitle: "management.shortcuts.subtitle")
+
+            SettingsSection("management.settings.shortcuts") {
+                ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
+                    if index > 0 { Divider().overlay(JadeColor.border) }
+                    shortcutRow(row)
                 }
             }
-            .padding(24)
+
+            HStack {
+                Spacer()
+                Button(L10n.localized("management.shortcuts.reset")) {
+                    viewModel.resetAllShortcutsToDefaults()
+                }
+                .buttonStyle(.jadeGhost)
+            }
+        }
+    }
+
+    private func shortcutRow(_ row: Row) -> some View {
+        VStack(alignment: .leading, spacing: JadeSpace.x1.value) {
+            HStack {
+                Text(row.label)
+                    .font(JadeFont.body)
+                    .foregroundStyle(JadeColor.textPrimary)
+                Spacer()
+                HotkeyRecorder(
+                    for: row.name,
+                    isConflicting: .constant(viewModel.isShortcutConflict(row.name)),
+                    conflictMessage: .constant(viewModel.conflictMessage(for: row.name))
+                )
+                .onChange(of: KeyboardShortcuts.getShortcut(for: row.name)) { _ in
+                    viewModel.refreshShortcutConflicts()
+                }
+            }
+        }
+    }
+}
+
+// MARK: - 4. Screenshot
+
+private struct ScreenshotPage: View {
+    @ObservedObject var viewModel: SettingsViewModel
+
+    @AppStorage("screenshot.copyToClipboard") private var copyToClipboard = true
+    @AppStorage("screenshot.playSound") private var playSound = true
+    @AppStorage("screenshot.includeShadow") private var includeShadow = true
+
+    var body: some View {
+        SettingsScrollPage {
+            SettingsHeader(page: .screenshot, subtitle: "management.screenshot.subtitle")
+
+            SettingsSection("management.screenshot.saveDirectory") {
+                HStack(spacing: JadeSpace.x2.value) {
+                    Text(viewModel.screenshotSaveDirectory.path)
+                        .font(JadeFont.callout)
+                        .foregroundStyle(JadeColor.textSecondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 9)
+                        .background(JadeColor.surface1)
+                        .jadeRadius(.md)
+                        .jadeRadiusBorder(.md)
+                    Button(L10n.localized("management.screenshot.choose")) {
+                        viewModel.showDirectoryImporter = true
+                    }
+                    .buttonStyle(.jadeSecondary)
+                }
+            }
+
+            SettingsSection("management.screenshot.format") {
+                Picker("", selection: .constant(0)) {
+                    Text("PNG").tag(0)
+                    Text("JPG").tag(1)
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .disabled(true)
+                .help(L10n.localized("management.screenshot.format.jpgDisabled"))
+                Text(L10n.localized("management.screenshot.format.note"))
+                    .font(JadeFont.caption)
+                    .foregroundStyle(JadeColor.textTertiary)
+            }
+
+            SettingsSection("management.screenshot.afterCapture") {
+                JadeSwitchRow(L10n.localized("management.screenshot.copyToClipboard"), isOn: $copyToClipboard)
+                Divider().overlay(JadeColor.border)
+                JadeSwitchRow(L10n.localized("management.screenshot.playSound"), isOn: $playSound)
+                Divider().overlay(JadeColor.border)
+                JadeSwitchRow(L10n.localized("management.screenshot.includeShadow"), isOn: $includeShadow)
+            }
         }
         .fileImporter(isPresented: $viewModel.showDirectoryImporter, allowedContentTypes: [.folder], allowsMultipleSelection: false) { result in
             if case .success(let urls) = result, let url = urls.first {
@@ -281,34 +424,458 @@ struct ManagementSettingsPage: View {
             }
         }
     }
+}
 
-    private func shortcutRow<R: View>(_ label: String, name: KeyboardShortcuts.Name, recorder: R) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(label)
-                    .frame(width: 170, alignment: .leading)
-                recorder
-                    .onChange(of: KeyboardShortcuts.getShortcut(for: name)) { _ in
-                        viewModel.refreshShortcutConflicts()
-                    }
-                Spacer()
+// MARK: - 5. Search sources
+
+private struct SearchSourcesPage: View {
+    @ObservedObject var viewModel: SettingsViewModel
+
+    private let fileSearchDirectories = ["~/Desktop", "~/Documents", "~/Downloads"]
+
+    var body: some View {
+        SettingsScrollPage {
+            SettingsHeader(page: .searchSources, subtitle: "management.searchSources.subtitle")
+
+            SettingsSection("management.settings.sources") {
+                ForEach(Array($viewModel.sourceToggles.enumerated()), id: \.element.id) { index, $source in
+                    if index > 0 { Divider().overlay(JadeColor.border) }
+                    JadeSwitchRow(icon: source.iconName,
+                                  title: source.title,
+                                  subtitle: source.subtitle,
+                                  isOn: Binding(get: { source.isEnabled },
+                                                set: { source.isEnabled = $0; Task { await viewModel.saveSettings() } }))
+                }
+                Text(L10n.localized("management.searchSources.hint"))
+                    .font(JadeFont.caption)
+                    .foregroundStyle(JadeColor.textTertiary)
             }
-            if let message = viewModel.conflictMessage(for: name) {
-                Label(message, systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption)
-                    .foregroundColor(.red)
-                    .padding(.leading, 170)
+
+            SettingsSection("management.searchSources.fileDirectories") {
+                ForEach(fileSearchDirectories, id: \.self) { dir in
+                    Text(dir)
+                        .font(JadeFont.callout)
+                        .foregroundStyle(JadeColor.textSecondary)
+                }
+                .disabled(true)
+                Text(L10n.localized("management.searchSources.fileDirectories.note"))
+                    .font(JadeFont.caption)
+                    .foregroundStyle(JadeColor.textTertiary)
             }
         }
     }
 }
 
+// MARK: - 6. Appearance
+
+private struct AppearancePage: View {
+    @ObservedObject var viewModel: SettingsViewModel
+
+    @AppStorage("accessibility.reduceMotion") private var reduceMotion = false
+
+    var body: some View {
+        SettingsScrollPage {
+            SettingsHeader(page: .appearance, subtitle: "management.appearance.subtitle")
+
+            SettingsSection("management.appearance.mode") {
+                Picker("", selection: appearanceBinding) {
+                    ForEach(AppearanceMode.allCases, id: \.self) { mode in
+                        Text(title(mode)).tag(mode)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+            }
+
+            SettingsSection("management.appearance.accent") {
+                HStack(spacing: JadeSpace.x3.value) {
+                    RoundedRectangle(cornerRadius: JadeRadius.md.value, style: .continuous)
+                        .fill(JadeColor.primary)
+                        .frame(width: 40, height: 28)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(L10n.localized("management.appearance.accent.jade"))
+                            .font(JadeFont.body)
+                            .foregroundStyle(JadeColor.textPrimary)
+                        Text(L10n.localized("management.appearance.accent.note"))
+                            .font(JadeFont.caption)
+                            .foregroundStyle(JadeColor.textTertiary)
+                    }
+                    Spacer()
+                }
+            }
+
+            SettingsSection("management.appearance.motion") {
+                JadeSwitchRow(L10n.localized("management.appearance.reduceMotion"), isOn: $reduceMotion)
+                Text(L10n.localized("management.appearance.reduceMotion.note"))
+                    .font(JadeFont.caption)
+                    .foregroundStyle(JadeColor.textTertiary)
+            }
+        }
+    }
+
+    private var appearanceBinding: Binding<AppearanceMode> {
+        Binding(get: { viewModel.appearanceMode },
+                set: { viewModel.updateAppearanceMode($0) })
+    }
+
+    private func title(_ mode: AppearanceMode) -> String {
+        switch mode {
+        case .system: return L10n.localized("management.appearance.system")
+        case .light: return L10n.localized("management.appearance.light")
+        case .dark: return L10n.localized("management.appearance.dark")
+        }
+    }
+}
+
+// MARK: - 7. Permissions
+
+private struct PermissionsPage: View {
+    @ObservedObject var viewModel: SettingsViewModel
+
+    var body: some View {
+        SettingsScrollPage {
+            SettingsHeader(page: .permissions, subtitle: "management.permissions.subtitle")
+
+            SettingsSection(nil) {
+                ForEach(Array(PermissionKind.allCases.enumerated()), id: \.element) { index, kind in
+                    if index > 0 { Divider().overlay(JadeColor.border) }
+                    permissionRow(kind)
+                }
+            }
+
+            HStack {
+                Spacer()
+                Button {
+                    Task { await viewModel.refreshPermissions() }
+                } label: {
+                    Label(L10n.localized("management.permissions.refresh"), systemImage: "arrow.clockwise")
+                }
+                .buttonStyle(.jadeGhost)
+            }
+        }
+    }
+
+    private func permissionRow(_ kind: PermissionKind) -> some View {
+        let status = viewModel.permissionStatuses[kind] ?? .unknown
+        return HStack(alignment: .top, spacing: JadeSpace.x3.value) {
+            Image(systemName: status.isAuthorized ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
+                .font(JadeFont.title3)
+                .foregroundStyle(status.isAuthorized ? JadeColor.success : JadeColor.warning)
+            VStack(alignment: .leading, spacing: JadeSpace.x1.value) {
+                Text(viewModel.permissionTitle(kind))
+                    .font(JadeFont.body)
+                    .foregroundStyle(JadeColor.textPrimary)
+                Text(viewModel.permissionDescription(kind))
+                    .font(JadeFont.caption)
+                    .foregroundStyle(JadeColor.textSecondary)
+            }
+            Spacer()
+            if status.isAuthorized {
+                Button(L10n.localized("management.permission.authorized")) {}
+                    .buttonStyle(.jadeSecondary)
+                    .disabled(true)
+            } else {
+                Button(L10n.localized("onboarding.permission.openSettings")) {
+                    viewModel.openSystemSettings(for: kind)
+                }
+                .buttonStyle(.jadeSecondary)
+            }
+        }
+    }
+}
+
+// MARK: - 8. Data
+
+private struct DataPage: View {
+    @ObservedObject var viewModel: SettingsViewModel
+
+    var body: some View {
+        SettingsScrollPage {
+            SettingsHeader(page: .data, subtitle: "management.data.subtitle")
+
+            SettingsSection("management.data.storage") {
+                HStack {
+                    Text(L10n.localized("management.data.storageUsed"))
+                        .font(JadeFont.body)
+                        .foregroundStyle(JadeColor.textPrimary)
+                    Spacer()
+                    Text(viewModel.storageUsageText)
+                        .font(JadeFont.body)
+                        .foregroundStyle(JadeColor.textSecondary)
+                }
+                Divider().overlay(JadeColor.border)
+                VStack(alignment: .leading, spacing: JadeSpace.x2.value) {
+                    Text(L10n.localized("management.clipboard.retention"))
+                        .font(JadeFont.body)
+                    Picker("", selection: retentionBinding) {
+                        ForEach(SettingsViewModel.retentionOptions, id: \.self) { retention in
+                            Text(viewModel.retentionTitle(retention)).tag(retention)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.segmented)
+                }
+            }
+
+            SettingsSection("management.data.actions") {
+                HStack(spacing: JadeSpace.x3.value) {
+                    Button(L10n.localized("management.data.openDirectory")) {
+                        viewModel.openDataDirectory()
+                    }
+                    .buttonStyle(.jadeSecondary)
+
+                    Button(L10n.localized("management.data.export")) {
+                        viewModel.exportData()
+                    }
+                    .buttonStyle(.jadeSecondary)
+                    .disabled(true)
+                    .help(L10n.localized("management.data.export.disabled"))
+
+                    Spacer()
+                }
+            }
+
+            SettingsSection("management.data.dangerZone") {
+                HStack {
+                    VStack(alignment: .leading, spacing: JadeSpace.x1.value) {
+                        Text(L10n.localized("management.data.resetAll"))
+                            .font(JadeFont.body)
+                            .foregroundStyle(JadeColor.textPrimary)
+                        Text(L10n.localized("management.data.resetAll.note"))
+                            .font(JadeFont.caption)
+                            .foregroundStyle(JadeColor.textTertiary)
+                    }
+                    Spacer()
+                    Button(L10n.localized("management.data.resetAll.button")) {
+                        viewModel.requestResetAllData()
+                    }
+                    .buttonStyle(.jadeDestructive)
+                    .disabled(viewModel.isResettingAllData)
+                }
+            }
+        }
+        .jadeConfirmationDialog(
+            "management.data.resetAll.confirm.title",
+            isPresented: $viewModel.showResetAllDataConfirmation,
+            confirmTitle: "management.data.resetAll.confirm.action",
+            cancelTitle: "settings.alert.cancel",
+            message: "management.data.resetAll.confirm.message"
+        ) {
+            Task { await viewModel.confirmResetAllData() }
+        }
+    }
+
+    private var retentionBinding: Binding<ClipboardRetention> {
+        Binding(get: { viewModel.clipboardRetention },
+                set: { viewModel.clipboardRetention = $0; Task { await viewModel.saveSettings() } })
+    }
+}
+
+// MARK: - 9. Updates
+
+private struct UpdatesPage: View {
+    @ObservedObject var viewModel: SettingsViewModel
+
+    private let about = BundleAboutInfoProvider().info
+    private let updateService: UpdateCheckServiceProtocol = WebUpdateCheckService()
+
+    var body: some View {
+        SettingsScrollPage {
+            SettingsHeader(page: .updates, subtitle: "management.updates.subtitle")
+
+            SettingsSection("management.updates.current") {
+                HStack {
+                    Text(L10n.localized("about.version", about.version, about.buildNumber))
+                        .font(JadeFont.body)
+                        .foregroundStyle(JadeColor.textPrimary)
+                    Spacer()
+                    Button(L10n.localized("about.checkUpdates")) {
+                        updateService.openDownloadPage()
+                    }
+                    .buttonStyle(.jadePrimary)
+                }
+                Divider().overlay(JadeColor.border)
+                JadeSwitchRow(L10n.localized("management.overview.autoCheckUpdates"), isOn: $viewModel.autoCheckUpdates)
+            }
+
+            SettingsSection(nil) {
+                Text(L10n.localized("management.updates.note"))
+                    .font(JadeFont.caption)
+                    .foregroundStyle(JadeColor.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+}
+
+// MARK: - 10. About
+
+private struct AboutPage: View {
+    private let about = BundleAboutInfoProvider().info
+    private let opener: ReleaseURLOpening = NSWorkspace.shared
+
+    @State private var showingPrivacyPolicy = false
+
+    var body: some View {
+        SettingsScrollPage {
+            VStack(spacing: JadeSpace.x3.value) {
+                AppIconView(size: 64, radius: .lg)
+                Text(about.appName)
+                    .font(JadeFont.title2)
+                    .foregroundStyle(JadeColor.textPrimary)
+                Text(L10n.localized("about.version", about.version, about.buildNumber))
+                    .font(JadeFont.callout)
+                    .foregroundStyle(JadeColor.textSecondary)
+                Text(about.copyright)
+                    .font(JadeFont.caption)
+                    .foregroundStyle(JadeColor.textTertiary)
+            }
+            .frame(maxWidth: .infinity)
+
+            SettingsSection("about.links.section") {
+                HStack(spacing: JadeSpace.x3.value) {
+                    Button(L10n.localized("about.homepage")) { opener.open(about.homepageURL) }
+                        .buttonStyle(.jadeSecondary)
+                    Button(L10n.localized("about.privacyPolicy")) { showingPrivacyPolicy = true }
+                        .buttonStyle(.jadeSecondary)
+                    Button(L10n.localized("about.thirdPartyLicenses")) { opener.open(about.thirdPartyLicensesURL) }
+                        .buttonStyle(.jadeSecondary)
+                    Spacer()
+                }
+            }
+
+            SettingsSection("management.about.system") {
+                aboutRow(L10n.localized("management.about.macos"), value: ProcessInfo.processInfo.operatingSystemVersionString)
+                Divider().overlay(JadeColor.border)
+                Text(L10n.localized("management.about.acknowledgements"))
+                    .font(JadeFont.caption)
+                    .foregroundStyle(JadeColor.textTertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .sheet(isPresented: $showingPrivacyPolicy) {
+            PrivacyPolicySheet(info: about)
+        }
+    }
+
+    private func aboutRow(_ label: String, value: String) -> some View {
+        HStack {
+            Text(label)
+                .font(JadeFont.body)
+                .foregroundStyle(JadeColor.textPrimary)
+            Spacer()
+            Text(value)
+                .font(JadeFont.callout)
+                .foregroundStyle(JadeColor.textSecondary)
+        }
+    }
+}
+
+// MARK: - 11. Feedback
+
+private struct FeedbackPage: View {
+    private let about = BundleAboutInfoProvider().info
+    private let feedbackService: FeedbackServiceProtocol = FeedbackEmailService()
+    private let opener: ReleaseURLOpening = NSWorkspace.shared
+
+    @State private var email = ""
+    @State private var category = FeedbackCategory.bug
+    @State private var details = ""
+    @State private var includeSystemInfo = true
+    @State private var errorMessage: String?
+
+    private enum FeedbackCategory: String, CaseIterable, Identifiable {
+        case bug, suggestion, other
+        var id: String { rawValue }
+        var title: String {
+            switch self {
+            case .bug: return L10n.localized("management.feedback.category.bug")
+            case .suggestion: return L10n.localized("management.feedback.category.suggestion")
+            case .other: return L10n.localized("management.feedback.category.other")
+            }
+        }
+    }
+
+    var body: some View {
+        SettingsScrollPage {
+            SettingsHeader(page: .feedback, subtitle: "management.feedback.subtitle")
+
+            SettingsSection(nil) {
+                fieldLabel("management.feedback.email")
+                JadeTextField("management.feedback.email.placeholder", text: $email)
+
+                fieldLabel("management.feedback.category")
+                Picker("", selection: $category) {
+                    ForEach(FeedbackCategory.allCases) { c in Text(c.title).tag(c) }
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+
+                fieldLabel("management.feedback.details")
+                TextEditor(text: $details)
+                    .font(JadeFont.body)
+                    .frame(minHeight: 120)
+                    .padding(JadeSpace.x1.value)
+                    .background(JadeColor.surface1)
+                    .jadeRadius(.md)
+                    .jadeRadiusBorder(.md)
+
+                JadeSwitchRow(L10n.localized("management.feedback.includeSystemInfo"), isOn: $includeSystemInfo)
+            }
+
+            HStack {
+                Spacer()
+                Button(L10n.localized("management.feedback.send")) { send() }
+                    .buttonStyle(.jadePrimary)
+            }
+        }
+        .alert(L10n.localized("about.feedback.error.title"), isPresented: Binding(
+            get: { errorMessage != nil },
+            set: { if !$0 { errorMessage = nil } }
+        )) {
+            Button(L10n.localized("settings.alert.ok")) { errorMessage = nil }
+        } message: {
+            Text(errorMessage ?? "")
+        }
+    }
+
+    private func fieldLabel(_ key: String) -> some View {
+        Text(L10n.localized(key))
+            .font(JadeFont.subhead)
+            .foregroundStyle(JadeColor.textSecondary)
+    }
+
+    private func send() {
+        do {
+            let body: String
+            if email.trimmingCharacters(in: .whitespaces).isEmpty {
+                body = details
+            } else {
+                body = "\(L10n.localized("management.feedback.email")): \(email)\n\n\(details)"
+            }
+            let context = FeedbackContext(
+                appVersion: about.version,
+                buildNumber: about.buildNumber,
+                macOSVersion: includeSystemInfo ? ProcessInfo.processInfo.operatingSystemVersionString : "(omitted)",
+                errorSummary: category.title,
+                userDescription: body
+            )
+            let url = try feedbackService.makeFeedbackEmail(context: context)
+            opener.open(url)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+}
+
+// MARK: - Blacklist management (preserved from prior SettingsView)
+
 struct BlacklistManagementSection: View {
     @ObservedObject var viewModel: SettingsViewModel
 
     var body: some View {
-        section(L10n.localized("management.blacklist.title")) {
-            VStack(alignment: .leading, spacing: 10) {
+        SettingsSection("management.blacklist.title") {
+            VStack(alignment: .leading, spacing: JadeSpace.x3.value) {
                 HStack {
                     Picker(L10n.localized("management.blacklist.source"), selection: $viewModel.newBlacklistSourceID) {
                         ForEach(SettingsViewModel.sourceOptions, id: \.id) { option in
@@ -322,21 +889,22 @@ struct BlacklistManagementSection: View {
                     Button(L10n.localized("management.blacklist.add")) {
                         Task { await viewModel.addBlacklistItem() }
                     }
+                    .buttonStyle(.jadeSecondary)
                 }
 
                 if viewModel.blacklistItems.isEmpty {
                     Text(L10n.localized("management.blacklist.empty"))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(JadeFont.caption)
+                        .foregroundStyle(JadeColor.textSecondary)
                 } else {
                     ForEach(viewModel.blacklistItems) { item in
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(item.title)
-                                    .font(.subheadline)
+                                    .font(JadeFont.body)
                                 Text("\(item.sourceID.rawValue) · \(item.resultID.rawValue) · \(item.resultType)")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                                    .font(JadeFont.caption)
+                                    .foregroundStyle(JadeColor.textSecondary)
                             }
                             Spacer()
                             Button(role: .destructive) {
@@ -344,8 +912,9 @@ struct BlacklistManagementSection: View {
                             } label: {
                                 Label(L10n.localized("management.blacklist.remove"), systemImage: "trash")
                             }
+                            .buttonStyle(.jadeGhost)
                         }
-                        Divider()
+                        Divider().overlay(JadeColor.border)
                     }
                 }
             }
@@ -353,330 +922,193 @@ struct BlacklistManagementSection: View {
     }
 }
 
-struct PermissionsManagementPage: View {
-    @ObservedObject var viewModel: SettingsViewModel
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                pageHeader(
-                    title: L10n.localized("management.permissions.title"),
-                    subtitle: L10n.localized("management.permissions.subtitle"),
-                    icon: "lock.shield"
-                )
-
-                ForEach(PermissionKind.allCases, id: \.self) { kind in
-                    let status = viewModel.permissionStatuses[kind] ?? .unknown
-                    section(viewModel.permissionTitle(kind)) {
-                        HStack(alignment: .top, spacing: 14) {
-                            Image(systemName: status.isAuthorized ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
-                                .font(.title2)
-                                .foregroundColor(status.isAuthorized ? .green : .orange)
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text(viewModel.statusTitle(status))
-                                    .font(.headline)
-                                Text(viewModel.permissionDescription(kind))
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                            Spacer()
-                            Button(L10n.localized("onboarding.permission.openSettings")) {
-                                viewModel.openSystemSettings(for: kind)
-                            }
-                        }
-                    }
-                }
-
-                HStack {
-                    Spacer()
-                    Button {
-                        Task { await viewModel.refreshPermissions() }
-                    } label: {
-                        Label(L10n.localized("management.permissions.refresh"), systemImage: "arrow.clockwise")
-                    }
-                }
-            }
-            .padding(24)
-        }
-    }
-}
-
-struct AboutManagementPage: View {
-    private let aboutProvider: AboutInfoProviderProtocol
-    private let feedbackService: FeedbackServiceProtocol
-    private let updateService: UpdateCheckServiceProtocol
-    private let opener: ReleaseURLOpening
-
-    @State private var showingPrivacyPolicy = false
-    @State private var showingFeedbackSheet = false
-    @State private var feedbackSummary = ""
-    @State private var feedbackDetails = ""
-    @State private var feedbackError: String?
-
-    init(
-        aboutProvider: AboutInfoProviderProtocol = BundleAboutInfoProvider(),
-        feedbackService: FeedbackServiceProtocol = FeedbackEmailService(),
-        updateService: UpdateCheckServiceProtocol = WebUpdateCheckService(),
-        opener: ReleaseURLOpening = NSWorkspace.shared
-    ) {
-        self.aboutProvider = aboutProvider
-        self.feedbackService = feedbackService
-        self.updateService = updateService
-        self.opener = opener
-    }
-
-    var body: some View {
-        let info = aboutProvider.info
-
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                pageHeader(
-                    title: L10n.localized("about.title"),
-                    subtitle: L10n.localized("about.subtitle"),
-                    icon: "info.circle"
-                )
-
-                section(L10n.localized("about.product.section")) {
-                    HStack(alignment: .center, spacing: 16) {
-                        Image(nsImage: NSApp.applicationIconImage)
-                            .resizable()
-                            .frame(width: 64, height: 64)
-                            .cornerRadius(14)
-                        VStack(alignment: .leading, spacing: 5) {
-                            Text(info.appName)
-                                .font(.title2.weight(.semibold))
-                            Text(L10n.localized("about.version", info.version, info.buildNumber))
-                                .foregroundColor(.secondary)
-                            Text(L10n.localized("about.description"))
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-
-                section(L10n.localized("about.links.section")) {
-                    aboutLinkRow(title: L10n.localized("about.homepage"), url: info.homepageURL)
-                    aboutButtonRow(title: L10n.localized("about.privacyPolicy"), systemImage: "hand.raised") {
-                        showingPrivacyPolicy = true
-                    }
-                    aboutButtonRow(title: L10n.localized("about.checkUpdates"), systemImage: "arrow.triangle.2.circlepath") {
-                        updateService.openDownloadPage()
-                    }
-                    aboutButtonRow(title: L10n.localized("about.feedback"), systemImage: "envelope") {
-                        showingFeedbackSheet = true
-                    }
-                    aboutLinkRow(title: L10n.localized("about.thirdPartyLicenses"), url: info.thirdPartyLicensesURL)
-                }
-
-                section(L10n.localized("about.release.section")) {
-                    bullet(L10n.localized("about.release.privacy"))
-                    bullet(L10n.localized("about.release.update"))
-                    bullet(L10n.localized("about.release.feedback"))
-                }
-
-                section(L10n.localized("about.copyright.section")) {
-                    Text(info.copyright)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-            }
-            .padding(24)
-        }
-        .sheet(isPresented: $showingPrivacyPolicy) {
-            PrivacyPolicySheet(info: info)
-        }
-        .sheet(isPresented: $showingFeedbackSheet) {
-            FeedbackSheet(
-                info: info,
-                feedbackService: feedbackService,
-                opener: opener,
-                summary: $feedbackSummary,
-                details: $feedbackDetails,
-                errorMessage: $feedbackError
-            )
-        }
-        .alert(L10n.localized("about.feedback.error.title"), isPresented: Binding(
-            get: { feedbackError != nil },
-            set: { if !$0 { feedbackError = nil } }
-        )) {
-            Button(L10n.localized("settings.alert.ok")) { feedbackError = nil }
-        } message: {
-            Text(feedbackError ?? "")
-        }
-    }
-
-    private func aboutLinkRow(title: String, url: URL) -> some View {
-        aboutButtonRow(title: title, systemImage: "arrow.up.right.square") {
-            opener.open(url)
-        }
-    }
-
-    private func aboutButtonRow(title: String, systemImage: String, action: @escaping () -> Void) -> some View {
-        VStack(spacing: 10) {
-            Button(action: action) {
-                HStack {
-                    Label(title, systemImage: systemImage)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(.secondary)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            Divider()
-        }
-    }
-
-    private func bullet(_ text: String) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            Text("•")
-            Text(text)
-        }
-        .font(.caption)
-        .foregroundColor(.secondary)
-    }
-}
+// MARK: - Privacy policy sheet (preserved)
 
 struct PrivacyPolicySheet: View {
     let info: AboutInfo
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: JadeSpace.x4.value) {
             HStack {
                 Text(L10n.localized("privacy.title"))
-                    .font(.title2.weight(.semibold))
+                    .font(JadeFont.title2)
                 Spacer()
                 Button(L10n.localized("settings.alert.ok")) { dismiss() }
+                    .buttonStyle(.jadeSecondary)
             }
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: JadeSpace.x3.value) {
                     privacySection("privacy.local.title", bodyKey: "privacy.local.body")
                     privacySection("privacy.clipboard.title", bodyKey: "privacy.clipboard.body")
                     privacySection("privacy.screenshot.title", bodyKey: "privacy.screenshot.body")
                     privacySection("privacy.control.title", bodyKey: "privacy.control.body")
                     privacySection("privacy.feedback.title", bodyKey: "privacy.feedback.body")
                     Text(L10n.localized("privacy.contact", info.feedbackEmail))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .font(JadeFont.caption)
+                        .foregroundStyle(JadeColor.textSecondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .padding(24)
+        .padding(JadeSpace.x6.value)
         .frame(width: 640, height: 560)
+        .background(JadeColor.surface1)
     }
 
     private func privacySection(_ titleKey: String, bodyKey: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: JadeSpace.x1.value) {
             Text(L10n.localized(titleKey))
-                .font(.headline)
+                .font(JadeFont.title3)
             Text(L10n.localized(bodyKey))
-                .foregroundColor(.secondary)
+                .font(JadeFont.body)
+                .foregroundStyle(JadeColor.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
 }
 
-struct FeedbackSheet: View {
-    let info: AboutInfo
-    let feedbackService: FeedbackServiceProtocol
-    let opener: ReleaseURLOpening
-    @Binding var summary: String
-    @Binding var details: String
-    @Binding var errorMessage: String?
-    @Environment(\.dismiss) private var dismiss
+// MARK: - Shared layout primitives
+
+/// Standard scrollable settings page container: 24pt padding, top-leading aligned.
+private struct SettingsScrollPage<Content: View>: View {
+    @ViewBuilder let content: Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(L10n.localized("about.feedback.sheet.title"))
-                .font(.title2.weight(.semibold))
-            Text(L10n.localized("about.feedback.sheet.scope"))
-                .foregroundColor(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text(L10n.localized("about.feedback.summary"))
-                TextField(L10n.localized("about.feedback.summary.placeholder"), text: $summary)
-                Text(L10n.localized("about.feedback.details"))
-                TextEditor(text: $details)
-                    .frame(minHeight: 110)
-                    .border(Color.secondary.opacity(0.25))
+        ScrollView {
+            VStack(alignment: .leading, spacing: JadeSpace.x6.value) {
+                content
             }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(L10n.localized("about.feedback.included"))
-                    .font(.headline)
-                Text("- \(L10n.localized("about.feedback.included.version", info.version, info.buildNumber))")
-                Text("- \(L10n.localized("about.feedback.included.macos", ProcessInfo.processInfo.operatingSystemVersionString))")
-                Text("- \(L10n.localized("about.feedback.included.summary"))")
-                Text("- \(L10n.localized("about.feedback.included.userText"))")
-                Text(L10n.localized("about.feedback.excluded"))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            .font(.caption)
-
-            HStack {
-                Spacer()
-                Button(L10n.localized("about.feedback.cancel"), role: .cancel) { dismiss() }
-                Button(L10n.localized("about.feedback.openMail")) { openMail() }
-                    .keyboardShortcut(.defaultAction)
-            }
-        }
-        .padding(24)
-        .frame(width: 560)
-    }
-
-    private func openMail() {
-        do {
-            let context = FeedbackContext(
-                appVersion: info.version,
-                buildNumber: info.buildNumber,
-                macOSVersion: ProcessInfo.processInfo.operatingSystemVersionString,
-                errorSummary: summary,
-                userDescription: details
-            )
-            let url = try feedbackService.makeFeedbackEmail(context: context)
-            opener.open(url)
-            dismiss()
-        } catch {
-            errorMessage = error.localizedDescription
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(JadeSpace.x6.value)
         }
     }
 }
 
-@ViewBuilder
-private func pageHeader(title: String, subtitle: String, icon: String) -> some View {
-    HStack(spacing: 14) {
-        Image(systemName: icon)
-            .font(.system(size: 28, weight: .semibold))
-            .foregroundColor(.accentColor)
-            .frame(width: 44, height: 44)
-            .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.system(size: 26, weight: .semibold))
-            Text(subtitle)
-                .font(.subheadline)
-                .foregroundColor(.secondary)
+/// Page title header (icon chip + title + subtitle).
+private struct SettingsHeader: View {
+    let page: ManagementCenterPage
+    let subtitle: String
+
+    var body: some View {
+        HStack(spacing: JadeSpace.x3.value) {
+            Image(systemName: page.iconName)
+                .font(.system(size: 24, weight: .semibold))
+                .foregroundStyle(JadeColor.primary)
+                .frame(width: 44, height: 44)
+                .background(JadeColor.primaryFill)
+                .jadeRadius(.md)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(page.title)
+                    .font(JadeFont.title2)
+                    .foregroundStyle(JadeColor.textPrimary)
+                Text(L10n.localized(subtitle))
+                    .font(JadeFont.callout)
+                    .foregroundStyle(JadeColor.textSecondary)
+            }
+            Spacer()
         }
-        Spacer()
     }
 }
 
-@ViewBuilder
-private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
-    VStack(alignment: .leading, spacing: 12) {
-        Text(title)
-            .font(.headline)
-        VStack(alignment: .leading, spacing: 12) {
-            content()
+/// A titled card section: headline title + surface2 rounded card (radius-lg, padding 16).
+struct SettingsSection<Content: View>: View {
+    private let title: String?
+    @ViewBuilder private let content: Content
+
+    init(_ title: String?, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: JadeSpace.x3.value) {
+            if let title {
+                Text(L10n.localized(title))
+                    .font(JadeFont.title3)
+                    .foregroundStyle(JadeColor.textPrimary)
+            }
+            VStack(alignment: .leading, spacing: JadeSpace.x3.value) {
+                content
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(JadeSpace.x4.value)
+            .background(JadeColor.surface2)
+            .jadeRadius(.lg)
         }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(NSColor.controlBackgroundColor), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+}
+
+/// A labeled switch row (Jade tinted toggle), optional icon + subtitle.
+private struct JadeSwitchRow: View {
+    private let icon: String?
+    private let title: String
+    private let subtitle: String?
+    @Binding private var isOn: Bool
+
+    init(_ title: String, isOn: Binding<Bool>) {
+        self.icon = nil
+        self.title = title
+        self.subtitle = nil
+        self._isOn = isOn
+    }
+
+    init(icon: String?, title: String, subtitle: String?, isOn: Binding<Bool>) {
+        self.icon = icon
+        self.title = title
+        self.subtitle = subtitle
+        self._isOn = isOn
+    }
+
+    var body: some View {
+        Toggle(isOn: $isOn) {
+            HStack(spacing: JadeSpace.x2.value) {
+                if let icon {
+                    Image(systemName: icon)
+                        .font(JadeFont.body)
+                        .foregroundStyle(JadeColor.textSecondary)
+                        .frame(width: 20)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(JadeFont.body)
+                        .foregroundStyle(JadeColor.textPrimary)
+                    if let subtitle {
+                        Text(subtitle)
+                            .font(JadeFont.caption)
+                            .foregroundStyle(JadeColor.textSecondary)
+                    }
+                }
+            }
+        }
+        .toggleStyle(.switch)
+        .tint(JadeColor.primary)
+    }
+}
+
+/// App icon glyph: renders the bundle icon, falling back to a jade `bird` symbol.
+private struct AppIconView: View {
+    let size: CGFloat
+    let radius: JadeRadius
+
+    var body: some View {
+        Group {
+            if let icon = NSApp.applicationIconImage, icon.size.width > 0 {
+                Image(nsImage: icon)
+                    .resizable()
+                    .interpolation(.high)
+            } else {
+                Image(systemName: "bird")
+                    .resizable()
+                    .scaledToFit()
+                    .padding(size * 0.18)
+                    .foregroundStyle(JadeColor.primary)
+                    .background(JadeColor.primaryFill)
+            }
+        }
+        .frame(width: size, height: size)
+        .jadeRadius(radius)
     }
 }
 
