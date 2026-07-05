@@ -27,14 +27,18 @@ final class ClipboardHistoryWindowController: NSWindowController, NSWindowDelega
 
         if window == nil {
             let viewModel = container.makeClipboardListViewModel()
-            let view = ClipboardListView(viewModel: viewModel)
-                .tint(JadeColor.primary) // 全局主色注入（Design Token T-004）
             let window = NSWindow(
                 contentRect: NSRect(x: 0, y: 0, width: 880, height: 600),
                 styleMask: [.titled, .closable, .miniaturizable, .resizable],
                 backing: .buffered,
                 defer: false
             )
+            let view = ClipboardHistoryView(
+                viewModel: viewModel,
+                onCopyAndClose: { [weak window] in window?.close() },
+                onOpenSettings: { [weak self] in self?.container.settingsWindowController.show(route: .settings) }
+            )
+                .tint(JadeColor.primary) // 全局主色注入（Design Token T-004）
             window.title = L10n.localized("management.page.clipboard")
             window.contentMinSize = NSSize(width: 880, height: 600)
             window.center()

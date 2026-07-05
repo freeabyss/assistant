@@ -3,93 +3,134 @@ import Combine
 import Foundation
 import os.log
 
-/// ViewModel for the Assistant MVP clipboard history page.
+/// ViewModel for the Qingniao clipboard history window (P-02).
 ///
 /// This implementation uses the Core Data + file-resource + in-memory index chain
-/// introduced by US-002~US-012. It intentionally does not depend on the legacy
-/// GRDB/FTS5 ClipboardListViewModel path.
+/// introduced by US-002~US-012 and reworked in v1.2 (T-005). It intentionally does
+/// not depend on the legacy GRDB/FTS5 path.
 @MainActor
 final class ClipboardListViewModel: ObservableObject {
-    enum Filter: String, CaseIterable, Identifiable {
+
+    /// P-02 sidebar selection. A single selection drives the visible list:
+    /// content-type segment, special segment (pinned / favorite) and time segment
+    /// (today / yesterday / earlier).
+    enum SidebarSelection: String, CaseIterable, Identifiable, Hashable {
+        // Type segment
         case all
         case text
         case image
+        case richText
         case file
+        // Special segment
+        case pinned
+        case favorite
+        // Time segment
+        case today
+        case yesterday
+        case earlier
 
         var id: String { rawValue }
 
+        /// Content type passed to the index query (nil = no type constraint).
         var contentType: ClipboardContentType? {
             switch self {
-            case .all:
-                return nil
-            case .text:
-                return nil
-            case .image:
-                return .image
-            case .file:
-                return .file
+            case .text: return .text
+            case .richText: return .richText
+            case .image: return .image
+            case .file: return .file
+            default: return nil
             }
         }
 
         var title: String {
             switch self {
-            case .all:
-                return L10n.localized("clipboard.filter.all")
-            case .text:
-                return L10n.localized("clipboard.filter.text")
-            case .image:
-                return L10n.localized("clipboard.filter.image")
-            case .file:
-                return L10n.localized("clipboard.filter.file")
+            case .all: return L10n.localized("clipboard.filter.all")
+            case .text: return L10n.localized("clipboard.filter.text")
+            case .image: return L10n.localized("clipboard.filter.image")
+            case .richText: return L10n.localized("clipboard.filter.rtf")
+            case .file: return L10n.localized("clipboard.filter.file")
+            case .pinned: return L10n.localized("clipboard.filter.pinned")
+            case .favorite: return L10n.localized("clipboard.filter.favorite")
+            case .today: return L10n.localized("clipboard.filter.today")
+            case .yesterday: return L10n.localized("clipboard.filter.yesterday")
+            case .earlier: return L10n.localized("clipboard.filter.earlier")
             }
         }
 
         var iconName: String {
             switch self {
-            case .all:
-                return "tray.full"
-            case .text:
-                return "doc.text"
-            case .image:
-                return "photo"
-            case .file:
-                return "doc"
+            case .all: return "tray.full"
+            case .text: return "doc.text"
+            case .image: return "photo"
+            case .richText: return "doc.richtext"
+            case .file: return "doc"
+            case .pinned: return "pin"
+            case .favorite: return "star"
+            case .today: return "sun.max"
+            case .yesterday: return "clock.arrow.circlepath"
+            case .earlier: return "calendar"
             }
         }
 
-        func includes(_ type: ClipboardContentType?) -> Bool {
+        /// Sidebar segment grouping (for rendering + separators).
+        static let typeCases: [SidebarSelection] = [.all, .text, .image, .richText, .file]
+        static let specialCases: [SidebarSelection] = [.pinned, .favorite]
+        static let timeCases: [SidebarSelection] = [.today, .yesterday, .earlier]
+
+        /// Post-filter applied to loaded snapshots.
+        func includes(_ snapshot: ClipboardRecordSnapshot, calendar: Calendar = .current, now: Date = Date()) -> Bool {
             switch self {
             case .all:
                 return true
             case .text:
-                return type == .text || type == .richText
+                return snapshot.contentType == .text
+            case .richText:
+                return snapshot.contentType == .richText
             case .image:
-                return type == .image
+                return snapshot.contentType == .image
             case .file:
-                return type == .file
+                return snapshot.contentType == .file
+            case .pinned:
+                return snapshot.isPinned
+            case .favorite:
+                return snapshot.isFavorite
+            case .today:
+                return calendar.isDateInToday(snapshot.updatedAt)
+            case .yesterday:
+                return calendar.isDateInYesterday(snapshot.updatedAt)
+            case .earlier:
+                return !calendar.isDateInToday(snapshot.updatedAt) && !calendar.isDateInYesterday(snapshot.updatedAt)
             }
         }
     }
 
     @Published var query: String = ""
-    @Published var filter: Filter = .all
+    @Published var selection: SidebarSelection = .all
     @Published private(set) var items: [ClipboardRecordSnapshot] = []
     @Published private(set) var selectedIndex: Int = 0
+    /// Multi-selection set (⌘A / click). Highlight + batch delete.
+    @Published var selectedIDs: Set<UUID> = []
     @Published private(set) var storageUsage: StorageUsage?
+    @Published private(set) var retentionDays: Int?
     @Published private(set) var isLoading = false
     @Published private(set) var isClearing = false
+    @Published private(set) var clipboardEnabled = true
     @Published var showClearAllConfirmation = false
     @Published var showToast = false
     @Published var toastMessage = ""
+    /// Item to preview in the sheet (nil = no sheet).
+    @Published var previewItem: ClipboardRecordSnapshot?
 
     private let queryService: ClipboardIndexQueryServiceProtocol
     private let repository: ClipboardRepositoryProtocol
     private let historyService: ClipboardHistoryServiceProtocol
     private let actionExecutor: SearchActionExecutorProtocol
     private let resourceStore: FileResourceStoreProtocol
+    private let settingsService: SettingsServiceProtocol
     private let logger = Logger.ui
     private var cancellables = Set<AnyCancellable>()
     private var savedObserver: NSObjectProtocol?
+    private var settingsObserver: NSObjectProtocol?
 
     var selectedItem: ClipboardRecordSnapshot? {
         guard items.indices.contains(selectedIndex) else { return nil }
@@ -110,7 +151,8 @@ final class ClipboardListViewModel: ObservableObject {
         repository: ClipboardRepositoryProtocol? = nil,
         historyService: ClipboardHistoryServiceProtocol? = nil,
         actionExecutor: SearchActionExecutorProtocol? = nil,
-        resourceStore: FileResourceStoreProtocol? = nil
+        resourceStore: FileResourceStoreProtocol? = nil,
+        settingsService: SettingsServiceProtocol? = nil
     ) {
         let defaultIndex = InMemorySearchIndex()
         let defaultResourceStore = resourceStore ?? FileResourceStore(fileSystem: PersistenceController.shared.fileSystem)
@@ -120,6 +162,7 @@ final class ClipboardListViewModel: ObservableObject {
         self.resourceStore = defaultResourceStore
         self.queryService = queryService ?? ClipboardIndexQueryService(index: defaultIndex, repository: defaultRepository)
         self.historyService = historyService ?? ClipboardHistoryService(repository: defaultRepository)
+        self.settingsService = settingsService ?? SettingsService(persistence: .shared)
         self.actionExecutor = actionExecutor ?? SearchPanelActionExecutor(
             appExecutor: NoopSearchActionExecutor(),
             commandExecutor: NoopSearchActionExecutor(),
@@ -142,11 +185,15 @@ final class ClipboardListViewModel: ObservableObject {
         setupDebounce()
         setupFilterSubscription()
         setupNewContentObserver()
+        setupSettingsObserver()
     }
 
     deinit {
         if let savedObserver {
             NotificationCenter.default.removeObserver(savedObserver)
+        }
+        if let settingsObserver {
+            NotificationCenter.default.removeObserver(settingsObserver)
         }
     }
 
@@ -154,21 +201,25 @@ final class ClipboardListViewModel: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
+        await refreshRuntimeSettings()
+
         let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        // Content-type selections constrain the index query; special/time
+        // selections load all and are post-filtered on the loaded snapshots.
+        let indexFilter = selection.contentType
         let indexedItems: [SearchIndexItem]
         if trimmedQuery.isEmpty {
-            indexedItems = queryService.historyIndex(filter: filter.contentType, limit: nil, offset: 0)
+            indexedItems = queryService.historyIndex(filter: indexFilter, limit: nil, offset: 0)
         } else {
-            indexedItems = queryService.searchIndex(query: trimmedQuery, filter: filter.contentType, limit: nil)
+            indexedItems = queryService.searchIndex(query: trimmedQuery, filter: indexFilter, limit: nil)
         }
 
-        let visibleIndexItems = indexedItems.filter { filter.includes($0.contentType) }
         var loaded: [ClipboardRecordSnapshot] = []
-        loaded.reserveCapacity(visibleIndexItems.count)
+        loaded.reserveCapacity(indexedItems.count)
 
-        for item in visibleIndexItems {
+        for item in indexedItems {
             do {
-                if let snapshot = try await queryService.loadDetails(for: item) {
+                if let snapshot = try await queryService.loadDetails(for: item), selection.includes(snapshot) {
                     loaded.append(snapshot)
                 }
             } catch {
@@ -177,6 +228,8 @@ final class ClipboardListViewModel: ObservableObject {
         }
 
         items = loaded
+        // Preserve selection where possible.
+        selectedIDs = selectedIDs.intersection(Set(loaded.map(\.id)))
         selectedIndex = items.isEmpty ? 0 : min(selectedIndex, items.count - 1)
         await refreshStorageUsage()
     }
@@ -185,20 +238,37 @@ final class ClipboardListViewModel: ObservableObject {
         await load()
     }
 
+    // MARK: - Selection
+
     func moveSelectionUp() {
         guard !items.isEmpty else { return }
         selectedIndex = selectedIndex > 0 ? selectedIndex - 1 : items.count - 1
+        syncCursorSelection()
     }
 
     func moveSelectionDown() {
         guard !items.isEmpty else { return }
         selectedIndex = selectedIndex < items.count - 1 ? selectedIndex + 1 : 0
+        syncCursorSelection()
     }
 
     func select(_ item: ClipboardRecordSnapshot) {
         guard let index = items.firstIndex(where: { $0.id == item.id }) else { return }
         selectedIndex = index
+        syncCursorSelection()
     }
+
+    func selectAll() {
+        selectedIDs = Set(items.map(\.id))
+    }
+
+    private func syncCursorSelection() {
+        if let selectedItem {
+            selectedIDs = [selectedItem.id]
+        }
+    }
+
+    // MARK: - Actions
 
     func copySelectedToPasteboard() {
         guard let selectedItem else { return }
@@ -225,16 +295,49 @@ final class ClipboardListViewModel: ObservableObject {
         }
     }
 
+    func toggleFavorite(_ item: ClipboardRecordSnapshot) async {
+        do {
+            _ = try await repository.toggleFavorite(id: item.id)
+            await load()
+        } catch {
+            logger.error("Failed to toggle clipboard favorite: \(error.localizedDescription, privacy: .public)")
+            showToast(message: error.localizedDescription)
+        }
+    }
+
     func delete(_ item: ClipboardRecordSnapshot) async {
         do {
             try await repository.delete(id: item.id)
             items.removeAll { $0.id == item.id }
+            selectedIDs.remove(item.id)
             selectedIndex = items.isEmpty ? 0 : min(selectedIndex, items.count - 1)
             await refreshStorageUsage()
         } catch {
             logger.error("Failed to delete clipboard record: \(error.localizedDescription, privacy: .public)")
             showToast(message: error.localizedDescription)
         }
+    }
+
+    /// Deletes the current multi-selection, or the cursor item if nothing is selected.
+    func deleteSelected() async {
+        let targets: [UUID]
+        if selectedIDs.isEmpty {
+            targets = selectedItem.map { [$0.id] } ?? []
+        } else {
+            targets = Array(selectedIDs)
+        }
+        guard !targets.isEmpty else { return }
+        for id in targets {
+            do {
+                try await repository.delete(id: id)
+            } catch {
+                logger.error("Failed to delete clipboard record: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+        items.removeAll { targets.contains($0.id) }
+        selectedIDs.subtract(targets)
+        selectedIndex = items.isEmpty ? 0 : min(selectedIndex, items.count - 1)
+        await refreshStorageUsage()
     }
 
     func clearAllConfirmed() async {
@@ -244,11 +347,25 @@ final class ClipboardListViewModel: ObservableObject {
         do {
             try await historyService.clearAll(confirmed: true)
             items = []
+            selectedIDs = []
             selectedIndex = 0
             await refreshStorageUsage()
             showToast(message: L10n.localized("clipboard.clearAll.success"))
         } catch {
             logger.error("Failed to clear clipboard history: \(error.localizedDescription, privacy: .public)")
+            showToast(message: error.localizedDescription)
+        }
+    }
+
+    /// Re-enables clipboard recording from the disabled empty state.
+    func enableClipboard() async {
+        do {
+            try await settingsService.set(true, for: .clipboardEnabled)
+            clipboardEnabled = true
+            NotificationCenter.default.post(name: .settingsDidChange, object: nil)
+            await load()
+        } catch {
+            logger.error("Failed to enable clipboard recording: \(error.localizedDescription, privacy: .public)")
             showToast(message: error.localizedDescription)
         }
     }
@@ -263,12 +380,23 @@ final class ClipboardListViewModel: ObservableObject {
         return try? await resourceStore.read(relativePath: original.relativePath)
     }
 
+    func richTextData(for item: ClipboardRecordSnapshot) async -> Data? {
+        guard let rtf = item.resources.first(where: { $0.type == .richTextRTF && !$0.isMissing }) else { return nil }
+        return try? await resourceStore.read(relativePath: rtf.relativePath)
+    }
+
     private func refreshStorageUsage() async {
         do {
             storageUsage = try await repository.storageUsage()
         } catch {
             logger.error("Failed to refresh clipboard storage usage: \(error.localizedDescription, privacy: .public)")
         }
+    }
+
+    private func refreshRuntimeSettings() async {
+        clipboardEnabled = (try? await settingsService.value(for: .clipboardEnabled, as: Bool.self)) ?? true
+        let retentionRaw = (try? await settingsService.stringValue(for: .clipboardRetention)) ?? "30d"
+        retentionDays = ClipboardRetention(rawValue: retentionRaw)?.days
     }
 
     private func setupDebounce() {
@@ -282,7 +410,7 @@ final class ClipboardListViewModel: ObservableObject {
     }
 
     private func setupFilterSubscription() {
-        $filter
+        $selection
             .dropFirst()
             .removeDuplicates()
             .sink { [weak self] _ in
@@ -298,6 +426,16 @@ final class ClipboardListViewModel: ObservableObject {
             queue: .main
         ) { [weak self] _ in
             Task { await self?.load() }
+        }
+    }
+
+    private func setupSettingsObserver() {
+        settingsObserver = NotificationCenter.default.addObserver(
+            forName: .settingsDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { await self?.refreshRuntimeSettings() }
         }
     }
 

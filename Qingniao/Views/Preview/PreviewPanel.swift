@@ -2,73 +2,90 @@ import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
 
-/// Content preview panel shown as a sheet when a clipboard item is tapped.
-/// Supports text selection, RTF rendering, image zoom, and file info display.
+/// Content preview panel shown as a sheet when a clipboard item is opened
+/// (space / ⌘Y / eye action). Backed by `ClipboardRecordSnapshot` (Core Data
+/// chain); image / RTF payloads are loaded lazily via async providers.
+///
+/// Supports text selection, RTF rendering, image zoom (0.5–5x magnification)
+/// and file info display. Delete / copy actions use Jade button styling.
 struct PreviewPanel: View {
-    let item: ClipboardItem
+    let item: ClipboardRecordSnapshot
+    var imageProvider: (ClipboardRecordSnapshot) async -> Data?
+    var richTextProvider: (ClipboardRecordSnapshot) async -> Data?
     var onCopy: () -> Void
     var onDelete: () -> Void
 
     @Environment(\.dismiss) private var dismiss
     @State private var imageScale: CGFloat = 1.0
+    @State private var image: NSImage?
+    @State private var rtfAttributed: NSAttributedString?
 
     var body: some View {
         VStack(spacing: 0) {
-            // Header
             headerBar
 
             Divider()
 
-            // Content area (scrollable)
             ScrollView {
                 contentArea
-                    .padding(16)
+                    .padding(JadeSpace.x4.value)
             }
 
             Divider()
 
-            // Action bar
             actionBar
         }
         .frame(minWidth: 450, minHeight: 400)
-        .background(Color(NSColor.windowBackgroundColor))
+        .background(JadeColor.surface1)
         // ESC to close: hidden button with .cancelAction keyboard shortcut (macOS 13+)
         .overlay(
             Button(action: { dismiss() }) { EmptyView() }
                 .keyboardShortcut(.cancelAction)
                 .hidden()
         )
+        .task(id: item.id) {
+            if item.contentType == .image {
+                if let data = await imageProvider(item) { image = NSImage(data: data) }
+            } else if item.contentType == .richText {
+                if let data = await richTextProvider(item) {
+                    rtfAttributed = try? NSAttributedString(
+                        data: data,
+                        options: [.documentType: NSAttributedString.DocumentType.rtf],
+                        documentAttributes: nil
+                    )
+                }
+            }
+        }
     }
 
     // MARK: - Header
 
     private var headerBar: some View {
         HStack {
-            // Type icon + label
-            Image(systemName: item.contentType.iconName)
-                .font(.system(size: 14))
-                .foregroundColor(typeColor)
+            Image(systemName: iconName)
+                .font(JadeFont.body)
+                .foregroundStyle(typeColor)
 
-            Text(item.contentType.displayName)
-                .font(.system(size: 13, weight: .semibold))
+            Text(typeLabel)
+                .font(JadeFont.body)
+                .fontWeight(.semibold)
+                .foregroundStyle(JadeColor.textPrimary)
 
             Spacer()
 
-            // Relative time
-            Text(relativeTime)
-                .font(.system(size: 12))
-                .foregroundColor(.secondary)
+            Text(L10n.relativeTime(from: item.updatedAt))
+                .font(JadeFont.callout)
+                .foregroundStyle(JadeColor.textSecondary)
 
-            // Close button
             Button(action: { dismiss() }) {
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 16))
-                    .foregroundColor(.secondary)
+                    .foregroundStyle(JadeColor.textSecondary)
             }
             .buttonStyle(.plain)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.horizontal, JadeSpace.x4.value)
+        .padding(.vertical, JadeSpace.x3.value)
     }
 
     // MARK: - Content Area
@@ -78,7 +95,7 @@ struct PreviewPanel: View {
         switch item.contentType {
         case .text:
             textPreview
-        case .rtf:
+        case .richText:
             rtfPreview
         case .image:
             imagePreview
@@ -87,69 +104,48 @@ struct PreviewPanel: View {
         }
     }
 
-    // MARK: - Text Preview
-
     private var textPreview: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(item.textContent ?? L10n.localized("preview.empty"))
-                .font(.system(size: 14, design: .monospaced))
+        Text(item.plainText ?? item.summary ?? L10n.localized("preview.empty"))
+            .font(.system(size: 14, design: .monospaced))
+            .textSelection(.enabled)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(JadeSpace.x3.value)
+            .background(Color(NSColor.textBackgroundColor))
+            .jadeRadius(.md)
+            .jadeRadiusBorder(.md)
+    }
+
+    @ViewBuilder
+    private var rtfPreview: some View {
+        if let rtfAttributed {
+            RTFTextView(attributedString: rtfAttributed)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(JadeSpace.x3.value)
+                .background(Color(NSColor.textBackgroundColor))
+                .jadeRadius(.md)
+                .jadeRadiusBorder(.md)
+        } else {
+            Text(item.plainText ?? item.summary ?? L10n.localized("preview.empty"))
+                .font(JadeFont.body)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(12)
+                .padding(JadeSpace.x3.value)
                 .background(Color(NSColor.textBackgroundColor))
-                .cornerRadius(8)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color.secondary.opacity(0.15), lineWidth: 1)
-                )
+                .jadeRadius(.md)
         }
     }
-
-    // MARK: - RTF Preview
-
-    private var rtfPreview: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if let attributed = parseRTF() {
-                RTFTextView(attributedString: attributed)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(12)
-                    .background(Color(NSColor.textBackgroundColor))
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.secondary.opacity(0.15), lineWidth: 1)
-                    )
-            } else {
-                // Fallback to plain text
-                Text(item.textContent ?? item.rtfContent ?? L10n.localized("preview.empty"))
-                    .font(.system(size: 14))
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(12)
-                    .background(Color(NSColor.textBackgroundColor))
-                    .cornerRadius(8)
-            }
-        }
-    }
-
-    // MARK: - Image Preview
 
     private var imagePreview: some View {
-        VStack(spacing: 12) {
-            if let data = item.imageData, let nsImage = NSImage(data: data) {
-                let _ = updateImageScaleIfNeeded(nsImage)
-
-                Image(nsImage: nsImage)
+        VStack(spacing: JadeSpace.x3.value) {
+            if let image {
+                Image(nsImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .scaleEffect(imageScale)
                     .frame(maxWidth: .infinity, maxHeight: 400)
                     .background(Color(NSColor.textBackgroundColor))
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.secondary.opacity(0.15), lineWidth: 1)
-                    )
+                    .jadeRadius(.md)
+                    .jadeRadiusBorder(.md)
                     .gesture(
                         MagnificationGesture()
                             .onChanged { value in
@@ -157,101 +153,67 @@ struct PreviewPanel: View {
                             }
                     )
 
-                // Image info
-                HStack(spacing: 16) {
-                    Label("\(Int(nsImage.size.width)) x \(Int(nsImage.size.height))", systemImage: "aspectratio")
-                    if let rep = nsImage.representations.first {
+                HStack(spacing: JadeSpace.x4.value) {
+                    Label("\(Int(image.size.width)) x \(Int(image.size.height))", systemImage: "aspectratio")
+                    if let rep = image.representations.first {
                         Label("\(rep.pixelsWide) x \(rep.pixelsHigh) px", systemImage: "arrow.up.left.and.arrow.down.right")
                     }
-                    if let tiffData = nsImage.tiffRepresentation {
-                        Label(ByteCountFormatter.string(fromByteCount: Int64(tiffData.count), countStyle: .file), systemImage: "doc")
-                    }
                 }
-                .font(.system(size: 12))
-                .foregroundColor(.secondary)
-
-                // OCR text if available
-                if let ocr = item.ocrText, !ocr.isEmpty {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(L10n.localized("preview.ocrText"))
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(.secondary)
-                        Text(ocr)
-                            .font(.system(size: 13))
-                            .textSelection(.enabled)
-                            .padding(8)
-                            .background(Color(NSColor.textBackgroundColor))
-                            .cornerRadius(6)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
+                .font(JadeFont.callout)
+                .foregroundStyle(JadeColor.textSecondary)
             } else {
-                VStack(spacing: 8) {
+                VStack(spacing: JadeSpace.x2.value) {
                     Image(systemName: "photo")
                         .font(.system(size: 40))
-                        .foregroundColor(.secondary.opacity(0.5))
+                        .foregroundStyle(JadeColor.textSecondary)
                     Text(L10n.localized("preview.imageNotAvailable"))
-                        .font(.system(size: 13))
-                        .foregroundColor(.secondary)
+                        .font(JadeFont.body)
+                        .foregroundStyle(JadeColor.textSecondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
     }
 
-    // MARK: - File Preview
-
     private var filePreview: some View {
-        VStack(spacing: 16) {
-            // Large file icon
-            if let path = item.filePath {
-                let fileURL = URL(fileURLWithPath: path)
+        VStack(spacing: JadeSpace.x4.value) {
+            if let fileURL = item.filePath {
+                let path = fileURL.path
                 let icon = NSWorkspace.shared.icon(forFile: path)
 
-                VStack(spacing: 12) {
-                    Image(nsImage: icon)
-                        .resizable()
-                        .frame(width: 64, height: 64)
+                Image(nsImage: icon)
+                    .resizable()
+                    .frame(width: 64, height: 64)
 
-                    // File info table
-                    VStack(spacing: 8) {
-                        fileInfoRow(label: L10n.localized("preview.fileName"), value: fileURL.lastPathComponent)
-                        fileInfoRow(label: L10n.localized("preview.filePath"), value: path)
-                        if let size = fileSizeString(path: path) {
-                            fileInfoRow(label: L10n.localized("preview.fileSize"), value: size)
-                        }
-                        if let type = fileType(path: path) {
-                            fileInfoRow(label: L10n.localized("preview.fileType"), value: type)
-                        }
-                        if let modified = fileModifiedDate(path: path) {
-                            fileInfoRow(label: L10n.localized("preview.fileModified"), value: modified)
-                        }
+                VStack(spacing: JadeSpace.x2.value) {
+                    fileInfoRow(label: L10n.localized("preview.fileName"), value: fileURL.lastPathComponent)
+                    fileInfoRow(label: L10n.localized("preview.filePath"), value: path)
+                    if let size = fileSizeString(path: path) {
+                        fileInfoRow(label: L10n.localized("preview.fileSize"), value: size)
                     }
-                    .padding(12)
-                    .background(Color(NSColor.textBackgroundColor))
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.secondary.opacity(0.15), lineWidth: 1)
-                    )
-
-                    // Show in Finder button
-                    Button(action: {
-                        NSWorkspace.shared.selectFile(path, inFileViewerRootedAtPath: "")
-                    }) {
-                        Label(L10n.localized("preview.showInFinder"), systemImage: "folder")
-                            .font(.system(size: 13))
+                    if let type = fileType(path: path) {
+                        fileInfoRow(label: L10n.localized("preview.fileType"), value: type)
                     }
-                    .buttonStyle(.bordered)
                 }
+                .padding(JadeSpace.x3.value)
+                .background(Color(NSColor.textBackgroundColor))
+                .jadeRadius(.md)
+                .jadeRadiusBorder(.md)
+
+                Button {
+                    NSWorkspace.shared.selectFile(path, inFileViewerRootedAtPath: "")
+                } label: {
+                    Label(L10n.localized("preview.showInFinder"), systemImage: "folder")
+                }
+                .buttonStyle(.jadeSecondary)
             } else {
-                VStack(spacing: 8) {
+                VStack(spacing: JadeSpace.x2.value) {
                     Image(systemName: "doc")
                         .font(.system(size: 40))
-                        .foregroundColor(.secondary.opacity(0.5))
+                        .foregroundStyle(JadeColor.textSecondary)
                     Text(L10n.localized("preview.fileNotAvailable"))
-                        .font(.system(size: 13))
-                        .foregroundColor(.secondary)
+                        .font(JadeFont.body)
+                        .foregroundStyle(JadeColor.textSecondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -261,66 +223,64 @@ struct PreviewPanel: View {
     // MARK: - Action Bar
 
     private var actionBar: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: JadeSpace.x3.value) {
             Spacer()
 
-            Button(action: {
+            Button {
                 onDelete()
                 dismiss()
-            }) {
+            } label: {
                 Label(L10n.localized("preview.delete"), systemImage: "trash")
-                    .font(.system(size: 13))
-                    .foregroundColor(.red)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(.jadeDestructive)
 
-            Button(action: {
+            Button {
                 onCopy()
                 dismiss()
-            }) {
+            } label: {
                 Label(L10n.localized("preview.copy"), systemImage: "doc.on.doc")
-                    .font(.system(size: 13))
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.jadePrimary)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.horizontal, JadeSpace.x4.value)
+        .padding(.vertical, JadeSpace.x3.value)
     }
 
     // MARK: - Helpers
 
     private var typeColor: Color {
         switch item.contentType {
-        case .text: return .blue
-        case .rtf: return .orange
-        case .image: return .green
-        case .file: return .gray
+        case .text: return JadeColor.info
+        case .richText: return JadeColor.warning
+        case .image: return JadeColor.success
+        case .file: return JadeColor.gray
         }
     }
 
-    private var relativeTime: String {
-        L10n.relativeTime(from: item.createdAt)
+    private var iconName: String {
+        switch item.contentType {
+        case .text: return "doc.text"
+        case .richText: return "doc.richtext"
+        case .image: return "photo"
+        case .file: return "doc"
+        }
     }
 
-    private func parseRTF() -> NSAttributedString? {
-        guard let rtf = item.rtfContent, let data = rtf.data(using: .utf8) else { return nil }
-        let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
-            .documentType: NSAttributedString.DocumentType.rtf,
-            .characterEncoding: String.Encoding.utf8.rawValue
-        ]
-        return try? NSAttributedString(data: data, options: options, documentAttributes: nil)
-    }
-
-    private func updateImageScaleIfNeeded(_ image: NSImage) {
-        // Reset scale when image changes
-        imageScale = 1.0
+    private var typeLabel: String {
+        switch item.contentType {
+        case .text: return L10n.localized("content.text")
+        case .richText: return L10n.localized("content.richText")
+        case .image: return L10n.localized("content.image")
+        case .file: return L10n.localized("content.file")
+        }
     }
 
     private func fileInfoRow(label: String, value: String) -> some View {
         HStack(alignment: .top) {
             Text(label)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.secondary)
+                .font(JadeFont.callout)
+                .fontWeight(.medium)
+                .foregroundStyle(JadeColor.textSecondary)
                 .frame(width: 80, alignment: .trailing)
             Text(value)
                 .font(.system(size: 12, design: .monospaced))
@@ -338,15 +298,6 @@ struct PreviewPanel: View {
     private func fileType(path: String) -> String? {
         guard let uti = try? URL(fileURLWithPath: path).resourceValues(forKeys: [.typeIdentifierKey]).typeIdentifier else { return nil }
         return UTType(uti)?.localizedDescription ?? uti
-    }
-
-    private func fileModifiedDate(path: String) -> String? {
-        guard let attrs = try? FileManager.default.attributesOfItem(atPath: path),
-              let date = attrs[.modificationDate] as? Date else { return nil }
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
     }
 }
 
@@ -380,11 +331,25 @@ struct RTFTextView: NSViewRepresentable {
 
 #Preview {
     PreviewPanel(
-        item: ClipboardItem(
+        item: ClipboardRecordSnapshot(
+            id: UUID(),
             contentType: .text,
-            textContent: "Hello World\nThis is a preview of the clipboard content.\nLine 3 here.",
-            contentHash: "preview1"
+            plainText: "Hello World\nThis is a preview of the clipboard content.\nLine 3 here.",
+            summary: "Hello World",
+            contentHash: "preview1",
+            isPinned: false,
+            isFavorite: false,
+            createdAt: Date(),
+            updatedAt: Date(),
+            filePath: nil,
+            fileDisplayName: nil,
+            fileUTI: nil,
+            fileSize: nil,
+            resources: [],
+            resourceStatus: .available
         ),
+        imageProvider: { _ in nil },
+        richTextProvider: { _ in nil },
         onCopy: {},
         onDelete: {}
     )

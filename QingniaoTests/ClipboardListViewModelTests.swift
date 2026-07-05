@@ -3,7 +3,7 @@ import XCTest
 
 @MainActor
 final class ClipboardListViewModelTests: XCTestCase {
-    func testLoadHistoryUsesIndexAndFiltersTextIncludingRichText() async {
+    func testLoadHistoryUsesIndexAndFiltersTextOnly() async {
         let fixtures = ClipboardHistoryFixtures()
         let queryService = MockClipboardIndexQueryService(items: fixtures.indexItems, snapshots: fixtures.snapshotsByID)
         let repository = MockClipboardRepository(storageUsage: StorageUsage(coreDataBytes: 100, resourceBytes: 250))
@@ -12,15 +12,16 @@ final class ClipboardListViewModelTests: XCTestCase {
             repository: repository,
             historyService: MockClipboardHistoryService(repository: repository),
             actionExecutor: MockClipboardActionExecutor(),
-            resourceStore: MockFileResourceStore()
+            resourceStore: MockFileResourceStore(),
+            settingsService: MockSettingsService()
         )
 
-        viewModel.filter = .text
+        viewModel.selection = .text
         await viewModel.load()
 
-        XCTAssertEqual(viewModel.items.map(\.id), [fixtures.text.id, fixtures.richText.id])
+        XCTAssertEqual(viewModel.items.map(\.id), [fixtures.text.id])
         XCTAssertEqual(viewModel.formattedStorageUsage, ByteCountFormatter.string(fromByteCount: 350, countStyle: .file))
-        XCTAssertEqual(queryService.historyCalls.last?.filter, nil, "Text filter should include both text and rich text via post-filtering.")
+        XCTAssertEqual(queryService.historyCalls.last?.filter, .text, "Text selection should constrain the index query to .text.")
     }
 
     func testSearchUsesDebouncedQueryPathAndImageFilter() async {
@@ -32,11 +33,12 @@ final class ClipboardListViewModelTests: XCTestCase {
             repository: repository,
             historyService: MockClipboardHistoryService(repository: repository),
             actionExecutor: MockClipboardActionExecutor(),
-            resourceStore: MockFileResourceStore()
+            resourceStore: MockFileResourceStore(),
+            settingsService: MockSettingsService()
         )
 
         viewModel.query = "image"
-        viewModel.filter = .image
+        viewModel.selection = .image
         await viewModel.load()
 
         XCTAssertEqual(viewModel.items.map(\.id), [fixtures.image.id])
@@ -54,7 +56,8 @@ final class ClipboardListViewModelTests: XCTestCase {
             repository: repository,
             historyService: MockClipboardHistoryService(repository: repository),
             actionExecutor: executor,
-            resourceStore: MockFileResourceStore()
+            resourceStore: MockFileResourceStore(),
+            settingsService: MockSettingsService()
         )
 
         await viewModel.load()
@@ -66,7 +69,7 @@ final class ClipboardListViewModelTests: XCTestCase {
         XCTAssertEqual(executor.executedActions, [.copyClipboardRecord(fixtures.richText.id)])
     }
 
-    func testTogglePinDeleteAndClearAllDelegateToNewRepositoryChain() async {
+    func testTogglePinFavoriteDeleteAndClearAllDelegateToRepositoryChain() async {
         let fixtures = ClipboardHistoryFixtures()
         let queryService = MockClipboardIndexQueryService(items: fixtures.indexItems, snapshots: fixtures.snapshotsByID)
         let repository = MockClipboardRepository()
@@ -76,15 +79,18 @@ final class ClipboardListViewModelTests: XCTestCase {
             repository: repository,
             historyService: historyService,
             actionExecutor: MockClipboardActionExecutor(),
-            resourceStore: MockFileResourceStore()
+            resourceStore: MockFileResourceStore(),
+            settingsService: MockSettingsService()
         )
 
         await viewModel.load()
         await viewModel.togglePin(fixtures.text)
+        await viewModel.toggleFavorite(fixtures.richText)
         await viewModel.delete(fixtures.image)
         await viewModel.clearAllConfirmed()
 
         XCTAssertEqual(repository.toggledIDs, [fixtures.text.id])
+        XCTAssertEqual(repository.favoritedIDs, [fixtures.richText.id])
         XCTAssertEqual(repository.deletedIDs, [fixtures.image.id])
         XCTAssertEqual(historyService.clearAllConfirmedValues, [true])
         XCTAssertTrue(viewModel.items.isEmpty)
@@ -110,6 +116,7 @@ private final class ClipboardHistoryFixtures {
             summary: summary,
             contentHash: "hash-\(id.uuidString)",
             isPinned: pinned,
+            isFavorite: false,
             createdAt: updatedAt.addingTimeInterval(-60),
             updatedAt: updatedAt,
             filePath: type == .file ? URL(fileURLWithPath: "/tmp/fixture.txt") : nil,
@@ -166,6 +173,7 @@ private final class MockClipboardIndexQueryService: ClipboardIndexQueryServicePr
 
 private final class MockClipboardRepository: ClipboardRepositoryProtocol {
     var toggledIDs: [UUID] = []
+    var favoritedIDs: [UUID] = []
     var deletedIDs: [UUID] = []
     var usage: StorageUsage
 
@@ -180,13 +188,24 @@ private final class MockClipboardRepository: ClipboardRepositoryProtocol {
     func clearAll() async throws {}
     func togglePin(id: UUID) async throws -> ClipboardRecordSnapshot {
         toggledIDs.append(id)
-        return ClipboardRecordSnapshot(
+        return Self.snapshot(id: id, pinned: true, favorite: false)
+    }
+    func toggleFavorite(id: UUID) async throws -> ClipboardRecordSnapshot {
+        favoritedIDs.append(id)
+        return Self.snapshot(id: id, pinned: false, favorite: true)
+    }
+    func cleanupExpired(now: Date) async throws -> Int { 0 }
+    func storageUsage() async throws -> StorageUsage { usage }
+
+    private static func snapshot(id: UUID, pinned: Bool, favorite: Bool) -> ClipboardRecordSnapshot {
+        ClipboardRecordSnapshot(
             id: id,
             contentType: .text,
-            plainText: "Pinned",
-            summary: "Pinned",
+            plainText: "Item",
+            summary: "Item",
             contentHash: "hash",
-            isPinned: true,
+            isPinned: pinned,
+            isFavorite: favorite,
             createdAt: Date(),
             updatedAt: Date(),
             filePath: nil,
@@ -197,8 +216,25 @@ private final class MockClipboardRepository: ClipboardRepositoryProtocol {
             resourceStatus: .available
         )
     }
-    func cleanupExpired(now: Date) async throws -> Int { 0 }
-    func storageUsage() async throws -> StorageUsage { usage }
+}
+
+private final class MockSettingsService: SettingsServiceProtocol {
+    var storage: [SettingKey: String] = [
+        .clipboardEnabled: "true",
+        .clipboardRetention: "30d"
+    ]
+
+    func value<T: Decodable>(for key: SettingKey, as type: T.Type) async throws -> T {
+        let raw = storage[key] ?? ""
+        if type == Bool.self { return (raw == "true") as! T }
+        return raw as! T
+    }
+    func set<T: Encodable>(_ value: T, for key: SettingKey) async throws {
+        if let bool = value as? Bool { storage[key] = bool ? "true" : "false" }
+        else { storage[key] = "\(value)" }
+    }
+    func reset(key: SettingKey) async throws {}
+    func stringValue(for key: SettingKey) async throws -> String { storage[key] ?? "" }
 }
 
 private final class MockClipboardHistoryService: ClipboardHistoryServiceProtocol {

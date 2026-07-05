@@ -34,6 +34,7 @@ struct SearchIndexItem: Identifiable, Hashable {
     let initials: String?
     let updatedAt: Date
     let isPinned: Bool
+    let isFavorite: Bool
     let contentHash: String?
     let resourceReferences: [UUID]
     let usageCount: Int
@@ -69,6 +70,7 @@ extension SearchIndexItem {
             initials: nil,
             updatedAt: snapshot.updatedAt,
             isPinned: snapshot.isPinned,
+            isFavorite: snapshot.isFavorite,
             contentHash: snapshot.contentHash,
             resourceReferences: snapshot.resources.map(\.id),
             usageCount: 0,
@@ -286,6 +288,7 @@ final class ClipboardSearchIndexLoader: ClipboardSearchIndexLoaderProtocol {
             initials: nil,
             updatedAt: record.updatedAt,
             isPinned: record.isPinned,
+            isFavorite: record.isFavorite,
             contentHash: record.contentHash,
             resourceReferences: resourceReferences,
             usageCount: 0,
@@ -364,6 +367,12 @@ final class IndexingClipboardRepository: ClipboardRepositoryProtocol {
 
     func togglePin(id: UUID) async throws -> ClipboardRecordSnapshot {
         let snapshot = try await base.togglePin(id: id)
+        index.upsert(SearchIndexItem(clipboard: snapshot))
+        return snapshot
+    }
+
+    func toggleFavorite(id: UUID) async throws -> ClipboardRecordSnapshot {
+        let snapshot = try await base.toggleFavorite(id: id)
         index.upsert(SearchIndexItem(clipboard: snapshot))
         return snapshot
     }

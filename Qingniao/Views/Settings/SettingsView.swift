@@ -69,7 +69,7 @@ struct ManagementCenterView: View {
         case .overview:
             ManagementOverviewView(viewModel: viewModel)
         case .clipboard:
-            ClipboardListView(viewModel: clipboardViewModel)
+            ClipboardHistoryView(viewModel: clipboardViewModel)
         case .settings:
             ManagementSettingsPage(viewModel: viewModel)
         case .permissions:

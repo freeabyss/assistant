@@ -129,6 +129,7 @@ protocol ClipboardRepositoryProtocol {
     func delete(id: UUID) async throws
     func clearAll() async throws
     func togglePin(id: UUID) async throws -> ClipboardRecordSnapshot
+    func toggleFavorite(id: UUID) async throws -> ClipboardRecordSnapshot
     func cleanupExpired(now: Date) async throws -> Int
     func storageUsage() async throws -> StorageUsage
 }
@@ -231,6 +232,7 @@ struct ClipboardRecordSnapshot: Identifiable, Hashable {
     let summary: String?
     let contentHash: String
     let isPinned: Bool
+    let isFavorite: Bool
     let createdAt: Date
     let updatedAt: Date
     let filePath: URL?
@@ -521,6 +523,18 @@ final class ClipboardRepository: @unchecked Sendable, ClipboardRepositoryProtoco
         }
     }
 
+    func toggleFavorite(id: UUID) async throws -> ClipboardRecordSnapshot {
+        let context = persistence.viewContext
+        return try await context.perform {
+            guard let record = try self.fetchRecord(id: id, in: context) else {
+                throw AssistantClipboardRepositoryError.recordNotFound(id)
+            }
+            record.isFavorite.toggle()
+            try context.saveIfNeeded()
+            return try self.makeSnapshot(from: record)
+        }
+    }
+
     func cleanupExpired(now: Date = Date()) async throws -> Int {
         let retention = try await retentionSettingDays()
         guard let retention else { return 0 }
@@ -529,7 +543,7 @@ final class ClipboardRepository: @unchecked Sendable, ClipboardRepositoryProtoco
         let context = persistence.viewContext
         let cleanupResult = try await context.perform {
             let request = CDClipboardRecord.fetchRequest()
-            request.predicate = NSPredicate(format: "isPinned == NO AND updatedAt < %@", cutoff as NSDate)
+            request.predicate = NSPredicate(format: "isPinned == NO AND isFavorite == NO AND updatedAt < %@", cutoff as NSDate)
             let records = try context.fetch(request)
             let paths = records.flatMap { $0.resources.map(\.relativePath) }
             let deletedCount = records.count
@@ -643,6 +657,7 @@ final class ClipboardRepository: @unchecked Sendable, ClipboardRepositoryProtoco
             summary: record.summary,
             contentHash: record.contentHash,
             isPinned: record.isPinned,
+            isFavorite: record.isFavorite,
             createdAt: record.createdAt,
             updatedAt: record.updatedAt,
             filePath: fileURL,

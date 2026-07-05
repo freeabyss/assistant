@@ -109,6 +109,7 @@ final class PersistenceController {
             attribute("summary", .stringAttributeType),
             attribute("contentHash", .stringAttributeType, isOptional: false),
             attribute("isPinned", .booleanAttributeType, isOptional: false, defaultValue: false),
+            attribute("isFavorite", .booleanAttributeType, isOptional: false, defaultValue: false),
             attribute("createdAt", .dateAttributeType, isOptional: false),
             attribute("updatedAt", .dateAttributeType, isOptional: false),
             attribute("filePath", .stringAttributeType),
@@ -219,6 +220,7 @@ final class CDClipboardRecord: NSManagedObject {
     @NSManaged var summary: String?
     @NSManaged var contentHash: String
     @NSManaged var isPinned: Bool
+    @NSManaged var isFavorite: Bool
     @NSManaged var createdAt: Date
     @NSManaged var updatedAt: Date
     @NSManaged var filePath: String?

@@ -24,8 +24,8 @@
 		A10001000000000000000010 /* UpdateService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000010; };
 		E01801000000000000000001 /* ReleaseInfoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E01800000000000000000001 /* ReleaseInfoService.swift */; };
 		E01801000000000000000002 /* ReleaseInfoServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E01800000000000000000002 /* ReleaseInfoServiceTests.swift */; };
-		A10001000000000000000012 /* ClipboardListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012; };
-		A10001000000000000000013 /* ClipboardItemRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013; };
+		A10001000000000000000012 /* ClipboardHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012; };
+		A10001000000000000000013 /* JadeClipboardRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013; };
 		A10001000000000000000014 /* PreviewPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000014; };
 		A10001000000000000000015 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000015; };
 		A10001000000000000000016 /* ClipboardListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000016; };
@@ -129,8 +129,8 @@
 		A1000000000000000000000C /* ClipboardMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardMonitor.swift; sourceTree = "<group>"; };
 		A10000000000000000000010 /* UpdateService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateService.swift; sourceTree = "<group>"; };
 		E01800000000000000000001 /* ReleaseInfoService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseInfoService.swift; sourceTree = "<group>"; };
-		A10000000000000000000012 /* ClipboardListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardListView.swift; sourceTree = "<group>"; };
-		A10000000000000000000013 /* ClipboardItemRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardItemRow.swift; sourceTree = "<group>"; };
+		A10000000000000000000012 /* ClipboardHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardHistoryView.swift; sourceTree = "<group>"; };
+		A10000000000000000000013 /* JadeClipboardRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JadeClipboardRow.swift; sourceTree = "<group>"; };
 		A10000000000000000000014 /* PreviewPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewPanel.swift; sourceTree = "<group>"; };
 		A10000000000000000000015 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		A10000000000000000000016 /* ClipboardListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardListViewModel.swift; sourceTree = "<group>"; };
@@ -427,8 +427,8 @@
 		A1000300000000000000000E /* ClipboardList */ = {
 			isa = PBXGroup;
 			children = (
-				A10000000000000000000012 /* ClipboardListView.swift */,
-				A10000000000000000000013 /* ClipboardItemRow.swift */,
+				A10000000000000000000012 /* ClipboardHistoryView.swift */,
+				A10000000000000000000013 /* JadeClipboardRow.swift */,
 			);
 			path = ClipboardList;
 			sourceTree = "<group>";
@@ -833,8 +833,8 @@
 				A1000100000000000000000C /* ClipboardMonitor.swift in Sources */,
 				A10001000000000000000010 /* UpdateService.swift in Sources */,
 					E01801000000000000000001 /* ReleaseInfoService.swift in Sources */,
-				A10001000000000000000012 /* ClipboardListView.swift in Sources */,
-				A10001000000000000000013 /* ClipboardItemRow.swift in Sources */,
+				A10001000000000000000012 /* ClipboardHistoryView.swift in Sources */,
+				A10001000000000000000013 /* JadeClipboardRow.swift in Sources */,
 				A10001000000000000000014 /* PreviewPanel.swift in Sources */,
 				A10001000000000000000015 /* SettingsView.swift in Sources */,
 				A10001000000000000000016 /* ClipboardListViewModel.swift in Sources */,
