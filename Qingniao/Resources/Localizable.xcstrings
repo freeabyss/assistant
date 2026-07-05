@@ -970,6 +970,40 @@
         }
       }
     },
+    "annotation.tool.blur": {
+      "comment": "Blur annotation tool name (disabled until v1.3)",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Blur"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "模糊"
+          }
+        }
+      }
+    },
+    "annotation.tool.blur.soon": {
+      "comment": "Tooltip explaining the blur tool ships in v1.3",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coming in v1.3"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "v1.3 支持"
+          }
+        }
+      }
+    },
     "annotation.tool.mosaic": {
       "comment": "Mosaic annotation tool name",
       "localizations": {
@@ -1017,40 +1051,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "文字"
-          }
-        }
-      }
-    },
-    "annotation.tool.blur": {
-      "comment": "Blur annotation tool name (disabled until v1.3)",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Blur"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "模糊"
-          }
-        }
-      }
-    },
-    "annotation.tool.blur.soon": {
-      "comment": "Tooltip explaining the blur tool ships in v1.3",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Coming in v1.3"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "v1.3 支持"
           }
         }
       }
@@ -2874,6 +2874,244 @@
         }
       }
     },
+    "management.about.acknowledgements": {
+      "comment": "Acknowledgements",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thanks to the open-source projects that make 青鸟 Qingniao possible."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "感谢让青鸟 Qingniao 成为可能的开源项目。"
+          }
+        }
+      }
+    },
+    "management.about.macos": {
+      "comment": "macOS version label",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS Version"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS 版本"
+          }
+        }
+      }
+    },
+    "management.about.system": {
+      "comment": "About system info section",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System Info"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统信息"
+          }
+        }
+      }
+    },
+    "management.appearance.accent": {
+      "comment": "Accent section",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accent Color"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "强调色"
+          }
+        }
+      }
+    },
+    "management.appearance.accent.jade": {
+      "comment": "Accent jade",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jade"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "青玉 Jade"
+          }
+        }
+      }
+    },
+    "management.appearance.accent.note": {
+      "comment": "Accent note",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom accent colors arrive in a later version."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自定义强调色将在后续版本开放。"
+          }
+        }
+      }
+    },
+    "management.appearance.dark": {
+      "comment": "Appearance: dark",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dark"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "深色"
+          }
+        }
+      }
+    },
+    "management.appearance.light": {
+      "comment": "Appearance: light",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Light"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "浅色"
+          }
+        }
+      }
+    },
+    "management.appearance.mode": {
+      "comment": "Appearance mode section",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appearance"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外观模式"
+          }
+        }
+      }
+    },
+    "management.appearance.motion": {
+      "comment": "Motion section",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Motion"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "动态效果"
+          }
+        }
+      }
+    },
+    "management.appearance.reduceMotion": {
+      "comment": "Reduce motion toggle",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reduce motion"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "减小动态效果"
+          }
+        }
+      }
+    },
+    "management.appearance.reduceMotion.note": {
+      "comment": "Reduce motion note",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reduces animations across the app."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "减少全 App 的动画效果。"
+          }
+        }
+      }
+    },
+    "management.appearance.subtitle": {
+      "comment": "Appearance page subtitle",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Theme, accent color, and motion"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "主题、强调色与动态效果"
+          }
+        }
+      }
+    },
+    "management.appearance.system": {
+      "comment": "Appearance: system",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统"
+          }
+        }
+      }
+    },
     "management.blacklist.add": {
       "comment": "US-015 management center",
       "localizations": {
@@ -3095,6 +3333,108 @@
         }
       }
     },
+    "management.clipboard.subtitle": {
+      "comment": "Clipboard page subtitle",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clipboard history retention and blacklist"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剪贴板历史保留与黑名单"
+          }
+        }
+      }
+    },
+    "management.data.actions": {
+      "comment": "Data actions section",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actions"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作"
+          }
+        }
+      }
+    },
+    "management.data.dangerZone": {
+      "comment": "Danger zone section",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Danger Zone"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "危险操作"
+          }
+        }
+      }
+    },
+    "management.data.export": {
+      "comment": "Export data button",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export Data…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导出数据…"
+          }
+        }
+      }
+    },
+    "management.data.export.disabled": {
+      "comment": "Export disabled tooltip",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data export arrives in v1.3"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "数据导出将在 v1.3 支持"
+          }
+        }
+      }
+    },
+    "management.data.openDirectory": {
+      "comment": "Open data directory button",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Data Directory"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开数据目录"
+          }
+        }
+      }
+    },
     "management.data.reset.done": {
       "comment": "Status message shown after all data has been reset",
       "localizations": {
@@ -3112,6 +3452,210 @@
         }
       }
     },
+    "management.data.resetAll": {
+      "comment": "Reset all data label",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset all data"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清空所有数据"
+          }
+        }
+      }
+    },
+    "management.data.resetAll.button": {
+      "comment": "Reset all button",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset All Data…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清空所有数据…"
+          }
+        }
+      }
+    },
+    "management.data.resetAll.confirm.action": {
+      "comment": "Reset confirm action",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清空"
+          }
+        }
+      }
+    },
+    "management.data.resetAll.confirm.message": {
+      "comment": "Reset confirm message",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All clipboard history, screenshots, and settings will be permanently deleted. The app will restart."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "所有剪贴板历史、截图和设置将被永久删除,App 将重启。"
+          }
+        }
+      }
+    },
+    "management.data.resetAll.confirm.title": {
+      "comment": "Reset confirm title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset all data?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确认清空所有数据?"
+          }
+        }
+      }
+    },
+    "management.data.resetAll.note": {
+      "comment": "Reset all note",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deletes all clipboard history, screenshots, and settings. This cannot be undone."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "删除所有剪贴板历史、截图和设置。此操作不可撤销。"
+          }
+        }
+      }
+    },
+    "management.data.restart.message": {
+      "comment": "Data reset restart message",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All data has been cleared. Please quit and reopen 青鸟 Qingniao to finish."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "所有数据已清空。请退出并重新打开青鸟 Qingniao 以完成。"
+          }
+        }
+      }
+    },
+    "management.data.restart.quit": {
+      "comment": "Data reset quit button",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quit Now"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "立即退出"
+          }
+        }
+      }
+    },
+    "management.data.restart.title": {
+      "comment": "Data reset restart title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data cleared"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "数据已清空"
+          }
+        }
+      }
+    },
+    "management.data.storage": {
+      "comment": "Data storage section",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storage"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "存储"
+          }
+        }
+      }
+    },
+    "management.data.storageUsed": {
+      "comment": "Storage used label",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storage used"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "存储占用"
+          }
+        }
+      }
+    },
+    "management.data.subtitle": {
+      "comment": "Data page subtitle",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storage usage, retention, and reset"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "存储占用、保留期与重置"
+          }
+        }
+      }
+    },
     "management.error.title": {
       "comment": "US-015 management center",
       "localizations": {
@@ -3125,6 +3669,176 @@
           "stringUnit": {
             "state": "translated",
             "value": "管理中心错误"
+          }
+        }
+      }
+    },
+    "management.feedback.category": {
+      "comment": "Feedback category label",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Category"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "问题类型"
+          }
+        }
+      }
+    },
+    "management.feedback.category.bug": {
+      "comment": "Category: bug",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bug"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bug"
+          }
+        }
+      }
+    },
+    "management.feedback.category.other": {
+      "comment": "Category: other",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "其他"
+          }
+        }
+      }
+    },
+    "management.feedback.category.suggestion": {
+      "comment": "Category: suggestion",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suggestion"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "建议"
+          }
+        }
+      }
+    },
+    "management.feedback.details": {
+      "comment": "Feedback details label",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Description"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "描述"
+          }
+        }
+      }
+    },
+    "management.feedback.email": {
+      "comment": "Feedback email label",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Email (optional)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "邮箱(可选)"
+          }
+        }
+      }
+    },
+    "management.feedback.email.placeholder": {
+      "comment": "Feedback email placeholder",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "your@email.com"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "your@email.com"
+          }
+        }
+      }
+    },
+    "management.feedback.includeSystemInfo": {
+      "comment": "Include system info toggle",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Include system information"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "附加系统信息"
+          }
+        }
+      }
+    },
+    "management.feedback.send": {
+      "comment": "Send feedback button",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Send Feedback"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "发送反馈"
+          }
+        }
+      }
+    },
+    "management.feedback.subtitle": {
+      "comment": "Feedback page subtitle",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Report a bug or send a suggestion"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "反馈问题或提出建议"
           }
         }
       }
@@ -3227,6 +3941,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "快捷操作"
+          }
+        }
+      }
+    },
+    "management.overview.autoCheckUpdates": {
+      "comment": "Auto-check updates toggle",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Automatically check for updates"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自动检查更新"
+          }
+        }
+      }
+    },
+    "management.overview.common": {
+      "comment": "Overview common settings section",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Common Settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "常用设置"
           }
         }
       }
@@ -3418,6 +4166,74 @@
         }
       }
     },
+    "management.overview.stat.clips": {
+      "comment": "Stat: clipboard items",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clipboard Items"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剪贴数"
+          }
+        }
+      }
+    },
+    "management.overview.stat.dailyLaunches": {
+      "comment": "Stat: daily launches",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daily Launches"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "日均启动"
+          }
+        }
+      }
+    },
+    "management.overview.stat.days": {
+      "comment": "Stat: usage days",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Days Used"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用天数"
+          }
+        }
+      }
+    },
+    "management.overview.stat.screenshots": {
+      "comment": "Stat: screenshots",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screenshots"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "截图数"
+          }
+        }
+      }
+    },
     "management.overview.subtitle": {
       "comment": "US-015 management center",
       "localizations": {
@@ -3452,6 +4268,23 @@
         }
       }
     },
+    "management.overview.versionLine": {
+      "comment": "Overview version line",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version %@ (%@)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "版本 %1$@（%2$@）"
+          }
+        }
+      }
+    },
     "management.page.about": {
       "comment": "Sidebar page title for About",
       "localizations": {
@@ -3469,6 +4302,23 @@
         }
       }
     },
+    "management.page.appearance": {
+      "comment": "Page title: appearance",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appearance"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外观"
+          }
+        }
+      }
+    },
     "management.page.clipboard": {
       "comment": "US-015 management center",
       "localizations": {
@@ -3482,6 +4332,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "剪贴板历史"
+          }
+        }
+      }
+    },
+    "management.page.data": {
+      "comment": "Page title: data",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "数据"
+          }
+        }
+      }
+    },
+    "management.page.feedback": {
+      "comment": "Page title: feedback",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feedback"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "反馈"
           }
         }
       }
@@ -3520,6 +4404,40 @@
         }
       }
     },
+    "management.page.screenshot": {
+      "comment": "Page title: screenshot",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screenshot"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "截图"
+          }
+        }
+      }
+    },
+    "management.page.searchSources": {
+      "comment": "Page title: search sources",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search Sources"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索源"
+          }
+        }
+      }
+    },
     "management.page.settings": {
       "comment": "US-015 management center",
       "localizations": {
@@ -3533,6 +4451,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "设置"
+          }
+        }
+      }
+    },
+    "management.page.shortcuts": {
+      "comment": "Page title: shortcuts",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shortcuts"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "快捷键"
+          }
+        }
+      }
+    },
+    "management.page.updates": {
+      "comment": "Page title: updates",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Updates"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更新"
           }
         }
       }
@@ -3792,6 +4744,23 @@
         }
       }
     },
+    "management.screenshot.afterCapture": {
+      "comment": "After-capture section",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After Capture"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "截图后"
+          }
+        }
+      }
+    },
     "management.screenshot.choose": {
       "comment": "US-015 management center",
       "localizations": {
@@ -3809,6 +4778,108 @@
         }
       }
     },
+    "management.screenshot.copyToClipboard": {
+      "comment": "Option: copy to clipboard",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy to clipboard"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制到剪贴板"
+          }
+        }
+      }
+    },
+    "management.screenshot.format": {
+      "comment": "Screenshot format section",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Format"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "格式"
+          }
+        }
+      }
+    },
+    "management.screenshot.format.jpgDisabled": {
+      "comment": "JPG disabled tooltip",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "JPG is not supported yet (PNG only for now)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂不支持 JPG(当前仅 PNG)"
+          }
+        }
+      }
+    },
+    "management.screenshot.format.note": {
+      "comment": "Screenshot format note",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MVP supports PNG only; more formats coming later."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MVP 仅支持 PNG,更多格式后续开放。"
+          }
+        }
+      }
+    },
+    "management.screenshot.includeShadow": {
+      "comment": "Option: include window shadow",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Include window shadow by default"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "默认包含窗口阴影"
+          }
+        }
+      }
+    },
+    "management.screenshot.playSound": {
+      "comment": "Option: play sound",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play sound after saving"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存后播放声音"
+          }
+        }
+      }
+    },
     "management.screenshot.saveDirectory": {
       "comment": "US-015 management center",
       "localizations": {
@@ -3822,6 +4893,125 @@
           "stringUnit": {
             "state": "translated",
             "value": "保存目录"
+          }
+        }
+      }
+    },
+    "management.screenshot.subtitle": {
+      "comment": "Screenshot page subtitle",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save location, format, and capture options"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存位置、格式与截图选项"
+          }
+        }
+      }
+    },
+    "management.searchSources.fileDirectories": {
+      "comment": "File search directories section",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "File Search Directories"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件搜索目录"
+          }
+        }
+      }
+    },
+    "management.searchSources.fileDirectories.note": {
+      "comment": "File dirs note",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "v1.3 will allow configuring these directories."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "v1.3 可配置这些目录。"
+          }
+        }
+      }
+    },
+    "management.searchSources.hint": {
+      "comment": "Search sources hint",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The more sources enabled, the more complete the results; disabled sources no longer appear in the command bar."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用越多源,结果越全;关闭后命令栏不再展示该类结果。"
+          }
+        }
+      }
+    },
+    "management.searchSources.subtitle": {
+      "comment": "Search sources subtitle",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose which result types appear in the command bar"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择命令栏展示的结果类型"
+          }
+        }
+      }
+    },
+    "management.section.core": {
+      "comment": "Sidebar section: core features",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Core"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "核心功能"
+          }
+        }
+      }
+    },
+    "management.section.system": {
+      "comment": "Sidebar section: system",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统"
           }
         }
       }
@@ -4132,6 +5322,40 @@
         }
       }
     },
+    "management.shortcuts.subtitle": {
+      "comment": "Shortcuts page subtitle",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Global keyboard shortcuts"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全局快捷键"
+          }
+        }
+      }
+    },
+    "management.sidebar.searchPlaceholder": {
+      "comment": "Sidebar filter placeholder",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索设置"
+          }
+        }
+      }
+    },
     "management.source.app": {
       "comment": "US-015 management center",
       "localizations": {
@@ -4349,6 +5573,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "管理中心"
+          }
+        }
+      }
+    },
+    "management.updates.current": {
+      "comment": "Current version section",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Current Version"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前版本"
+          }
+        }
+      }
+    },
+    "management.updates.note": {
+      "comment": "Updates note",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This version is distributed via GitHub Releases. Checking for updates opens the download page in your browser."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前版本通过 GitHub Releases 分发,检查更新将在浏览器打开下载页。"
+          }
+        }
+      }
+    },
+    "management.updates.subtitle": {
+      "comment": "Updates page subtitle",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version and update checks"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "版本与更新检查"
           }
         }
       }
@@ -6529,27 +7804,6 @@
         }
       }
     },
-    "screenshot.source.region": {
-      "comment": "Badge label for region capture in preview",
-      "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Region" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "区域" } }
-      }
-    },
-    "screenshot.source.window": {
-      "comment": "Badge label for window capture in preview",
-      "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Window" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "窗口" } }
-      }
-    },
-    "screenshot.source.screen": {
-      "comment": "Badge label for full-screen capture in preview",
-      "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Full Screen" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "全屏" } }
-      }
-    },
     "screenshot.savePanel.filename": {
       "comment": "Filename format for screenshot save. %@ is date-time string.",
       "localizations": {
@@ -6580,6 +7834,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "保存截图"
+          }
+        }
+      }
+    },
+    "screenshot.source.region": {
+      "comment": "Badge label for region capture in preview",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Region"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "区域"
+          }
+        }
+      }
+    },
+    "screenshot.source.screen": {
+      "comment": "Badge label for full-screen capture in preview",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full Screen"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全屏"
+          }
+        }
+      }
+    },
+    "screenshot.source.window": {
+      "comment": "Badge label for window capture in preview",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Window"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "窗口"
           }
         }
       }
