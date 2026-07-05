@@ -42,6 +42,8 @@ struct UsageStatSnapshot: Hashable {
 protocol UsageStatRepositoryProtocol: SearchUsageStoreProtocol {
     func usage(targetType: String, targetID: String) async -> UsageStatSnapshot?
     func recordUse(targetType: String, targetID: String) async throws -> UsageStatSnapshot
+    /// Most-recently-used stats across all target types, newest first (T-011 command bar home).
+    func recentlyUsed(limit: Int) async -> [UsageStatSnapshot]
 }
 
 /// Core Data backed UsageStat repository used by AppSource and later CommandSource.
@@ -68,6 +70,19 @@ final class UsageStatRepository: UsageStatRepositoryProtocol {
             } catch {
                 return nil
             }
+        }
+    }
+
+    func recentlyUsed(limit: Int) async -> [UsageStatSnapshot] {
+        guard limit > 0 else { return [] }
+        let context = persistence.viewContext
+        return await context.perform {
+            let request = CDUsageStat.fetchRequest()
+            request.predicate = NSPredicate(format: "lastUsedAt != nil")
+            request.sortDescriptors = [NSSortDescriptor(key: "lastUsedAt", ascending: false)]
+            request.fetchLimit = limit
+            let stats = (try? context.fetch(request)) ?? []
+            return stats.map(Self.snapshot(from:))
         }
     }
 

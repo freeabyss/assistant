@@ -322,7 +322,19 @@ final class AppContainer: NSObject {
             blacklistChecker: blacklistChecker,
             actionExecutor: actionExecutor
         )
-        return SearchPanelViewModel(searchService: service, onClose: onClose)
+        let homeProvider = CommandBarHomeProvider(
+            usageRepository: usageStore,
+            appSource: appSearchSource,
+            clipboardRepository: clipboardRepository
+        )
+        return SearchPanelViewModel(
+            searchService: service,
+            homeProvider: homeProvider,
+            onOpenSettings: { [weak self] in
+                self?.settingsWindowController.show(route: .settings)
+            },
+            onClose: onClose
+        )
     }
 
     /// Builds a clipboard-history list view model backed by the shared repository/index.

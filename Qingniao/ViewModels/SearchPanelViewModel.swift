@@ -3,6 +3,48 @@ import Combine
 import Foundation
 import os.log
 
+/// Search-source filter selectable via ⌘1-6 in the command bar (T-011, PRD §9.6).
+enum CommandBarSource: Int, CaseIterable, Identifiable {
+    case all = 1
+    case app = 2
+    case command = 3
+    case clipboard = 4
+    case file = 5
+    case settings = 6
+
+    var id: Int { rawValue }
+
+    /// The `SearchSourceID` this filter keeps, or `nil` for "所有".
+    var sourceID: SearchSourceID? {
+        switch self {
+        case .all: return nil
+        case .app: return .app
+        case .command: return .command
+        case .clipboard: return .clipboard
+        case .file: return .file
+        case .settings: return .settings
+        }
+    }
+
+    /// Whether a result belongs to this filter. Calculator/convert results are
+    /// treated as part of "所有" only (they have no dedicated ⌘ slot).
+    func matches(_ result: SearchResult) -> Bool {
+        guard let sourceID else { return true }
+        return result.sourceID == sourceID
+    }
+
+    var localizedTitleKey: String {
+        switch self {
+        case .all: return "commandBar.source.all"
+        case .app: return "commandBar.source.app"
+        case .command: return "commandBar.source.command"
+        case .clipboard: return "commandBar.source.clipboard"
+        case .file: return "commandBar.source.file"
+        case .settings: return "commandBar.source.settings"
+        }
+    }
+}
+
 @MainActor
 final class SearchPanelViewModel: ObservableObject {
     @Published var query: String = ""
@@ -13,53 +55,172 @@ final class SearchPanelViewModel: ObservableObject {
     @Published var showToast: Bool = false
     @Published var toastMessage: String = ""
 
+    /// Active ⌘1-6 source filter (default "所有").
+    @Published var activeSource: CommandBarSource = .all
+
+    /// Empty-query home content (T-011 / D-120).
+    @Published private(set) var recentResults: [SearchResult] = []
+    @Published private(set) var favoriteResults: [SearchResult] = []
+
+    /// Pending danger command awaiting `⏎` confirmation; drives `JadeConfirmationDialog`.
+    @Published var pendingDangerResult: SearchResult?
+
     private let searchService: SearchServiceProtocol
+    private let homeProvider: CommandBarHomeProviding?
+    private let dangerCommandIDs: Set<String>
     private let onClose: () -> Void
+    private let onOpenSettings: () -> Void
     private let logger = Logger.search
     private var cancellables = Set<AnyCancellable>()
+
+    static let homeSectionLimit = 5
 
     var hasQuery: Bool {
         !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    var selectedResult: SearchResult? {
-        guard results.indices.contains(selectedIndex) else { return nil }
-        return results[selectedIndex]
+    /// Home content is shown when there is no query. It is non-empty only when at
+    /// least one section has data.
+    var hasHomeContent: Bool {
+        !recentResults.isEmpty || !favoriteResults.isEmpty
     }
 
-    init(searchService: SearchServiceProtocol, onClose: @escaping () -> Void = {}) {
+    /// Results filtered by the active ⌘1-6 source (search mode).
+    var visibleResults: [SearchResult] {
+        results.filter { activeSource.matches($0) }
+    }
+
+    var selectedResult: SearchResult? {
+        let list = visibleResults
+        guard list.indices.contains(selectedIndex) else { return nil }
+        return list[selectedIndex]
+    }
+
+    init(
+        searchService: SearchServiceProtocol,
+        homeProvider: CommandBarHomeProviding? = nil,
+        dangerCommandIDs: Set<String> = SearchPanelViewModel.defaultDangerCommandIDs,
+        onOpenSettings: @escaping () -> Void = {},
+        onClose: @escaping () -> Void = {}
+    ) {
         self.searchService = searchService
+        self.homeProvider = homeProvider
+        self.dangerCommandIDs = dangerCommandIDs
         self.onClose = onClose
+        self.onOpenSettings = onOpenSettings
         setupDebounce()
+    }
+
+    /// Danger commands that require a `⏎` second confirmation (PRD §9.5 / T-011).
+    static let defaultDangerCommandIDs: Set<String> = [
+        "clearClipboardHistory",
+        "restartFinder",
+        "restartDock"
+    ]
+
+    /// Whether a result is a danger command (shows ⚠️ badge + confirmation dialog).
+    func isDangerous(_ result: SearchResult) -> Bool {
+        guard case .runCommand(let commandID) = result.primaryAction else { return false }
+        return dangerCommandIDs.contains(commandID.rawValue)
+    }
+
+    /// Whether the result is the calculator/convert top answer, pinned to row 0.
+    func isCalculatorTopResult(_ result: SearchResult) -> Bool {
+        result.sourceID == .calculator && visibleResults.first?.id == result.id
     }
 
     func open() {
         query = ""
+        activeSource = .all
+        pendingDangerResult = nil
         clearResults()
+        Task { await loadHomeContent() }
     }
 
     func close() {
         onClose()
     }
 
+    func openSettings() {
+        onOpenSettings()
+    }
+
+    /// Clears the input (⌘K). Reloads home content.
+    func clearInput() {
+        query = ""
+    }
+
+    func selectSource(_ source: CommandBarSource) {
+        activeSource = source
+        selectedIndex = 0
+    }
+
     func moveUp() {
-        guard !results.isEmpty else { return }
-        selectedIndex = selectedIndex > 0 ? selectedIndex - 1 : results.count - 1
+        let count = visibleResults.count
+        guard count > 0 else { return }
+        selectedIndex = selectedIndex > 0 ? selectedIndex - 1 : count - 1
     }
 
     func moveDown() {
-        guard !results.isEmpty else { return }
-        selectedIndex = selectedIndex < results.count - 1 ? selectedIndex + 1 : 0
+        let count = visibleResults.count
+        guard count > 0 else { return }
+        selectedIndex = selectedIndex < count - 1 ? selectedIndex + 1 : 0
     }
 
     func select(_ result: SearchResult) {
-        guard let index = results.firstIndex(where: { $0.id == result.id }) else { return }
+        guard let index = visibleResults.firstIndex(where: { $0.id == result.id }) else { return }
         selectedIndex = index
     }
 
     func confirmSelection() {
         guard let result = selectedResult else { return }
+        trigger(result)
+    }
+
+    /// Runs a result's primary action, routing danger commands through confirmation.
+    func trigger(_ result: SearchResult) {
+        if isDangerous(result) {
+            pendingDangerResult = result
+            return
+        }
         Task { await execute(result) }
+    }
+
+    /// Confirms the pending danger command (invoked by the confirmation dialog).
+    func confirmPendingDanger() {
+        guard let result = pendingDangerResult else { return }
+        pendingDangerResult = nil
+        Task { await execute(result) }
+    }
+
+    func cancelPendingDanger() {
+        pendingDangerResult = nil
+    }
+
+    /// Copies the current selection's value (text / path / result value) to the
+    /// pasteboard without executing its primary action (⌘C, PRD §9.6).
+    func copyCurrentValue() {
+        guard let result = selectedResult, let text = copyableText(for: result) else { return }
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
+        showToast(message: L10n.localized("commandBar.copied"))
+    }
+
+    private func copyableText(for result: SearchResult) -> String? {
+        switch result.primaryAction {
+        case .copyText(let text):
+            return text
+        case .openFile(let url), .revealInFinder(let url):
+            return url.path
+        case .openApplication:
+            if case .appIcon(let url) = result.icon { return url.path }
+            return result.subtitle
+        case .copyClipboardRecord:
+            return result.title
+        case .runCommand, .openSettings, .startScreenshot:
+            return result.title
+        }
     }
 
     func execute(_ result: SearchResult) async {
@@ -75,10 +236,24 @@ final class SearchPanelViewModel: ObservableObject {
         }
     }
 
+    func loadHomeContent() async {
+        guard let homeProvider else {
+            recentResults = []
+            favoriteResults = []
+            return
+        }
+        let limit = Self.homeSectionLimit
+        async let recents = homeProvider.recentResults(limit: limit)
+        async let favorites = homeProvider.favoriteResults(limit: limit)
+        recentResults = await recents
+        favoriteResults = await favorites
+    }
+
     func searchNow() async {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             clearResults()
+            await loadHomeContent()
             return
         }
 
@@ -87,9 +262,9 @@ final class SearchPanelViewModel: ObservableObject {
 
         let response = await searchService.search(query: trimmed)
         results = Array(response.results.prefix(SearchService.defaultResultLimit))
-        selectedIndex = results.isEmpty ? 0 : min(selectedIndex, results.count - 1)
+        selectedIndex = 0
         elapsed = response.elapsed * 1000
-        logger.info("SearchPanel query returned \(self.results.count) results in \(String(format: "%.1f", self.elapsed))ms")
+        logger.info("CommandBar query returned \(self.results.count) results in \(String(format: "%.1f", self.elapsed))ms")
     }
 
     private func setupDebounce() {
@@ -98,6 +273,14 @@ final class SearchPanelViewModel: ObservableObject {
             .removeDuplicates()
             .sink { [weak self] _ in
                 Task { await self?.searchNow() }
+            }
+            .store(in: &cancellables)
+
+        // Reset selection when the source filter changes so the highlight stays in bounds.
+        $activeSource
+            .removeDuplicates()
+            .sink { [weak self] _ in
+                self?.selectedIndex = 0
             }
             .store(in: &cancellables)
     }

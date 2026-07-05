@@ -47,6 +47,7 @@
 		A10001000000000000000025 /* FileSearchSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000025; };
 		A1000100000000000000002D /* SystemCommandSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002D; };
 		A1000100000000000000002E /* CalculatorSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002E; };
+		C011000000000000000000E1 /* CommandBarHomeProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C011000000000000000000E2; };
 		A10001000000000000000026 /* ScreenshotService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000026; };
 		A10001000000000000000027 /* ScreenshotOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000027; };
 		A1000100000000000000002C /* KeyEventHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002C; };
@@ -155,6 +156,7 @@
 		A10000000000000000000025 /* FileSearchSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchSource.swift; sourceTree = "<group>"; };
 		A1000000000000000000002D /* SystemCommandSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemCommandSource.swift; sourceTree = "<group>"; };
 		A1000000000000000000002E /* CalculatorSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorSource.swift; sourceTree = "<group>"; };
+		C011000000000000000000E2 /* CommandBarHomeProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandBarHomeProvider.swift; sourceTree = "<group>"; };
 		A10000000000000000000026 /* ScreenshotService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotService.swift; sourceTree = "<group>"; };
 		A10000000000000000000027 /* ScreenshotOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotOverlay.swift; sourceTree = "<group>"; };
 		A1000000000000000000002C /* KeyEventHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyEventHandler.swift; sourceTree = "<group>"; };
@@ -491,6 +493,7 @@
 				A10000000000000000000025 /* FileSearchSource.swift */,
 				A1000000000000000000002D /* SystemCommandSource.swift */,
 				A1000000000000000000002E /* CalculatorSource.swift */,
+				C011000000000000000000E2 /* CommandBarHomeProvider.swift */,
 				A10000000000000000000044 /* InMemorySearchIndex.swift */,
 				B00500000000000000000002 /* SearchCore.swift */,
 				B00600000000000000000006 /* SettingsSource.swift */,
@@ -854,6 +857,7 @@
 				A10001000000000000000025 /* FileSearchSource.swift in Sources */,
 				A1000100000000000000002D /* SystemCommandSource.swift in Sources */,
 				A1000100000000000000002E /* CalculatorSource.swift in Sources */,
+				C011000000000000000000E1 /* CommandBarHomeProvider.swift in Sources */,
 				A10001000000000000000044 /* InMemorySearchIndex.swift in Sources */,
 				B00500000000000000000001 /* SearchCore.swift in Sources */,
 				B00600000000000000000005 /* SettingsSource.swift in Sources */,
