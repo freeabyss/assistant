@@ -1,6 +1,11 @@
 import SwiftUI
 
 /// A brief overlay toast notification that appears at the center of its parent.
+///
+/// - Note: This is the single surviving Toast implementation after the v1.2
+///   T-005 convergence (the RecentContentView overlay and the standalone GRDB
+///   path toasts were removed). T-007 rewrites this into the Jade-styled
+///   `JadeToast` (center/bottom, slide+fade, auto-dismiss, primary/danger).
 struct ToastView: View {
     let message: String
 

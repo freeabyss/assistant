@@ -324,6 +324,10 @@ private struct ScreenshotPreviewView: View {
             )
 
             if let toast = viewModel.toastMessage {
+                // TODO: T-007 — migrate this inline overlay to the unified JadeToast
+                // component (JadeToast replaces ToastView.swift). Kept inline for now
+                // because the screenshot preview is a standalone NSHostingView and the
+                // JadeToast component does not exist yet.
                 Text(toast)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.white)
