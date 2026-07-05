@@ -3,14 +3,14 @@
 import PackageDescription
 
 let package = Package(
-    name: "Assistant",
+    name: "Qingniao",
     platforms: [
         .macOS(.v13)
     ],
     products: [
         .library(
-            name: "SnapVault",
-            targets: ["SnapVault"]
+            name: "Qingniao",
+            targets: ["Qingniao"]
         )
     ],
     dependencies: [
@@ -20,17 +20,17 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "SnapVault",
+            name: "Qingniao",
             dependencies: [
                 .product(name: "GRDB", package: "GRDB.swift"),
                 .product(name: "KeyboardShortcuts", package: "KeyboardShortcuts"),
                 .product(name: "Sparkle", package: "Sparkle")
             ],
-            path: "SnapVault",
+            path: "Qingniao",
             exclude: [
-                "App/SnapVaultApp.swift",
+                "App/QingniaoApp.swift",
                 "Info.plist",
-                "SnapVault.entitlements",
+                "Qingniao.entitlements",
                 "Resources/Assets.xcassets",
                 "Resources/appcast.xml",
                 "Resources/Localizable.xcstrings",
@@ -40,9 +40,9 @@ let package = Package(
             ]
         ),
         .testTarget(
-            name: "SnapVaultTests",
-            dependencies: ["SnapVault"],
-            path: "SnapVaultTests"
+            name: "QingniaoTests",
+            dependencies: ["Qingniao"],
+            path: "QingniaoTests"
         )
     ]
 )

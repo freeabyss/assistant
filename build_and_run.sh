@@ -1,15 +1,15 @@
 #!/bin/bash
 
-# SnapVault 构建并启动脚本
+# Qingniao 构建并启动脚本
 # 用法: ./build_and_run.sh [clean|build|run|all]
 
 set -e  # 遇到错误立即退出
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_NAME="SnapVault"
-SCHEME_NAME="SnapVault"
+PROJECT_NAME="Qingniao"
+SCHEME_NAME="Qingniao"
 DERIVED_DATA_PATH="${PROJECT_DIR}/DerivedData"
-APP_PATH="${DERIVED_DATA_PATH}/Build/Products/Debug/Assistant.app"
+APP_PATH="${DERIVED_DATA_PATH}/Build/Products/Debug/Qingniao.app"
 
 # 颜色输出
 RED='\033[0;31m'
@@ -120,7 +120,7 @@ run_app() {
 
 # 显示帮助信息
 show_help() {
-    echo "SnapVault 构建并启动脚本"
+    echo "Qingniao 构建并启动脚本"
     echo ""
     echo "用法: $0 [命令]"
     echo ""
