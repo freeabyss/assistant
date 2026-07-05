@@ -94,7 +94,7 @@
         "CMD-008 回归"
       ],
       "done_definition": "entitlements 无 app-sandbox=true；14 条白名单命令在本地非 sandbox 环境下全部可执行；Release 配置签名后 spctl --assess -vvv Qingniao.app 返回 accepted",
-      "passes": false
+      "passes": true
     },
     {
       "id": "T-003",

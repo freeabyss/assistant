@@ -159,3 +159,25 @@ TOK(6) 设计 token / BRAND(7) 改名一致性 / DATA(5) 数据迁移 / DI(3) Ap
 - entitlements 仍含 `com.apple.security.app-sandbox=true`，由 T-002 关闭。
 - 数据目录仍为 Assistant/（PersistenceController 等），由 T-003 迁移到 Qingniao/。
 - markdown 文档（README/PRIVACY/THIRD_PARTY_NOTICES/CHANGELOG）品牌未改，归 T-016；注意 ReleaseInfoServiceTests.testProjectHomepageContainsUS020... 仍断言 README 含 `feedback@assistant.app` 与旧 URL，README 改名时（T-016）需同步或该用例会失败（本任务未跑该用例；build 已通过）。
+
+---
+
+## T-002 关闭 Sandbox + Hardened Runtime + Developer ID 签名/entitlements（已完成 · 2026-07-03）
+
+### 完成内容
+1. **Qingniao/Qingniao.entitlements**：
+   - `com.apple.security.app-sandbox` 由 `true` 改为 `false`（Developer ID 分发，非 Mac App Store）。
+   - 新增 `com.apple.security.automation.apple-events`=`true`，使 restartFinder/restartDock/toggleAppearance 及控制其他 App 的 AppleEvents 在关闭沙盒后可靠执行。
+   - 保留 `com.apple.security.files.user-selected.read-write`、`com.apple.security.screencapture`。
+2. **Qingniao.xcodeproj/project.pbxproj**：Qingniao target 的 Debug 与 Release 配置均加入 `ENABLE_HARDENED_RUNTIME = YES`（公证要求）。Bundle ID 保持 `com.assistant.app`，CODE_SIGN_STYLE 仍 Automatic（本地 Debug 用 ad-hoc/Sign to Run Locally）。
+3. **build_and_run.sh**：新增 `build_for_release` 函数与 `release` 子命令。流程：Release clean build → `codesign --force --deep --options runtime --timestamp --entitlements ... --sign "$DEVELOPER_ID_APP"` → `codesign --verify --deep --strict` → `ditto` 打 zip → `xcrun notarytool submit --keychain-profile "$AC_NOTARY_PROFILE" --wait` → `xcrun stapler staple` → `spctl --assess -vvv --type execute`。证书/公证凭据经环境变量 `DEVELOPER_ID_APP` / `AC_NOTARY_PROFILE` 注入。缺少 DEVELOPER_ID_APP 时快速失败；缺少 AC_NOTARY_PROFILE 时仅完成签名并告警（便于无证书环境验证前半程）。help 文本同步。
+
+### 验证结果
+- `xcodebuild -project Qingniao.xcodeproj -scheme Qingniao -configuration Debug build` → **BUILD SUCCEEDED**。
+- 构建产物 Qingniao.app 的 `codesign -d --entitlements` 确认：`app-sandbox=false`、`automation.apple-events=true`。
+- 14 条白名单命令目录（AssistantCommandCatalog.commands）数量不变仍为 14；SystemCommandSource 执行 restartFinder/restartDock 用 NSRunningApplication.terminate、toggleAppearance 切 NSApp.appearance——关闭 sandbox 后这些 NSWorkspace/AppKit 路径不再受沙盒限制。
+- `bash -n build_and_run.sh` 语法 OK；`release` 在无 DEVELOPER_ID_APP 时正确快速失败（exit 1）。
+
+### 未覆盖 / 待人工
+- **signing + notarytool 实跑未执行**：本地无 Developer ID Application 证书与 notarytool keychain profile，无法真正签名/公证/staple，故 `spctl --assess ... accepted` 与 done_definition 中「Release 配置签名后 spctl 返回 accepted」需在具备证书的机器上由人工用 `DEVELOPER_ID_APP=... AC_NOTARY_PROFILE=... ./build_and_run.sh release` 验证。Debug 用的是 ad-hoc 签名（flags=0x2 adhoc），不体现 hardened runtime 标志，但 ENABLE_HARDENED_RUNTIME 已写入工程，真实 Developer ID 签名时生效。
+- 白名单命令的「实机执行成功」（CMD-001/006/007/008 回归）属手工验收（需运行 App 实际点按），归 T-019 全量回归；本任务仅从代码路径 + entitlements 层面确认已解除沙盒限制。
