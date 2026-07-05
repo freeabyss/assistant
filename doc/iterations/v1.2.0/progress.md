@@ -219,3 +219,64 @@ TOK(6) 设计 token / BRAND(7) 改名一致性 / DATA(5) 数据迁移 / DI(3) Ap
 - Swift 类型改名（AssistantError→QingniaoError 等）不在本任务，T-005/T-006 处理。
 - AccentColor.colorset 已建立，macOS 会自动将其作为 App accent；同时代码层显式 `.tint(JadeColor.primary)` 双保险，二者一致（都是 Jade 主色，明暗自适应）。
 - Preview 可在 Xcode Canvas 逐个查看：JadeColor（明暗色板）/JadeRadius/JadeSpace/JadeFont/JadeShadow/JadeMaterial。命令行 xcodebuild 无法渲染 Canvas，需人工在 Xcode 打开验证（TOK-001~006/ACC-005 的 Canvas 目视项）。
+
+---
+
+## T-003 数据目录迁移 Assistant/ → Qingniao/ 与清空所有数据 + 打开数据目录（已完成 · 2026-07-05）
+
+### 完成内容
+
+**1. 数据目录路径常量改名（Assistant → Qingniao）**
+- `Qingniao/Database/AssistantFileSystem.swift`：新增静态常量 `directoryName="Qingniao"`、`legacyDirectoryName="Assistant"`、`storeFileName="Qingniao.sqlite"`、`legacyStoreFileName="Assistant.sqlite"`、`applicationSupportDirectory`；`.default` 与 `storeURL` 改用新常量。文件名保留 `AssistantFileSystem.swift`（db.md 允许保留；不重命名以免大面积改 pbxproj/引用，struct 名不变，仅路径常量改）。
+- `Qingniao/Database/PersistenceController.swift`：`NSPersistentContainer(name:)` 由 "Assistant" → "Qingniao"（store 落到 Qingniao/Qingniao.sqlite）。lightweight migration 原本已开启（`shouldMigrateStoreAutomatically`/`shouldInferMappingModelAutomatically` = true，等价 NSMigratePersistentStoresAutomaticallyOption + NSInferMappingModelAutomaticallyOption），保持不动。
+- `Qingniao/Database/DatabaseManager.swift`（GRDB legacy，保留）：`databaseURL()` 由 Assistant/assistant.db → Qingniao/assistant.db（用 `AssistantFileSystem.directoryName`）；文件名 assistant.db 不改（legacy 只读兼容，T-005 处理）。加 legacy 注释。
+- `Qingniao/App/AppDelegate.swift`：`createApplicationSupportDirectory()` 目录名改用 `AssistantFileSystem.directoryName`。
+
+**2. 启动时目录迁移（新文件 DataDirectoryMigrator.swift）**
+- `Qingniao/Database/DataDirectoryMigrator.swift`（新建）：
+  - `migrateIfNeeded() -> Outcome`：新目录存在→alreadyMigrated；无旧目录→freshInstall；旧目录存在且新目录不存在→`FileManager.moveItem` 整目录 rename + 重命名 store 文件 Assistant.sqlite(/-shm/-wal)→Qingniao.sqlite(...)（migrated）。
+  - move 失败 fallback：`copyItem` 旧目录到 `Qingniao-migration-backup-<ISO8601 无冒号时间戳>/`，再建空 Qingniao/，返回 `.fallbackBackup(backupURL, underlying)`。永不抛错，保证启动不阻塞。
+  - 可注入 applicationSupportDirectory/fileManager/now，便于测试。
+- `AppDelegate.applicationDidFinishLaunching` 最前面（DatabaseManager.setup / PersistenceController.load 之前）调用 `migrateDataDirectoryIfNeeded()`；fallback 分支弹 NSAlert（data.migration.failed.* 本地化）并可在 Finder 显示备份目录。
+
+**3. AppSetting 默认值更新（db.md §8.3）**
+- `PersistenceController.AssistantSettingDefaults.values` 新增：`onboarding.completedAt`(空串=nil)、`hotkey.capture.region`(shift+ctrl+cmd+4)、`hotkey.capture.window`(shift+ctrl+cmd+5)、`hotkey.capture.fullscreen`(ctrl+option+cmd+3)、`search.source.file.enabled`(true)、`appearance.mode`(system)、`data.folderBookmark`(空串=nil)。
+- **保留 `onboarding.completed`(false)**：现有 onboarding 门禁（AppDelegate.loadOnboardingCompletionState / OnboardingViewModel）仍读旧布尔键；切换到 completedAt 语义属后续任务，本任务只新增 completedAt 不破坏门禁。
+- `Qingniao/Models/AppSetting.swift`：`SettingKey` 新增 case onboardingCompletedAt/captureRegionHotkey/captureWindowHotkey/captureFullscreenHotkey/fileSourceEnabled/appearanceMode/dataFolderBookmark；新增 `AppearanceMode` enum(system/light/dark) + SettingsService encode/decode 支持。
+
+**4. DataManagementService（新文件，供 T-013 UI 接）**
+- `Qingniao/Services/DataManagement/DataManagementService.swift`（新建，含 DataManagement 组）：
+  - `resetAllData() async throws`：remove 已加载 persistent store → 删 Qingniao.sqlite(/-shm/-wal) → 删 Clipboard/Images|Thumbnails|RichText → `removePersistentDomain(forName: bundleIdentifier)`（用 com.assistant.app 域，不动 UserDefaults.standard 全局）→ post `.dataDidReset`。失败抛 `DataManagementError.dataResetFailed(reason:)`。
+  - `openDataDirectory() -> Bool`：确保 Qingniao/ 存在后 `NSWorkspace.open`。
+  - `exportData() throws`：v1.3 占位（assertionFailure + print + log），UI 侧 disabled+tooltip。
+  - 新增 `Notification.Name.dataDidReset`（com.assistant.dataDidReset）。
+  - 错误类型：因 QingniaoError 伞类型尚不存在（SnapVaultError→QingniaoError 改名属 T-005/T-006），本任务用局部 `DataManagementError.dataResetFailed`。
+
+**5. SettingsViewModel 暴露给 T-013 的方法**
+- `Qingniao/ViewModels/SettingsViewModel.swift`：注入 `DataManagementService`；新增 @Published `showResetAllDataConfirmation`/`showResetAllDataRestartAlert`/`isResettingAllData`；方法 `requestResetAllData()`、`confirmResetAllData() async`、`openDataDirectory()`、`exportData()`。
+
+**6. 本地化**：Localizable.xcstrings 新增 data.reset.failed / data.migration.failed.{title,message,reveal,dismiss} / management.data.reset.done（中英）。
+
+**7. Xcode 工程接入**：手工维护 pbxproj，用 `F005...` 前缀 ID 新增 3 个 SOURCE_ROOT 全路径 PBXFileReference（DataDirectoryMigrator.swift 挂 Database 组、DataManagementService.swift 挂新建 DataManagement 组、DataDirectoryMigratorTests.swift 挂 QingniaoTests 组）+ 对应 PBXBuildFile + app/test Sources build phase。
+
+### 验证结果
+- `swift build` → Build complete（仅存量 warning）。
+- `xcodebuild -project Qingniao.xcodeproj -scheme Qingniao -configuration Debug build` → **BUILD SUCCEEDED**。
+- `swift test`（Persistence/Settings/DatabaseManager）19 passed；`xcodebuild test`（DataDirectoryMigrator/Persistence/DatabaseManager）15 passed，含新增 3 条迁移测试（freshInstall/alreadyMigrated/move+rename）。
+- 更新受路径改名影响的既有测试：PersistenceControllerTests storeURL 断言 Assistant.sqlite→Qingniao.sqlite；DatabaseManagerTests 路径断言 Assistant→Qingniao。
+
+### 暴露给 T-013 的 API 签名
+- `DataManagementService.resetAllData() async throws`
+- `DataManagementService.openDataDirectory() -> Bool`（@discardableResult）
+- `DataManagementService.exportData() throws`（v1.3 占位，UI disabled）
+- `Notification.Name.dataDidReset`
+- `SettingsViewModel.requestResetAllData()` / `.confirmResetAllData() async` / `.openDataDirectory()` / `.exportData()`
+- `SettingsViewModel` @Published：`showResetAllDataConfirmation`、`showResetAllDataRestartAlert`、`isResettingAllData`
+- 新枚举 `AppearanceMode`(system/light/dark) + `SettingKey` 新 case（appearanceMode/fileSourceEnabled/dataFolderBookmark/三截图热键/onboardingCompletedAt）
+
+### 留给后续 agent 的提示
+- **onboarding 门禁仍用旧 `onboarding.completed` 布尔**：本任务按"新增"要求加了 `onboarding.completedAt` 默认值与 SettingKey，但未切换 AppDelegate/OnboardingViewModel 的判定逻辑（避免破坏 v1.1 已修的 onboarding 死锁）。若要落实 db.md §8.3"completedAt 取代 completed"，需在专门任务里改门禁 + 迁移旧值 + 更新 OnboardingViewModelTests。
+- 「清空所有数据后重启回到 onboarding」：resetAllData 会清 completed 键（随 UserDefaults 域 + Core Data store 一并没了），重启后 initializeDefaultSettings 重建默认（completed=false）→ 回到 onboarding。DataManagementService 只 post .dataDidReset，**实际重启由 UI（T-013）提示用户手动重启或调用 relaunch**，本任务不实现自动重启。
+- DataManagementService 的 `resetAllData` 依赖 `PersistenceController.shared.container` 已加载；若在未 load 的实例上调用需注意。
+- 截图热键默认值只写进了 AppSetting 默认表（字符串形式），**并未接到 KeyboardShortcuts.Name / 实际热键注册**（KeyboardShortcuts+Names.swift 里 captureRegion/captureWindow 仍是 cmd+shift+a/w，无 fullscreen Name）。热键实际绑定/注册属截图相关任务。
+- 数据文件夹安全书签 `data.folderBookmark` 仅加了默认空值键，未实现书签解析/持久化逻辑（关闭 Sandbox 后的用户选择目录场景）。

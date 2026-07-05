@@ -64,6 +64,7 @@ final class SettingsViewModel: ObservableObject {
     private let launchAtLoginService: LaunchAtLoginServiceProtocol
     private let notificationCenter: NotificationCenter
     private let userDefaults: UserDefaults
+    private let dataManagementService: DataManagementService
     private let logger = Logger.app
 
     @Published var selectedPage: ManagementCenterPage = .overview
@@ -85,6 +86,12 @@ final class SettingsViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var showDirectoryImporter = false
     @Published var showLanguageRestartAlert = false
+
+    /// v1.2 (T-003): drives the "清空所有数据" confirmation + post-reset restart prompt
+    /// on the settings Data page (T-013 UI binds to these).
+    @Published var showResetAllDataConfirmation = false
+    @Published var showResetAllDataRestartAlert = false
+    @Published var isResettingAllData = false
 
     var enabledSourceNames: String {
         let names = sourceToggles.filter(\.isEnabled).map(\.title)
@@ -125,7 +132,8 @@ final class SettingsViewModel: ObservableObject {
         permissionService: PermissionServiceProtocol = PermissionService(),
         launchAtLoginService: LaunchAtLoginServiceProtocol = LaunchAtLoginService(),
         notificationCenter: NotificationCenter = .default,
-        userDefaults: UserDefaults = .standard
+        userDefaults: UserDefaults = .standard,
+        dataManagementService: DataManagementService = DataManagementService()
     ) {
         self.settingsService = settingsService
         self.blacklistRepository = blacklistRepository
@@ -133,6 +141,7 @@ final class SettingsViewModel: ObservableObject {
         self.launchAtLoginService = launchAtLoginService
         self.notificationCenter = notificationCenter
         self.userDefaults = userDefaults
+        self.dataManagementService = dataManagementService
     }
 
     func load() async {
@@ -204,6 +213,40 @@ final class SettingsViewModel: ObservableObject {
 
     func updateScreenshotDirectory(_ directory: URL) {
         screenshotSaveDirectory = directory
+    }
+
+    // MARK: - Data page actions (T-003 / T-013)
+
+    /// User tapped "清空所有数据" — request the two-step confirmation before wiping.
+    func requestResetAllData() {
+        showResetAllDataConfirmation = true
+    }
+
+    /// Confirmed "清空所有数据": deletes the store, resource files, and UserDefaults
+    /// domain, then surfaces the restart prompt. On failure sets `errorMessage`.
+    func confirmResetAllData() async {
+        showResetAllDataConfirmation = false
+        isResettingAllData = true
+        defer { isResettingAllData = false }
+        do {
+            try await dataManagementService.resetAllData()
+            showResetAllDataRestartAlert = true
+            statusMessage = L10n.localized("management.data.reset.done")
+        } catch {
+            logger.error("Reset all data failed: \(error.localizedDescription, privacy: .public)")
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// "打开数据目录": reveal the Qingniao data directory in Finder.
+    func openDataDirectory() {
+        dataManagementService.openDataDirectory()
+    }
+
+    /// "导出数据": v1.3 placeholder. UI keeps the button disabled with a tooltip;
+    /// this exists so the binding compiles and logs if ever triggered.
+    func exportData() {
+        try? dataManagementService.exportData()
     }
 
     func refreshPermissions() async {

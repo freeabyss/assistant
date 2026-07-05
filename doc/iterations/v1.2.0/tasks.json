@@ -133,7 +133,7 @@
         "SETNEW-005"
       ],
       "done_definition": "新装环境下启动在 Qingniao/ 建库；从 v1.1 升级（手工复制旧 Assistant 目录）时自动迁移；清空所有数据后重启回到 onboarding；打开数据目录能在 Finder 定位",
-      "passes": false
+      "passes": true
     },
     {
       "id": "T-004",
