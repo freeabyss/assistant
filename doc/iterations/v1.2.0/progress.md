@@ -101,3 +101,36 @@ AC-FILE 文件搜索 E2E、AC-FULLSCREEN 全屏热键、AC-VERSION 版本号 1.2
 - ⑤ 拆任务：参考 review.md §八 建议的 T-A~T-O（改名/版本、数据迁移、AppContainer、窗口拆分、死代码清理×2、UnitConverter 合并、FileSearch 接入、全屏热键、Onboarding 单屏、关 Sandbox+签名+移除 Sparkle、DesignToken、外观/数据页+冲突检测、健壮性整改、测试同步）。注意 AppDelegate 拆分与 DesignToken 迁移是最大回归面（M-1/M-2），建议分批。
 - ⑤ 测试：FileSearchSourceTests 保留转为接线回归；UnitConverterSourceTests + OCR 相关测试删除。
 - code review 必查：onDemandAccessibilityCheck 的 Mock/Static 两 conformer 补齐（否则编译失败）。
+
+---
+
+## ⑤.1 测试用例生成 + 用例评审 —— doc/test/cases.md 第 11 节 + report.md 占位 + review.md
+
+**执行时间**：2026-07-03
+**产出**：
+- `doc/test/cases.md`：新增第 11 节「青鸟 Qingniao v1.2 测试用例」（+98 条 TC），并对第 5 节因 v1.2 UI 重设计受影响的旧 TC 就地标注「v1.2 修订」（6 处：Onboarding/菜单栏/搜索/剪贴板/截图/命令/关于），更新版本记录与修订记录表。文件由 471 行扩到约 1130 行。
+- `doc/test/report.md`：追加 v1.2.0 节（**计划占位**，开发未开始，不含执行结果）。
+- 新建 `doc/iterations/v1.2.0/test/review.md`：用例评审记录（APPROVED_WITH_MINOR_FIXES，阻塞级 0、改善级 4 已直接修订）。
+
+### v1.2 新增 TC 结构（98 条，20 个模块前缀）
+TOK(6) 设计 token / BRAND(7) 改名一致性 / DATA(5) 数据迁移 / DI(3) AppContainer / SEARCH-F(9) 文件搜索 / SEARCH-E(5) 命令栏空态增强 / SHOT-FS(4) 全屏热键 / SHOT-UI(5) 标注 UI / ONB-V2(8) Onboarding 单屏 / PERM-OD(3) 权限按需 / CODE(5) 死代码 / DIST(6) 分发签名 / UPD(3) 更新 / SHORTCUT(4) 快捷键 / SETNEW(5) 设置新页 / REG(7) 回归 / BUILD(2) 构建脚本 / ROBUST(2) 健壮性 / ACC(5) 无障碍 / I18N(4) 双语。
+- P0=49、P1=42、P2=7。P0 覆盖改名/迁移/文件搜索/全屏热键/onboarding/分发/死代码核心路径。
+- 每条含 关联 FR/AC、前置、步骤、预期、优先级、自动化类型、对应测试文件（或待建）。
+- 含 v1.2 追溯矩阵（P0 FR/AC→TC）+ P0 统计表 + 架构 M-1~M-6 看护映射。
+
+### 评审结论
+- **APPROVED_WITH_MINOR_FIXES**：阻塞级 0；改善级 4（均为 PRD/架构文档内既存不一致的测试侧下游映射，已直接修订 cases.md 并选定测试基线）。
+- 架构 6 改善级问题（M-1~M-6）每个至少 1 条 TC 看护，无遗漏。
+
+### 发现的 PRD/架构不一致（未改源文档，转 leader 校准；测试已选基线）
+1. FR-SEARCH-11 文件优先级 60 vs §9.3/D-121 的 75 —— 测试取 75（SEARCH-F-006）。
+2. FR-SEARCH-14/15 空态 vs D-120 最近+收藏 —— 测试取 D-120（SEARCH-E-001）。
+3. **[新]** 截图保存默认目录：FR-SHOT-10 `~/Pictures/Screenshots` vs §9.4 P-05 `~/Desktop` —— 测试取 FR-SHOT-10（SHOT-007）。
+4. **[新]** 区域/窗口截图默认热键：§9.6 `⇧⌃⌘4/5` vs §7.11/US-013 示例 `⌃⌥⌘4/5` —— 测试取 §9.6（SHORTCUT-002）。
+5. 文件搜索拼音/首字母：任务指令要求 vs FR-SEARCH-13「只做原文搜索」—— 测试以 FR-SEARCH-13 为准，拼音不作 P0 门禁（SEARCH-F-003）。
+
+### 留给后续 subagent 的提示
+- ⑤ 开发每完成一批任务（T-A~T-O），对应回填 report.md v1.2.0 节实际通过数/失败详情；swift/xcodebuild 基线在删 UnitConverter/OCR 用例 + 增 v1.2 新用例后重新核定。
+- 待建测试文件：DesignTokenTests / BrandingConsistencyTests / DataMigrationTests / AppContainerTests / GlobalShortcutTests / HotkeyConflictDetectorTests / OnDemandPermissionTests；FileSearchSourceTests 转接线回归。
+- 可入 CI 的脚本/静态校验：版本三源、entitlements、无 Sparkle、死代码 grep、强制解包 grep、build_and_run pgrep。
+- 上线前专项：反馈邮箱 feedback@qingniao.app 可收件、qingniao.app 域名/隐私政策 URL 最终确定。

@@ -81,3 +81,45 @@
   - TC-M-008 hotkey 触发按需申请 Alert（代码层 AppDelegate.ensureScreenRecordingPermission 补 request + code review 通过，端到端未验）
   - TC-M-009 SettingsViewModel 权限入口（P2 遗留：未改为注入 + 未补 request）
 - **详情**：doc/iterations/v1.1.0/test/report.md
+
+---
+
+## v1.2.0（2026-07-03 定稿用例；**开发未开始，本节为计划占位**，Issue #5）
+
+> 品牌改名青鸟 Qingniao 迭代。v1.2 测试用例已在 `cases.md` 第 11 节定稿（新增 98 条 TC，P0=49/P1=42/P2=7，前缀 TOK/BRAND/DATA/DI/SEARCH-F/SEARCH-E/SHOT-FS/SHOT-UI/ONB-V2/PERM-OD/CODE/DIST/UPD/SHORTCUT/SETNEW/REG/BUILD/ROBUST/ACC/I18N），并对第 5 节受 UI 重设计影响的旧 TC 就地标注「v1.2 修订」。评审记录见 `doc/iterations/v1.2.0/test/review.md`（结论 APPROVED_WITH_MINOR_FIXES，阻塞级 0）。
+>
+> **本节暂不填写执行结果**——开发（review.md §八 T-A~T-O 任务）尚未启动。以下为计划执行范围，待各开发任务完成后按批次回填实际通过数/失败详情。
+
+### 计划执行范围
+
+- **`swift test --skip-update`**：
+  - 新增/待建：`DesignTokenTests`、`BrandingConsistencyTests`、`DataMigrationTests`、`AppContainerTests`、`GlobalShortcutTests`、`HotkeyConflictDetectorTests`、`OnDemandPermissionTests`。
+  - 转接线回归：`FileSearchSourceTests`（从未实例化 → 接线后回归）。
+  - 增补：`SearchServiceCoreTests`（文件权重 75）、`SearchPanelViewModelTests`（空态最近+收藏、⌘1-6、⌘K）、`OnboardingViewModelTests`（单屏、按需权限、completedAt 持久化）、`PermissionServiceProtocolConformanceTests`（onDemandAccessibilityCheck 三 conformer）、`CalculatorSourceTests`（换算并入回归）、`UpdateServiceTests`（无 Sparkle、跳 Releases）。
+  - 删除：`UnitConverterSourceTests`、OCR 相关测试。
+  - 基线：v1.1 为 swift 134；删旧增新后于开发完成时重新核定（预期净增，具体数回填）。
+- **`xcodebuild build` / `xcodebuild test`**：改名后 scheme/target/product 名 Qingniao 应能构建（BUILD-002）；Xcode target 测试基线 v1.1 为 125，回填实际数。
+- **脚本 / 静态校验（可入 CI）**：版本号三源一致（BRAND-007）、entitlements 关 Sandbox + apple-events（DIST-001/002）、无 Sparkle 残留（UPD-001）、死代码 grep（CODE-001~005）、强制解包 grep（ROBUST-001）、build_and_run.sh pgrep Qingniao（BUILD-001）。
+- **手工验收清单范围**：
+  - 品牌/图标：BRAND-005；关于页 1.2.0（BRAND-006）。
+  - 文件搜索 E2E：AC-FILE（SEARCH-F-005）。
+  - 全屏截图热键 E2E：AC-FULLSCREEN（SHOT-FS-002）。
+  - Onboarding 单屏 + 屏幕录制 TCC + 辅助功能稍后 + 重启不重弹：ONB-V2-001/003/005/008、PERM-OD-002。
+  - 分发签名：AC-CMD-SANDBOX（DIST-003）、AC-SIGN（DIST-004/005）、Gatekeeper、公证 staple。
+  - 截图标注 UI：SHOT-UI-001~005（pill 工具条、mosaic、blur 禁用 tooltip）。
+  - 设置新页：SETNEW-001~005（外观/数据/清空/打开目录/侧栏分组）。
+  - 无障碍：ACC-001~005（VoiceOver、键盘遍历、对比度、减弱动效）。
+  - i18n：I18N-002（长英文不截断）。
+  - 剪贴板/命令/截图/权限回归：REG-001~007。
+- **上线前专项校验**：反馈邮箱 feedback@qingniao.app 真实可收件（BRAND-004）；官网/隐私政策 URL（qingniao.app 域名）最终确定。
+
+### 待回填指标（开发完成后）
+
+| 维度 | 计划 | 实际 |
+|------|------|------|
+| swift test | 全绿，基线重新核定 | 待回填 |
+| xcodebuild build | BUILD SUCCEEDED（target Qingniao） | 待回填 |
+| xcodebuild test | 全绿 | 待回填 |
+| P0 TC（49 条） | 全过 | 待回填 |
+| 手工验收（AC-FILE/FULLSCREEN/VERSION/ONBOARD/CMD-SANDBOX/SIGN 等） | 全过 | 待回填 |
+| 阻塞项 | 期望 0 | 待回填 |
