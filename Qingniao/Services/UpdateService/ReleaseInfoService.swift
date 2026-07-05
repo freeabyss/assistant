@@ -69,10 +69,17 @@ struct BundleAboutInfoProvider: AboutInfoProviderProtocol {
 }
 
 enum ReleaseLinks {
-    static let homepageURL = URL(string: "https://github.com/freeabyss/assistant")!
-    static let privacyPolicyURL = URL(string: "https://github.com/freeabyss/assistant/blob/main/PRIVACY.md")!
-    static let releasesURL = URL(string: "https://github.com/freeabyss/assistant/releases")!
-    static let thirdPartyLicensesURL = URL(string: "https://github.com/freeabyss/assistant/blob/main/THIRD_PARTY_NOTICES.md")!
+    /// Safe URL construction: these literals are valid, but we avoid force-unwrap
+    /// (`URL(string:)!`) to satisfy the v1.2 robustness pass. The `fileURLWithPath`
+    /// fallback can never be reached for these constants and keeps the type non-optional.
+    private static func url(_ string: String) -> URL {
+        URL(string: string) ?? URL(fileURLWithPath: "/")
+    }
+
+    static let homepageURL = url("https://github.com/freeabyss/assistant")
+    static let privacyPolicyURL = url("https://github.com/freeabyss/assistant/blob/main/PRIVACY.md")
+    static let releasesURL = url("https://github.com/freeabyss/assistant/releases")
+    static let thirdPartyLicensesURL = url("https://github.com/freeabyss/assistant/blob/main/THIRD_PARTY_NOTICES.md")
     static let feedbackEmail = "feedback@qingniao.app"
 }
 
@@ -99,9 +106,8 @@ struct FeedbackEmailService: FeedbackServiceProtocol {
     }
 
     private func emailBody(context: FeedbackContext) -> String {
-        let summary = context.errorSummary?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
-            ? context.errorSummary!
-            : "No error summary provided"
+        let trimmedSummary = context.errorSummary?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let summary = (trimmedSummary?.isEmpty == false ? trimmedSummary : nil) ?? "No error summary provided"
         let description = context.userDescription.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             ? "Please describe what happened here."
             : context.userDescription

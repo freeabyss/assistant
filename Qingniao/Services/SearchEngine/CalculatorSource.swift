@@ -302,14 +302,21 @@ struct CalculatorUnit: Hashable {
 }
 
 private enum UnitConverter {
-    private static let conversionRegex: NSRegularExpression = {
+    private static let conversionRegex: NSRegularExpression? = {
         // Supports "10 cm to inch", "10 cm in inch", and "10 cm -> inch".
         // A target unit is required so CalculatorSource returns one precise result.
-        // swiftlint:disable:next force_try
-        try! NSRegularExpression(pattern: #"^\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*([a-zA-Z°]+)\s*(?:to|in|->)\s*([a-zA-Z°]+)\s*$"#, options: [.caseInsensitive])
+        // The pattern is a compile-time constant; on the impossible compile failure
+        // we log and disable unit conversion rather than force-try (v1.2 robustness pass).
+        do {
+            return try NSRegularExpression(pattern: #"^\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*([a-zA-Z°]+)\s*(?:to|in|->)\s*([a-zA-Z°]+)\s*$"#, options: [.caseInsensitive])
+        } catch {
+            Logger.app.error("Failed to compile unit conversion regex: \(error.localizedDescription, privacy: .public)")
+            return nil
+        }
     }()
 
     static func parse(_ input: String) -> UnitConversionRequest? {
+        guard let conversionRegex else { return nil }
         let range = NSRange(input.startIndex..., in: input)
         guard let match = conversionRegex.firstMatch(in: input, options: [], range: range), match.numberOfRanges == 4,
               let valueRange = Range(match.range(at: 1), in: input),

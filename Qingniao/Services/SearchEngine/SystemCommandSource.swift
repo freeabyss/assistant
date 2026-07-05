@@ -331,7 +331,10 @@ final class SystemCommandExecutor: CommandExecutorProtocol {
 
         switch commandID {
         case .openSystemSettings:
-            try openURL(URL(string: "x-apple.systempreferences:")!, commandID: commandID)
+            guard let settingsURL = URL(string: "x-apple.systempreferences:") else {
+                throw AssistantCommandExecutionError.executionFailed(commandID, "Invalid system settings URL")
+            }
+            try openURL(settingsURL, commandID: commandID)
         case .openAppSettings:
             notificationCenter.post(name: .openManagementCenter, object: SettingsRoute.settings)
         case .openDownloads:

@@ -358,7 +358,11 @@ struct RTFTextView: NSViewRepresentable {
 
     func makeNSView(context: Context) -> NSScrollView {
         let scrollView = NSTextView.scrollableTextView()
-        let textView = scrollView.documentView as! NSTextView
+        guard let textView = scrollView.documentView as? NSTextView else {
+            // scrollableTextView() always vends an NSTextView; guard instead of
+            // force-cast so an unexpected AppKit change degrades gracefully.
+            return scrollView
+        }
         textView.isEditable = false
         textView.isSelectable = true
         textView.drawsBackground = false
