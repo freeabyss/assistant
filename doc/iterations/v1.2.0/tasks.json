@@ -404,7 +404,7 @@
         "REG-006"
       ],
       "done_definition": "首次启动单屏 onboarding 显示；辅助功能不自动弹 TCC；屏幕录制按钮正常触发；重启不重弹；跳过设置后能进入主界面且截图功能在首次使用时提示",
-      "passes": false
+      "passes": true
     },
     {
       "id": "T-011",

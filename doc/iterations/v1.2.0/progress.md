@@ -517,3 +517,32 @@ AppDelegate 通过 `container.onboardingGate = { self.ensureOnboardingGate() }` 
 - v1.2 不做 FS 监听/增量索引、不做拼音、不做内容全文检索（均按约束）。
 - build Debug SUCCEEDED；xcodebuild test 全绿（142 tests, 0 failures，含新增 10 条 FileSearchSourceTests）。
 - 修复了 T-008 progress 中提到的 `FileSearchSourceTests` `/var` vs `/private/var` 软链断言问题（改为按 lastPathComponent/resolved path 比较）。
+
+---
+
+## T-010 Onboarding 单屏重构（辅助功能按需 + 屏幕录制前置）（2026-07-05）
+
+### 完成内容
+将旧的 7 步向导 Onboarding 重构为 PRD §9.4 P-06 单屏布局（720×520），辅助功能权限由强制改为按需（`onDemandAccessibilityCheck()`），屏幕录制作为主流程前置（可「暂不开启截图」跳过），完成后写 `onboarding.completedAt` 时间戳，重启不重弹（AC-6）。
+
+### 改写/新增文件
+- `Qingniao/Services/Permissions/PermissionService.swift` — 协议 + 实现新增 `@MainActor onDemandAccessibilityCheck() -> Bool`：已授权直接返回 true；未授权弹 NSAlert（说明用途 + 「打开系统设置」/「取消」），点「打开系统设置」调 `openSystemSettings(for: .accessibility)`（内部走 `requestAccessibilityPromptIfNeeded` + 打开隐私页）。Onboarding **不**触发辅助功能 TCC。
+- `Qingniao/ViewModels/OnboardingViewModel.swift` — 完全重写为单屏状态机：移除 `OnboardingStep`/`step`/`continueToNextStep`/`completeIfPossible`/`canContinueCurrentStep`。新状态：`hotkeyValidation`、`clipboardEnabled`(默认 true)、`launchAtLoginEnabled`(默认 false)、`screenRecordingAuthorized`、`screenshotSkipped`、`completionErrorMessage`。核心规则 `canStart = screenRecordingAuthorized || screenshotSkipped`（简单明确，不卡死）。`requestScreenRecording()` 触发 TCC 并刷新；`skipScreenshot()` 置跳过；`start()` 写 hotkey+clipboard+launchAtLogin+`markCompleted()`；`skipOnboarding()` 显式写 `clipboardEnabled=false`+`markCompleted()`。`markCompleted()` 写 `onboardingCompletedAt`(ISO8601 时间戳) + legacy `onboardingCompleted=true`（双写，兼容旧读取路径）。构造函数新增可注入 `now: () -> Date`。
+- `Qingniao/Views/Onboarding/OnboardingView.swift` — 完全重写为单屏：VStack 720×520 + `JadeRadius.xl` + `JadeShadow.xl` + padding x8（32）。顶部 SF Symbol `bird` 80pt jade 色 + display 标题 + body 副标题；中段 3 张 `surface2` + `JadeRadius.md` 卡片（HotkeyRecorder 绑 `.togglePanel` / 剪贴板 Toggle / 开机启动 Toggle，均 tint primary）；屏幕录制段（说明 + primary「授予屏幕录制权限」/ ghost「暂不开启截图」，已授权显示「已授予 ✓」success）；辅助功能段（说明 + ghost「稍后再说」）；footer（ghost「跳过设置」带 `jadeConfirmationDialog` / primary「开始使用」disabled=`!canStart` / Link「隐私政策」）。全 token 化，无硬编码。#Preview 更新为单屏 Light/Dark。
+- `Qingniao/App/Controllers/AppContainer.swift` — `loadOnboardingCompletionState()` 改为优先读 `onboarding.completedAt`（非空即完成），回落 legacy 布尔（AC-6 重启不重弹核心）。
+- `Qingniao/App/AppDelegate.swift` — onboarding 窗口 680→720 宽；`OnboardingViewModel(onComplete:)` 显式标签。
+- `Qingniao/Resources/Localizable.xcstrings` — 新增 17 键（en + zh-Hans）：onboarding.hotkey.title / clipboard.toggle(.subtitle) / launchAtLogin.toggle.subtitle / screenRecording.explain/.grant/.granted/.skip/.skipped / accessibility.explain/.later / start / error.screenRecordingRequired / permission.onDemand.accessibility.title/.message/.openSettings/.cancel。
+- `QingniaoTests/OnboardingViewModelTests.swift` — 重写为单屏断言（12 条）：canStart 规则、skipScreenshot、requestScreenRecording 触发一次、onboarding 全程 0 次辅助功能申请、start 被 canStart 阻塞、start 写 completedAt+legacy+settings+launchAtLogin、clipboard=false 分支、skipOnboarding 写 false、hotkey 持久化、onAppear 刷新。MockPermissionService 补 `onDemandAccessibilityCheck` 计数替身。
+- `QingniaoTests/PermissionServiceProtocolConformanceTests.swift` — 补 PERM-OD-003：Mock/Static 两 conformer 的 `onDemandAccessibilityCheck` 断言（编译即验证真实服务已实现）。
+- `QingniaoTests/SettingsSourceTests.swift` — `StaticPermissionService` 补 `onDemandAccessibilityCheck`。
+
+### 验证
+- `xcodebuild -scheme Qingniao -configuration Debug clean build` → **BUILD SUCCEEDED**。
+- `xcodebuild ... test`（隔离 worktree @HEAD，干净 derivedData）→ **All tests passed / TEST SUCCEEDED**，140 test case 全绿，含 12 条 OnboardingViewModelTests + PERM-OD-003 conformance。
+- disabled 规则正确：屏幕录制未授权且未点「暂不开启截图」时「开始使用」disabled；授权后或点跳过后 enabled（`test_canStart_*` 覆盖）。
+- AC-6（重启不重弹）：`start()`/`skipOnboarding()` 写 `onboarding.completedAt` 时间戳；`AppContainer.loadOnboardingCompletionState()` 优先读该键非空即完成 → 重启 `isOnboardingCompleted=true` 直接进主界面，不再 `showOnboardingWindow()`。单测 `test_start_writesSettingsAndCompletedAt` / `test_skipOnboarding_writesFlagsAndInvokesCompletion` 断言 completedAt 非空。手工 E2E（重启真实验证）留待手工测试。
+
+### 重要提示（留给后续 Agent）
+- **并发施工冲突**：本任务执行期间，另一 Agent 在同一工作树并行处理 T-011（CommandBar）/T-012（剪贴板 UI，`isFavorite` 特性）。T-010 的源码改动（OnboardingView/ViewModel/PermissionService/AppContainer/xcstrings/SettingsSourceTests）被对方的 commit `3e5c445`（"T-011 rename"）**顺带一起提交**进 HEAD。本 Agent 的独立 commit `7fc70c1` 仅含剩余的测试重写 + AppDelegate onComplete 标签。两部分合起来即完整 T-010，功能与测试均已闭环。
+- 对方未提交的 `isFavorite` WIP（PersistenceController/AssistantClipboardRepository/InMemorySearchIndex + Mock 未补 `toggleFavorite`）会让**工作树当前 test build 失败**，但那是 T-012 未完成状态，与 T-010 无关；隔离 worktree @HEAD 验证证明 T-010 代码本身 build+test 全绿。
+- 辅助功能按需申请的**调用点接线**（在自动粘贴/模拟快捷键等能力首次触发时调 `onDemandAccessibilityCheck()`）本任务未接（这些能力属未来功能，v1.2 无实际触发点）；PERM-OD-002 的端到端 Alert 手工验证留待有真实触发点时。
