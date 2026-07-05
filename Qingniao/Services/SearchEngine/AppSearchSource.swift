@@ -5,16 +5,6 @@ import os.log
 
 // MARK: - App source domain models
 
-/// Application information for legacy unified-search callers.
-struct AppInfo {
-    let name: String
-    let bundleID: String
-    let path: URL
-    let icon: NSImage?
-    let lastUsed: Date?
-    let useCount: Int
-}
-
 /// Stable, lightweight app index item used by the Assistant MVP AppSource.
 ///
 /// Icons are represented by the app bundle path in `SearchResultIcon.appIcon`
@@ -38,13 +28,6 @@ protocol AppSourceProtocol: SearchSource {
     func rebuildIndex() async
     func refreshIndex() async
     func application(for id: ApplicationID) -> ApplicationIndexItem?
-}
-
-/// Compatibility protocol for the older UnifiedSearchService path that still
-/// exists in the project while Assistant MVP search UI is migrated.
-protocol AppSearchSourceProtocol: UnifiedSearchSource {
-    func rebuildIndex() async
-    func getAppInfo(bundleID: String) -> AppInfo?
 }
 
 // MARK: - Usage stats
@@ -230,13 +213,10 @@ final class AppSearchActionExecutor: SearchActionExecutorProtocol {
 /// default, indexes `.app` bundles in memory, supports exact/prefix/pinyin/
 /// initials/contains/fuzzy matching, and returns stable `app:<id>` result IDs so
 /// SearchService blacklist filtering can hide concrete app results.
-final class AppSearchSource: AppSourceProtocol, AppSearchSourceProtocol {
+final class AppSearchSource: AppSourceProtocol {
     let id: SearchSourceID = .app
     let displayName = "Applications"
     let isEnabledInSearch = true
-
-    // Legacy UnifiedSearchSource compatibility.
-    let sourceType: SearchResultType = .application
 
     private let logger = Logger.search
     private let fileManager: FileManager
@@ -302,27 +282,6 @@ final class AppSearchSource: AppSourceProtocol, AppSearchSourceProtocol {
         return results
     }
 
-    /// Legacy UnifiedSearchSource compatibility for existing view models.
-    func search(query: String, limit: Int) async throws -> [UnifiedSearchResult] {
-        let results = await search(query: query)
-        return results.prefix(limit).compactMap { result in
-            guard case .openApplication(let applicationID) = result.primaryAction,
-                  let item = application(for: applicationID) else {
-                return nil
-            }
-            return UnifiedSearchResult(
-                id: result.id.rawValue,
-                title: result.title,
-                subtitle: result.subtitle,
-                icon: NSWorkspace.shared.icon(forFile: item.path.path),
-                type: .application,
-                score: min(1.0, result.finalScore / 150.0),
-                highlightRanges: [],
-                action: .launchApp(bundleID: item.bundleIdentifier ?? item.targetID, path: item.path)
-            )
-        }
-    }
-
     func rebuildIndex() async {
         let start = CFAbsoluteTimeGetCurrent()
         let paths = scanApplicationPaths()
@@ -355,24 +314,6 @@ final class AppSearchSource: AppSourceProtocol, AppSearchSourceProtocol {
         lock.lock()
         defer { lock.unlock() }
         return apps.first { $0.id == id }
-    }
-
-    func getAppInfo(bundleID: String) -> AppInfo? {
-        lock.lock()
-        let item = apps.first { $0.bundleIdentifier == bundleID || $0.targetID == bundleID }
-        lock.unlock()
-
-        guard let item else { return nil }
-        let icon = NSWorkspace.shared.icon(forFile: item.path.path)
-        icon.size = NSSize(width: 32, height: 32)
-        return AppInfo(
-            name: item.localizedName ?? item.displayName,
-            bundleID: item.bundleIdentifier ?? item.targetID,
-            path: item.path,
-            icon: icon,
-            lastUsed: item.lastLaunchAt,
-            useCount: item.launchCount
-        )
     }
 
     func recordApplicationLaunch(_ id: ApplicationID) async {

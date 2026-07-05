@@ -14,7 +14,7 @@ struct FileInfo {
 }
 
 /// Protocol for file search source.
-protocol FileSearchSourceProtocol: UnifiedSearchSource {
+protocol FileSearchSourceProtocol: SearchSource {
     /// Set the search scope (default: user home directory).
     func setSearchScope(_ paths: [URL])
 
@@ -27,8 +27,15 @@ protocol FileSearchSourceProtocol: UnifiedSearchSource {
 /// Uses the system Spotlight index to search for files by name and content.
 /// Searches are performed on the main RunLoop (required by NSMetadataQuery)
 /// with a configurable timeout to avoid blocking.
+///
+/// - Note: v1.2 T-005 ported this source from the removed `UnifiedSearchSource`
+///   protocol onto the Assistant `SearchSource` protocol. The full wiring into
+///   `SearchService` (weight 75, index warm-up) is completed in T-009.
 final class FileSearchSource: FileSearchSourceProtocol {
-    let sourceType: SearchResultType = .file
+    let id: SearchSourceID = .file
+    let displayName = "Files"
+    let isEnabledInSearch = true
+
     private let logger = Logger.search
 
     /// Spotlight query timeout in seconds.
@@ -40,9 +47,20 @@ final class FileSearchSource: FileSearchSourceProtocol {
     /// File type UTI filters. If empty, no type filtering is applied.
     private var fileTypes: [String] = []
 
+    /// Default result limit when the protocol variant is used.
+    private let defaultLimit = SearchService.defaultResultLimit
+
     // MARK: - SearchSource
 
-    func search(query: String, limit: Int) async throws -> [UnifiedSearchResult] {
+    func canSearch(query: String) -> Bool {
+        query.trimmingCharacters(in: .whitespacesAndNewlines).count >= 2
+    }
+
+    func search(query: String) async -> [SearchResult] {
+        (try? await searchFiles(query: query, limit: defaultLimit)) ?? []
+    }
+
+    private func searchFiles(query: String, limit: Int) async throws -> [SearchResult] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return [] }
 
@@ -67,7 +85,7 @@ final class FileSearchSource: FileSearchSourceProtocol {
             fileResults.append(contentsOf: augmented)
         }
 
-        let results = fileResults.map { fileInfo -> UnifiedSearchResult in
+        let results = fileResults.map { fileInfo -> SearchResult in
             var relevanceScore = computeRelevanceScore(fileInfo: fileInfo, query: trimmed)
             if isPinyinCandidate {
                 // Apply a pinyin bonus when the file's display name pinyin/initials
@@ -80,18 +98,21 @@ final class FileSearchSource: FileSearchSourceProtocol {
             }
             let subtitle = buildSubtitle(fileInfo: fileInfo)
 
-            return UnifiedSearchResult(
-                id: "file:\(fileInfo.path.path)",
+            return SearchResult(
+                id: SearchResultID(rawValue: "file:\(fileInfo.path.path)"),
+                sourceID: .file,
                 title: fileInfo.name,
                 subtitle: subtitle,
-                icon: fileInfo.icon,
-                type: .file,
-                score: relevanceScore,
-                highlightRanges: computeHighlightRanges(in: fileInfo.name, query: trimmed),
-                action: .openFile(path: fileInfo.path)
+                icon: .appIcon(fileInfo.path),
+                typeLabel: "File",
+                baseScore: SourcePriority.file,
+                matchScore: relevanceScore * 30,
+                usageScore: 0,
+                primaryAction: .openFile(fileInfo.path),
+                secondaryActions: [.revealInFinder(fileInfo.path), .copyText(fileInfo.path.path)]
             )
         }
-        .sorted { $0.score > $1.score }
+        .sorted { $0.finalScore > $1.finalScore }
 
         logger.info("FileSearchSource found \(results.count) results for '\(trimmed, privacy: .public)' (pinyinCandidate=\(isPinyinCandidate))")
         return Array(results.prefix(limit))
@@ -329,36 +350,6 @@ final class FileSearchSource: FileSearchSourceProtocol {
             let days = Int(interval / 86400)
             return String(format: NSLocalizedString("%dd ago", comment: ""), days)
         }
-    }
-
-    // MARK: - Highlight
-
-    /// Compute highlight ranges for query keywords within the text.
-    private func computeHighlightRanges(in text: String, query: String) -> [NSRange] {
-        guard !text.isEmpty, !query.isEmpty else { return [] }
-
-        let keywords = query.components(separatedBy: .whitespacesAndNewlines)
-            .filter { !$0.isEmpty }
-
-        var ranges: [NSRange] = []
-        let nsText = text as NSString
-
-        for keyword in keywords {
-            let options: NSString.CompareOptions = [.caseInsensitive, .diacriticInsensitive]
-            var searchRange = NSRange(location: 0, length: nsText.length)
-
-            while searchRange.location < nsText.length {
-                let foundRange = nsText.range(of: keyword, options: options, range: searchRange)
-                guard foundRange.location != NSNotFound else { break }
-                ranges.append(foundRange)
-                searchRange = NSRange(
-                    location: foundRange.location + foundRange.length,
-                    length: nsText.length - (foundRange.location + foundRange.length)
-                )
-            }
-        }
-
-        return ranges.sorted { $0.location < $1.location }
     }
 
     // MARK: - Pinyin Augmentation

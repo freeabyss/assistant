@@ -66,9 +66,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     /// Auto-update service (Sparkle).
     private let updateService = UpdateService()
 
-    /// Legacy unified search service retained for compatibility with older views.
-    private let unifiedSearchService = UnifiedSearchService()
-
     /// Application search source.
     private let appSearchSource = AppSearchSource()
 
@@ -134,7 +131,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Set up Sparkle auto-update (Sparkle handles launch delay + periodic checks internally)
         updateService.setup()
 
-        // Listen for manual update check requests from MenuBarView
+        // Listen for manual update check requests from the UI
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleCheckForUpdates),
@@ -172,13 +169,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Register global keyboard shortcuts for search and screenshots.
         registerGlobalShortcuts()
-
-        // Keep the legacy unified service registered for compatibility, but the
-        // visible US-011 panel below uses the current Assistant MVP SearchService.
-        unifiedSearchService.registerSource(appSearchSource)
-        unifiedSearchService.registerSource(systemCommandSource)
-        unifiedSearchService.registerSource(calculatorSource)
-        logger.info("Legacy unified search service initialized for compatibility")
 
         // Create the Assistant MVP search panel view model (must be on main actor).
         searchPanelViewModel = makeSearchPanelViewModel()
@@ -966,26 +956,19 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func syncLaunchAtLoginPreference() {
-        let repository = ContentRepository()
-        let shouldEnable: Bool
-
-        do {
-            if let stored = try repository.readSetting(key: LegacySettingKey.launchAtLoginEnabled) {
-                shouldEnable = stored == "1"
-            } else {
-                shouldEnable = true
-                try repository.updateSetting(key: LegacySettingKey.launchAtLoginEnabled, value: "1")
+        // Reads the Core Data `launchAtLogin.enabled` setting (default true) and
+        // aligns the system LaunchAtLogin registration. The legacy GRDB
+        // ContentRepository path was removed in v1.2 (T-005).
+        let settingsService = SettingsService(persistence: .shared)
+        let launchAtLoginService = LaunchAtLoginService()
+        Task {
+            let shouldEnable = (try? await settingsService.value(for: .launchAtLoginEnabled, as: Bool.self)) ?? true
+            do {
+                try launchAtLoginService.setEnabled(shouldEnable)
+                logger.info("Launch at login synced from Assistant setting: enabled=\(shouldEnable)")
+            } catch {
+                logger.error("Failed to sync launch-at-login preference: \(error.localizedDescription, privacy: .public)")
             }
-
-            if shouldEnable, SMAppService.mainApp.status != .enabled {
-                try SMAppService.mainApp.register()
-                logger.info("Launch at login registered from Assistant default setting")
-            } else if !shouldEnable, SMAppService.mainApp.status == .enabled {
-                try SMAppService.mainApp.unregister()
-                logger.info("Launch at login unregistered from Assistant user setting")
-            }
-        } catch {
-            logger.error("Failed to sync launch-at-login preference: \(error.localizedDescription, privacy: .public)")
         }
     }
 }

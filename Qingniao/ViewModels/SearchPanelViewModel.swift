@@ -155,6 +155,14 @@ final class SearchPanelActionExecutor: SearchActionExecutorProtocol {
             await openSettings(route)
         case .startScreenshot(let mode):
             await startScreenshot(mode)
+        case .openFile(let url):
+            await MainActor.run {
+                NSWorkspace.shared.open(url)
+            }
+        case .revealInFinder(let url):
+            await MainActor.run {
+                NSWorkspace.shared.activateFileViewerSelecting([url])
+            }
         }
     }
 

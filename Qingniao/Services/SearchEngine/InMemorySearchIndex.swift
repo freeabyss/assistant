@@ -17,6 +17,7 @@ extension SearchSourceID {
     static let command = SearchSourceID(rawValue: "command")
     static let calculator = SearchSourceID(rawValue: "calculator")
     static let settings = SearchSourceID(rawValue: "settings")
+    static let file = SearchSourceID(rawValue: "file")
 }
 
 // MARK: - Index model

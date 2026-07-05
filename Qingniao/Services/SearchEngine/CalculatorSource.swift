@@ -9,12 +9,10 @@ import os.log
 /// - Supports unit conversions for length, weight, data size, and temperature.
 /// - Does not support currency, variables, functions, history, or arbitrary expression execution.
 /// - Uses a handwritten parser rather than NSExpression or any executable expression engine.
-final class CalculatorSource: SearchSource, UnifiedSearchSource {
+final class CalculatorSource: SearchSource {
     let id: SearchSourceID = .calculator
     let displayName = "Calculator"
     let isEnabledInSearch = true
-
-    let sourceType: SearchResultType = .calculator
 
     private let logger = Logger.search
 
@@ -53,46 +51,6 @@ final class CalculatorSource: SearchSource, UnifiedSearchSource {
             primaryAction: .copyText(result.copyText),
             secondaryActions: []
         )]
-    }
-
-    // MARK: - Legacy UnifiedSearchSource compatibility
-
-    func search(query: String, limit: Int) async throws -> [UnifiedSearchResult] {
-        let results = await search(query: query)
-        _ = limit
-        return results.map { result in
-            let iconName: String
-            let type: SearchResultType
-            switch result.icon {
-            case .systemSymbol(let name):
-                iconName = name
-            case .appIcon, .thumbnail, .none:
-                iconName = "function"
-            }
-            if result.typeLabel == "Convert" {
-                type = .unitConversion
-            } else {
-                type = .calculator
-            }
-            let icon = NSImage(systemSymbolName: iconName, accessibilityDescription: result.typeLabel)
-            icon?.size = NSSize(width: 24, height: 24)
-            let copyText: String
-            if case .copyText(let value) = result.primaryAction {
-                copyText = value
-            } else {
-                copyText = result.title
-            }
-            return UnifiedSearchResult(
-                id: result.id.rawValue,
-                title: result.title,
-                subtitle: result.subtitle,
-                icon: icon,
-                type: type,
-                score: 1.0,
-                highlightRanges: [],
-                action: .copyText(copyText)
-            )
-        }
     }
 
     // MARK: - Public parser/evaluator API from architecture_api.md

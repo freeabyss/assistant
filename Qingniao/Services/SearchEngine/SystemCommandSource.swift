@@ -233,13 +233,10 @@ enum AssistantCommandCatalog {
 /// `doc/architecture_api.md` section 10.1. It does not parse arbitrary user text
 /// as shell, and it does not include shutdown, system restart, logout, sudo,
 /// file deletion, process killing, or custom command execution.
-final class SystemCommandSource: CommandSourceProtocol, UnifiedSearchSource {
+final class SystemCommandSource: CommandSourceProtocol {
     let id: SearchSourceID = .command
     let displayName = "Commands"
     let isEnabledInSearch = true
-
-    // Legacy UnifiedSearchSource compatibility for the old UI path.
-    let sourceType: SearchResultType = .systemCommand
 
     let commands: [AssistantCommandDefinition]
     private let logger = Logger.search
@@ -275,26 +272,6 @@ final class SystemCommandSource: CommandSourceProtocol, UnifiedSearchSource {
         }
     }
 
-    /// Legacy UnifiedSearchSource compatibility. It still exposes only the MVP
-    /// whitelist and maps to the safe `SystemCommand` compatibility enum.
-    func search(query: String, limit: Int) async throws -> [UnifiedSearchResult] {
-        let matches = matchedCommands(query: query)
-        return matches.prefix(limit).map { match in
-            let icon = NSImage(systemSymbolName: match.command.iconSystemName, accessibilityDescription: match.command.chineseName)
-            icon?.size = NSSize(width: 24, height: 24)
-            return UnifiedSearchResult(
-                id: "command:\(match.command.id.rawValue)",
-                title: match.command.chineseName,
-                subtitle: match.command.englishName,
-                icon: icon,
-                type: .systemCommand,
-                score: match.kind.score / SearchTextMatcher.MatchKind.exact.score,
-                highlightRanges: highlightRanges(in: match.command.chineseName, query: query),
-                action: .runSystemCommand(SystemCommand(commandID: match.command.id))
-            )
-        }
-    }
-
     private struct CommandMatch {
         let command: AssistantCommandDefinition
         let kind: SearchTextMatcher.MatchKind
@@ -314,13 +291,6 @@ final class SystemCommandSource: CommandSourceProtocol, UnifiedSearchSource {
             if lhs.kind != rhs.kind { return lhs.kind < rhs.kind }
             return lhs.command.chineseName.localizedCaseInsensitiveCompare(rhs.command.chineseName) == .orderedAscending
         }
-    }
-
-    private func highlightRanges(in title: String, query: String) -> [NSRange] {
-        let normalizedTitle = SearchTextMatcher.normalize(title)
-        let normalizedQuery = SearchTextMatcher.normalize(query)
-        guard let range = normalizedTitle.range(of: normalizedQuery) else { return [] }
-        return [NSRange(range, in: title)]
     }
 }
 

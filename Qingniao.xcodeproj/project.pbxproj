@@ -14,7 +14,6 @@
 		A10001000000000000000002 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002; };
 		A10001000000000000000003 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000003; };
 		A10001000000000000000004 /* DatabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000004; };
-		A10001000000000000000005 /* ContentRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000005; };
 		A10001000000000000000006 /* ClipboardItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000006; };
 		A10001000000000000000007 /* Tag.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000007; };
 		A10001000000000000000008 /* AppSetting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000008; };
@@ -22,11 +21,9 @@
 		A1000100000000000000000A /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000A; };
 		A1000100000000000000000B /* CryptoHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000B; };
 		A1000100000000000000000C /* ClipboardMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000C; };
-		A1000100000000000000000E /* SearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000E; };
 		A10001000000000000000010 /* UpdateService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000010; };
 		E01801000000000000000001 /* ReleaseInfoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E01800000000000000000001 /* ReleaseInfoService.swift */; };
 		E01801000000000000000002 /* ReleaseInfoServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E01800000000000000000002 /* ReleaseInfoServiceTests.swift */; };
-		A10001000000000000000011 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011; };
 		A10001000000000000000012 /* ClipboardListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012; };
 		A10001000000000000000013 /* ClipboardItemRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013; };
 		A10001000000000000000014 /* PreviewPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000014; };
@@ -38,23 +35,14 @@
 		A1000100000000000000001A /* DataCleanupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001D; };
 		A1000100000000000000001B /* KeyboardShortcuts+Names.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001E; };
 		A1000100000000000000001C /* appcast.xml in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001F; };
-		A1000100000000000000001D /* ExportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000020; };
-		A10001000000000000000021 /* UnifiedSearchTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000021; };
-		A10001000000000000000022 /* UnifiedSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000022; };
-		A10001000000000000000023 /* ClipboardSearchSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000023; };
 		A10001000000000000000024 /* AppSearchSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000024; };
 		A1000100000000000000002D /* SystemCommandSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002D; };
 		A1000100000000000000002E /* CalculatorSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002E; };
 		A10001000000000000000026 /* ScreenshotService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000026; };
 		A10001000000000000000027 /* ScreenshotOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000027; };
-		A10001000000000000000028 /* UnifiedSearchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000028; };
-		A10001000000000000000029 /* UnifiedResultRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000029; };
-		A1000100000000000000002A /* ResultGroupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002A; };
-		A1000100000000000000002B /* UnifiedResultList.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002B; };
 		A1000100000000000000002C /* KeyEventHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002C; };
+		A100010000000000000000A1 /* AutoFocusTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000000000000000000A1; };
 		A10001000000000000000030 /* PinyinHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000030; };
-		A10001000000000000000031 /* RecentContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000031; };
-		A10001000000000000000032 /* RecentContentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000032; };
 		A10001000000000000000033 /* ScreenshotToolbarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000033; };
 		A10001000000000000000034 /* AnnotationShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000034; };
 		A10001000000000000000035 /* AnnotationCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000035; };
@@ -113,7 +101,6 @@
 		A10000000000000000000002 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A10000000000000000000003 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		A10000000000000000000004 /* DatabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManager.swift; sourceTree = "<group>"; };
-		A10000000000000000000005 /* ContentRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentRepository.swift; sourceTree = "<group>"; };
 		A10000000000000000000006 /* ClipboardItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardItem.swift; sourceTree = "<group>"; };
 		A10000000000000000000007 /* Tag.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tag.swift; sourceTree = "<group>"; };
 		A10000000000000000000008 /* AppSetting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSetting.swift; sourceTree = "<group>"; };
@@ -121,12 +108,8 @@
 		A1000000000000000000000A /* Logger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Logger.swift; sourceTree = "<group>"; };
 		A1000000000000000000000B /* CryptoHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoHelper.swift; sourceTree = "<group>"; };
 		A1000000000000000000000C /* ClipboardMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardMonitor.swift; sourceTree = "<group>"; };
-		A1000000000000000000000D /* ContentStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentStore.swift; sourceTree = "<group>"; };
-		A1000000000000000000000E /* SearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchService.swift; sourceTree = "<group>"; };
-		A1000000000000000000000F /* OCRService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OCRService.swift; sourceTree = "<group>"; };
 		A10000000000000000000010 /* UpdateService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateService.swift; sourceTree = "<group>"; };
 		E01800000000000000000001 /* ReleaseInfoService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseInfoService.swift; sourceTree = "<group>"; };
-		A10000000000000000000011 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
 		A10000000000000000000012 /* ClipboardListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardListView.swift; sourceTree = "<group>"; };
 		A10000000000000000000013 /* ClipboardItemRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardItemRow.swift; sourceTree = "<group>"; };
 		A10000000000000000000014 /* PreviewPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewPanel.swift; sourceTree = "<group>"; };
@@ -141,24 +124,15 @@
 		A1000000000000000000001D /* DataCleanupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataCleanupService.swift; sourceTree = "<group>"; };
 		A1000000000000000000001E /* KeyboardShortcuts+Names.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "KeyboardShortcuts+Names.swift"; sourceTree = "<group>"; };
 		A1000000000000000000001F /* appcast.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = appcast.xml; sourceTree = "<group>"; };
-		A10000000000000000000020 /* ExportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportService.swift; sourceTree = "<group>"; };
-		A10000000000000000000021 /* UnifiedSearchTypes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedSearchTypes.swift; sourceTree = "<group>"; };
-		A10000000000000000000022 /* UnifiedSearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedSearchService.swift; sourceTree = "<group>"; };
-		A10000000000000000000023 /* ClipboardSearchSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardSearchSource.swift; sourceTree = "<group>"; };
 		A10000000000000000000024 /* AppSearchSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSearchSource.swift; sourceTree = "<group>"; };
 		A10000000000000000000025 /* FileSearchSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchSource.swift; sourceTree = "<group>"; };
 		A1000000000000000000002D /* SystemCommandSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemCommandSource.swift; sourceTree = "<group>"; };
 		A1000000000000000000002E /* CalculatorSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorSource.swift; sourceTree = "<group>"; };
 		A10000000000000000000026 /* ScreenshotService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotService.swift; sourceTree = "<group>"; };
 		A10000000000000000000027 /* ScreenshotOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotOverlay.swift; sourceTree = "<group>"; };
-		A10000000000000000000028 /* UnifiedSearchViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedSearchViewModel.swift; sourceTree = "<group>"; };
-		A10000000000000000000029 /* UnifiedResultRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedResultRow.swift; sourceTree = "<group>"; };
-		A1000000000000000000002A /* ResultGroupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultGroupView.swift; sourceTree = "<group>"; };
-		A1000000000000000000002B /* UnifiedResultList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedResultList.swift; sourceTree = "<group>"; };
 		A1000000000000000000002C /* KeyEventHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyEventHandler.swift; sourceTree = "<group>"; };
+		A100000000000000000000A1 /* AutoFocusTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoFocusTextField.swift; sourceTree = "<group>"; };
 		A10000000000000000000030 /* PinyinHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinyinHelper.swift; sourceTree = "<group>"; };
-		A10000000000000000000031 /* RecentContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentContentView.swift; sourceTree = "<group>"; };
-		A10000000000000000000032 /* RecentContentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentContentViewModel.swift; sourceTree = "<group>"; };
 		A10000000000000000000033 /* ScreenshotToolbarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotToolbarController.swift; sourceTree = "<group>"; };
 		A10000000000000000000034 /* AnnotationShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationShape.swift; sourceTree = "<group>"; };
 		A10000000000000000000035 /* AnnotationCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationCanvas.swift; sourceTree = "<group>"; };
@@ -287,8 +261,6 @@
 					C01400000000000000000008 /* OnboardingViewModel.swift */,
 				A10000000000000000000016 /* ClipboardListViewModel.swift */,
 				A10000000000000000000017 /* SettingsViewModel.swift */,
-				A10000000000000000000028 /* UnifiedSearchViewModel.swift */,
-				A10000000000000000000032 /* RecentContentViewModel.swift */,
 				B01100000000000000000002 /* SearchPanelViewModel.swift */,
 			);
 			path = ViewModels;
@@ -395,7 +367,6 @@
 		A1000300000000000000000D /* MenuBar */ = {
 			isa = PBXGroup;
 			children = (
-				A10000000000000000000011 /* MenuBarView.swift */,
 			);
 			path = MenuBar;
 			sourceTree = "<group>";
@@ -431,6 +402,7 @@
 				A1000000000000000000001C /* ToastView.swift */,
 				A10000000000000000000027 /* ScreenshotOverlay.swift */,
 				A1000000000000000000002C /* KeyEventHandler.swift */,
+				A100000000000000000000A1 /* AutoFocusTextField.swift */,
 				A10000000000000000000033 /* ScreenshotToolbarController.swift */,
 			);
 			path = Components;
@@ -447,7 +419,6 @@
 		A10003000000000000000012 /* ContentStore */ = {
 			isa = PBXGroup;
 			children = (
-				A1000000000000000000000D /* ContentStore.swift */,
 			);
 			path = ContentStore;
 			sourceTree = "<group>";
@@ -455,10 +426,6 @@
 		A10003000000000000000013 /* SearchEngine */ = {
 			isa = PBXGroup;
 			children = (
-				A1000000000000000000000E /* SearchService.swift */,
-				A10000000000000000000021 /* UnifiedSearchTypes.swift */,
-				A10000000000000000000022 /* UnifiedSearchService.swift */,
-				A10000000000000000000023 /* ClipboardSearchSource.swift */,
 				A10000000000000000000024 /* AppSearchSource.swift */,
 				A10000000000000000000025 /* FileSearchSource.swift */,
 				A1000000000000000000002D /* SystemCommandSource.swift */,
@@ -474,7 +441,6 @@
 		A10003000000000000000014 /* OCRService */ = {
 			isa = PBXGroup;
 			children = (
-				A1000000000000000000000F /* OCRService.swift */,
 			);
 			path = OCRService;
 			sourceTree = "<group>";
@@ -498,7 +464,6 @@
 		A10003000000000000000017 /* Repositories */ = {
 			isa = PBXGroup;
 			children = (
-				A10000000000000000000005 /* ContentRepository.swift */,
 				A10000000000000000000042 /* AssistantClipboardRepository.swift */,
 				B00600000000000000000002 /* SearchBlacklistRepository.swift */,
 			);
@@ -524,7 +489,6 @@
 		A1000300000000000000001A /* ExportService */ = {
 			isa = PBXGroup;
 			children = (
-				A10000000000000000000020 /* ExportService.swift */,
 			);
 			path = ExportService;
 			sourceTree = "<group>";
@@ -540,9 +504,6 @@
 		A1000300000000000000001C /* SearchResults */ = {
 			isa = PBXGroup;
 			children = (
-				A10000000000000000000029 /* UnifiedResultRow.swift */,
-				A1000000000000000000002A /* ResultGroupView.swift */,
-				A1000000000000000000002B /* UnifiedResultList.swift */,
 			);
 			path = SearchResults;
 			sourceTree = "<group>";
@@ -550,7 +511,6 @@
 		A1000300000000000000001D /* RecentContent */ = {
 			isa = PBXGroup;
 			children = (
-				A10000000000000000000031 /* RecentContentView.swift */,
 			);
 			path = RecentContent;
 			sourceTree = "<group>";
@@ -791,7 +751,6 @@
 				F00500000000000000000102 /* DataManagementService.swift in Sources */,
 				A10001000000000000000042 /* AssistantClipboardRepository.swift in Sources */,
 				B00600000000000000000001 /* SearchBlacklistRepository.swift in Sources */,
-				A10001000000000000000005 /* ContentRepository.swift in Sources */,
 				A10001000000000000000006 /* ClipboardItem.swift in Sources */,
 				A10001000000000000000007 /* Tag.swift in Sources */,
 				A10001000000000000000008 /* AppSetting.swift in Sources */,
@@ -799,10 +758,8 @@
 				A1000100000000000000000A /* Logger.swift in Sources */,
 				A1000100000000000000000B /* CryptoHelper.swift in Sources */,
 				A1000100000000000000000C /* ClipboardMonitor.swift in Sources */,
-				A1000100000000000000000E /* SearchService.swift in Sources */,
 				A10001000000000000000010 /* UpdateService.swift in Sources */,
 					E01801000000000000000001 /* ReleaseInfoService.swift in Sources */,
-				A10001000000000000000011 /* MenuBarView.swift in Sources */,
 				A10001000000000000000012 /* ClipboardListView.swift in Sources */,
 				A10001000000000000000013 /* ClipboardItemRow.swift in Sources */,
 				A10001000000000000000014 /* PreviewPanel.swift in Sources */,
@@ -812,10 +769,6 @@
 				A10001000000000000000019 /* ToastView.swift in Sources */,
 				A1000100000000000000001A /* DataCleanupService.swift in Sources */,
 				A1000100000000000000001B /* KeyboardShortcuts+Names.swift in Sources */,
-				A1000100000000000000001D /* ExportService.swift in Sources */,
-				A10001000000000000000021 /* UnifiedSearchTypes.swift in Sources */,
-				A10001000000000000000022 /* UnifiedSearchService.swift in Sources */,
-				A10001000000000000000023 /* ClipboardSearchSource.swift in Sources */,
 				A10001000000000000000024 /* AppSearchSource.swift in Sources */,
 				A1000100000000000000002D /* SystemCommandSource.swift in Sources */,
 				A1000100000000000000002E /* CalculatorSource.swift in Sources */,
@@ -824,15 +777,10 @@
 				B00600000000000000000005 /* SettingsSource.swift in Sources */,
 				A10001000000000000000026 /* ScreenshotService.swift in Sources */,
 				A10001000000000000000027 /* ScreenshotOverlay.swift in Sources */,
-				A10001000000000000000028 /* UnifiedSearchViewModel.swift in Sources */,
-				A10001000000000000000029 /* UnifiedResultRow.swift in Sources */,
-				A1000100000000000000002A /* ResultGroupView.swift in Sources */,
-				A1000100000000000000002B /* UnifiedResultList.swift in Sources */,
 				A1000100000000000000002C /* KeyEventHandler.swift in Sources */,
+				A100010000000000000000A1 /* AutoFocusTextField.swift in Sources */,
 				A10001000000000000000030 /* PinyinHelper.swift in Sources */,
 				93566319C8B49A482D84E301 /* L10n.swift in Sources */,
-				A10001000000000000000031 /* RecentContentView.swift in Sources */,
-				A10001000000000000000032 /* RecentContentViewModel.swift in Sources */,
 				A10001000000000000000033 /* ScreenshotToolbarController.swift in Sources */,
 				A10001000000000000000034 /* AnnotationShape.swift in Sources */,
 				A10001000000000000000035 /* AnnotationCanvas.swift in Sources */,

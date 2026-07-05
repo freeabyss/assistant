@@ -110,19 +110,19 @@ final class SystemCommandSourceTests: XCTestCase {
         }
     }
 
-    func testLegacyUnifiedSourceAlsoReturnsOnlyWhitelistCommands() async throws {
+    func testSearchReturnsOnlyWhitelistCommands() async throws {
         let source = SystemCommandSource()
-        let results = try await source.search(query: "截图", limit: 20)
+        let results = await source.search(query: "截图")
 
         XCTAssertFalse(results.isEmpty)
         for result in results {
-            guard case .runSystemCommand(let command) = result.action else {
-                XCTFail("Legacy result should use runSystemCommand compatibility action")
+            guard case .runCommand(let commandID) = result.primaryAction else {
+                XCTFail("Command result should use runCommand action")
                 continue
             }
-            XCTAssertTrue(AssistantCommandCatalog.allowedIDs.contains(command.commandID))
-            XCTAssertNotEqual(command.rawValue, "shutdown")
-            XCTAssertNotEqual(command.rawValue, "restart")
+            XCTAssertTrue(AssistantCommandCatalog.allowedIDs.contains(commandID))
+            XCTAssertNotEqual(commandID.rawValue, "shutdown")
+            XCTAssertNotEqual(commandID.rawValue, "restart")
         }
     }
 

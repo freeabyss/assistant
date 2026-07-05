@@ -57,6 +57,8 @@ enum SearchAction: Hashable {
     case runCommand(CommandID)
     case openSettings(SettingsRoute)
     case startScreenshot(AssistantScreenshotMode)
+    case openFile(URL)
+    case revealInFinder(URL)
 }
 
 struct SearchResult: Identifiable, Hashable {
@@ -134,6 +136,7 @@ struct SourcePriority {
     static let command: Double = 90
     static let calculator: Double = 85
     static let settings: Double = 80
+    static let file: Double = 75
     static let clipboard: Double = 70
 
     static func value(for sourceID: SearchSourceID) -> Double {
@@ -146,6 +149,8 @@ struct SourcePriority {
             return calculator
         case .settings:
             return settings
+        case .file:
+            return file
         case .clipboard:
             return clipboard
         default:
@@ -231,6 +236,14 @@ final class DefaultSearchActionExecutor: SearchActionExecutorProtocol {
                 let pasteboard = NSPasteboard.general
                 pasteboard.clearContents()
                 pasteboard.setString(text, forType: .string)
+            }
+        case .openFile(let url):
+            await MainActor.run {
+                NSWorkspace.shared.open(url)
+            }
+        case .revealInFinder(let url):
+            await MainActor.run {
+                NSWorkspace.shared.activateFileViewerSelecting([url])
             }
         case .openApplication, .copyClipboardRecord, .runCommand, .openSettings, .startScreenshot:
             // The UI/system integration layer supplies concrete handlers for non-copy actions in later tasks.

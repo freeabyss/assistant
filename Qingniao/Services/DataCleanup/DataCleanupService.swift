@@ -1,20 +1,28 @@
 import Foundation
 import os.log
 
-/// Service that periodically cleans up expired clipboard items and enforces storage limits.
+/// Service that periodically cleans up expired clipboard items.
 ///
 /// - Runs on app launch and then every hour
-/// - Executes on a background thread to avoid blocking the UI
+/// - Executes on a background task to avoid blocking the UI
 /// - Pinned items are never automatically deleted
+/// - Backed by the Core Data clipboard repository (`ClipboardRepository`); the
+///   retention window is read from the `clipboard.retention` setting inside the
+///   repository. The legacy GRDB `ContentRepository` path was removed in v1.2
+///   (T-005).
 final class DataCleanupService {
     private let logger = Logger.database
-    private let repository = ContentRepository()
+    private let repository: ClipboardRepositoryProtocol
 
     /// Timer for periodic cleanup (every hour).
     private var timer: Timer?
 
     /// Whether a cleanup is currently in progress.
     private var isCleaning = false
+
+    init(repository: ClipboardRepositoryProtocol = ClipboardRepository(persistence: .shared)) {
+        self.repository = repository
+    }
 
     // MARK: - Public API
 
@@ -24,15 +32,14 @@ final class DataCleanupService {
         logger.info("DataCleanupService starting")
 
         // Run immediate cleanup on launch
-        Task.detached(priority: .utility) { [weak self] in
-            self?.performCleanup()
+        Task { [weak self] in
+            await self?.performCleanup()
         }
 
         // Schedule hourly cleanup
         timer = Timer.scheduledTimer(withTimeInterval: 3600, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            Task.detached(priority: .utility) {
-                self.performCleanup()
+            Task { [weak self] in
+                await self?.performCleanup()
             }
         }
     }
@@ -46,8 +53,8 @@ final class DataCleanupService {
 
     // MARK: - Internal
 
-    /// Perform a full cleanup cycle: read settings, run expiry, run storage limit.
-    func performCleanup() {
+    /// Perform a full cleanup cycle: run retention-based expiry.
+    func performCleanup() async {
         guard !isCleaning else {
             logger.debug("Cleanup already in progress, skipping")
             return
@@ -57,18 +64,9 @@ final class DataCleanupService {
         defer { isCleaning = false }
 
         do {
-            // Read settings from database
-            let retentionDaysStr = try repository.readSetting(key: LegacySettingKey.retentionDays)
-            let maxStorageMBStr = try repository.readSetting(key: LegacySettingKey.maxStorageMB)
-
-            let retentionDays = Int(retentionDaysStr ?? LegacySettingKey.defaults[LegacySettingKey.retentionDays]!) ?? 30
-            let maxStorageMB = Int(maxStorageMBStr ?? LegacySettingKey.defaults[LegacySettingKey.maxStorageMB]!) ?? 500
-
-            // Run combined cleanup (expiry + storage limit)
-            let deleted = try repository.cleanup(retentionDays: retentionDays, maxStorageMB: maxStorageMB)
-
+            let deleted = try await repository.cleanupExpired(now: Date())
             if deleted > 0 {
-                logger.info("Cleanup complete: removed \(deleted) items (retention=\(retentionDays)d, maxStorage=\(maxStorageMB)MB)")
+                logger.info("Cleanup complete: removed \(deleted) expired items")
             } else {
                 logger.debug("Cleanup complete: no items to remove")
             }
