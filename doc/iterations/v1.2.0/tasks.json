@@ -287,7 +287,7 @@
         "ACC-003"
       ],
       "done_definition": "所有组件 #Preview 可在 Xcode Canvas 查看；参数化 API 干净；暂不强制全 App 接入（后续 T 逐步替换）",
-      "passes": false
+      "passes": true
     },
     {
       "id": "T-008",

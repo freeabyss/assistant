@@ -398,3 +398,39 @@ AppDelegate 通过 `container.onboardingGate = { self.ensureOnboardingGate() }` 
 - **Onboarding 显示逻辑保持原样**（单屏化是 T-010）；AppDelegate 仍持 onboardingWindow 并通过 onboardingGate 闭包注入容器。
 - api.md v3 里 CommandBarController 要求 `.ultraThinMaterial`、20px 圆角——本任务保留现状（borderless panel + cornerRadius 12 + SearchPanelView 自带外观），材质/圆角属于 T-011 UI 重写范畴，未提前引入。
 - api.md 还列了 AnnotationWindowController / ScreenshotOverlayController / GlobalShortcutManager / HotkeyConflictDetector 作为独立类型——本任务按「薄封装、不重写」原则用 ScreenshotWindowController 统一封装现有截图窗口，热键仍用 KeyboardShortcuts 直接注册；独立的 GlobalShortcutManager/冲突检测/全屏热键注册留给热键相关任务。
+
+---
+
+## T-007 统一 Jade 组件库（presentation, P1)
+
+### 状态
+✅ 完成。`xcodebuild -project Qingniao.xcodeproj -scheme Qingniao -configuration Debug build` → **BUILD SUCCEEDED**。tasks.json T-007 passes=true。
+
+### 新增文件（Qingniao/Views/Components/,均带 light+dark #Preview）
+1. `JadeButton.swift` — `JadeButtonStyle: ButtonStyle`,四变体 primary/secondary/destructive/ghost;hover/pressed/disabled 三态;水平 fixedSize。便捷 API `.jadePrimary/.jadeSecondary/.jadeDestructive/.jadeGhost`。primary=primary 底白字、secondary=surface2 底主色前景+border 描边、destructive=systemRed、ghost 透明底 hover 出 surface2。
+2. `JadeTextField.swift` — `@Binding<String>`+`LocalizedStringKey` placeholder,可选左图标 `Image?`,右 xmark.circle.fill 清空;`@FocusState` 驱动:focus 1.5pt primary 边框/未 focus 1pt border;JadeRadius.md、JadeFont.body、内边 12×9。
+3. `HotkeyRecorder.swift` — 包 `KeyboardShortcuts.Recorder`,jade 圆角/边框/focus primary;**不做冲突检测**(T-008),暴露 `isConflicting: Binding<Bool>`+`conflictMessage: Binding<String?>` 外部传入,冲突时行内红色 exclamationmark.triangle 警告。
+4. `JadeListRow.swift` — 泛型 `JadeListRow<Content>`;`selected`(primaryFill 底+lg 圆角)、`rowSize: .compact(44)/.comfortable(64)`、`actions: [JadeRowAction]`(hover 右侧图标按钮组,支持 isDestructive)。附带 `JadeRowAction`/`JadeRowSize` 类型。
+5. `JadePill.swift` — 文本胶囊/徽标,6 配色 neutral/primary/info/success/warning/danger(前景色+15% 底);短内容(≤2 字符)/toolbar 用 capsule,其余 JadeRadius.sm;`.regular`/`.toolbar` 尺寸;`JadeBadge` 为其 typealias。
+6. `StatCard.swift` — 图标(Image)+值(title1)+标题(LocalizedStringKey),JadeRadius.lg+surface2 底,hover 切 surface3,可选 tint。
+7. `PermissionGate.swift` — 空权限态:systemImage+标题+描述+jadePrimary 引导按钮,全部 LocalizedStringKey。
+8. `JadeConfirmationDialog.swift` — `View.jadeConfirmationDialog(_:isPresented:confirmTitle:cancelTitle:message:onConfirm:)` helper,封装系统 confirmationDialog 为红色 destructive+cancel 双按钮,不重复造轮子。
+
+### 改写文件
+- `ToastView.swift` → **重写为 JadeToast**:变体 .info/.success/.error(各自图标+语义色)、position .bottom/.center、slide+fade、3s 自动消失(error 不自动)。保留旧 `.toast(message:isShowing:)` 签名(内部转 JadeToastModifier,.info/.bottom)兼容现有调用;新增完整版 `.jadeToast(_:isShowing:variant:position:)`。
+- `ScreenshotToolbarController.swift` → 删除内联 toast TODO,改用 `JadeToast(toast, variant:.info)`(该预览是独立 NSHostingView,直接渲染 JadeToast,自动消失仍由 ScreenshotPreviewViewModel.showToast 处理)。
+
+### pbxproj
+- 手工加 9 个文件(8 新增+ToastView 已存在无需重复),用 **F007 前缀** UUID(对齐 Design 层 F004 惯例)。四处:PBXBuildFile(F007...101-108)、PBXFileReference(F007...001-008)、PBXGroup Components children、PBXSourcesBuildPhase。
+
+### commit（3 次)
+1. `feat(T-007): 新增 Jade 组件库 8 个组件`
+2. `feat(T-007): 重写 ToastView 为 JadeToast + 迁移截图内联 toast`
+3. `build(T-007): 注册 9 个 Jade 组件文件到 Qingniao.xcodeproj`
+（+本次 progress/tasks 记录 commit）
+
+### 留给后续 agent 的提示
+- **本任务只做组件本身,未把现有 View 切到新组件**(那是 T-015)。例外:ToastView 被就地重写(API 兼容)+ ScreenshotToolbar 内联 toast 已迁移。
+- **HotkeyRecorder 冲突检测是 T-008**:组件只渲染 isConflicting/conflictMessage,检测逻辑由 T-008 监听 KeyboardShortcuts 变更后写入 binding。Recorder 无原生 focus 回调,当前用 onHover 近似高亮,T-008 若需精确 focus 态可再增强。
+- **JadePill capsule 判定**用 `text.count <= 2`(计数/短徽标),中文字符也按 count 计;如需更精确可换度量。
+- pbxproj 仍是手工 group 型工程,新增 .swift 记得四处接线(SwiftPM 侧 glob 自动)。
