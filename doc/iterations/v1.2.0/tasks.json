@@ -597,7 +597,7 @@
         "SHOT-009 回归"
       ],
       "done_definition": "区域/窗口/全屏三种截图都可触发；预览工具条为悬浮 pill 形态；blur 禁用显示 tooltip；保存/复制/标注/取消流程正常",
-      "passes": false
+      "passes": true
     },
     {
       "id": "T-015",

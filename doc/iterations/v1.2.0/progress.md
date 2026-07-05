@@ -653,3 +653,60 @@ AppDelegate 通过 `container.onboardingGate = { self.ensureOnboardingGate() }` 
 - `isCalculatorTopResult` 依据「calculator 源且排在 visibleResults 首行」判定（未新增 SearchResult flag，靠 SearchService 现有排序把 calculator matchScore=30 顶上去）。
 - Tab 补全为「唯一标题前缀匹配」补全；未做多结果公共前缀补全。
 - Loading：输入框内 `isLoading` 显示 ProgressView；FileSearchSource 索引态未单独在命令栏画 ProgressView（可后续接 `.fileSearchIndexReady` 通知），`commandBar.indexing` key 已备。
+
+---
+
+## T-014 截图标注 UI 重构（P-04/P-05）：悬浮 pill 工具条 + 全屏热键 —— 完成
+
+**日期**：2026-07-06　**执行**：子 Agent
+
+### 做了什么
+1. **ScreenshotOverlay（P-04 叠层）** `Qingniao/Views/Components/ScreenshotOverlay.swift`
+   - 只改样式,不动 NSBezierPath 手绘逻辑。尺寸标签 pill:字体 caption(11pt medium)、圆角 radius-md(8pt)、黑 0.7 底白字,分隔符 `x`→`×`。
+   - `WindowCaptureOverlayView` 窗口高亮:systemBlue 0.9 / 3pt 边框 → `JadeColor.primaryNS` 20% 填充 + Jade 2pt 描边。
+   - 保留:十字准星、ESC 取消、最小选区 5×5、level `.screenSaver`。
+2. **默认保存目录 ~/Desktop（D-032 / FR-SHOT-10）**
+   - `PersistenceController.swift` AssistantSettingDefaults `screenshot.saveDirectory`:`~/Pictures/Screenshots`→`~/Desktop`。
+   - `SettingsViewModel.swift` `@Published screenshotSaveDirectory` 默认同改。
+   - `SettingsServiceTests.testScreenshotSaveDirectoryAndLaunchAtLoginPersist` 断言同步改 `~/Desktop`。
+3. **ScreenshotToolbarController（P-05 预览）** `Qingniao/Views/Components/ScreenshotToolbarController.swift`
+   - 底部实心条 → 居中悬浮 Capsule pill(ultraThinMaterial + Jade border 1px + shadow.md)。
+   - ToolbarButton 72×46→72×40,hover 背景 `JadeColor.surface3`,取消按钮 `JadeColor.danger` tint。
+   - 4 操作:复制(doc.on.doc)/保存(square.and.arrow.down)/标注(pencil.tip)/取消(xmark)。**去掉了旧的 previewHeader 标题栏**,改为左上角源类型 badge(crop/macwindow/rectangle.inset.filled + 中文标签 + WxH,不可点)。
+   - 画布容器:radius-xxl(20) + `JadeMaterial.commandBar` + `jadeShadow(.xl)`,图片区黑 0.8 底 padding x6(24)。
+   - 保存逻辑:新增 `configuredSaveDirectory()` 同步从 Core Data 读 `SettingKey.screenshotSaveDirectory`(默认 ~/Desktop);`ScreenshotToolbarAction` 新增 `.saveAs`。**⌥点击保存**→`presentSavePanel()`(NSSavePanel,allowedContentTypes=[.png]);普通点击/⌘S→存默认目录。文件名 `Screenshot yyyy-MM-dd HH.mm.ss.png`。
+   - 移除废弃 `VisualEffectBlur` NSViewRepresentable。
+4. **Annotation 编辑器（P-05）** `AnnotationEditorWindow.swift` + `AnnotationToolbar.swift`(整体重写)
+   - RootView 由 VStack(顶栏/Divider/画布/Divider/底栏) 改为 ZStack:黑画布 `.ignoresSafeArea()` 铺满,顶/底 Capsule pill 悬浮居中。
+   - 顶栏 pill:矩形/箭头/文字/马赛克 ToolPill(选中 Jade 底白字) + **blur 禁用**(DisabledToolPill,opacity 0.4 + help "v1.3 支持")。
+   - 底栏 pill:撤销/重做 IconButton + 六色 swatch(选中 `JadeColor.primary` 2pt/26pt 色环,原 accentColor) + 线宽 segmented Picker + 取消(danger)/复制/保存(prominent Jade)。
+   - **注意**:按 PRD P-05 底栏规格只保留「线宽」segmented,**移除了原顶栏的 textSize(字号) segmented Picker**(P-05 未列字号)。`AnnotationTextSize` 枚举仍保留(渲染/文字工具仍用 `state.style.textSize` 默认 .medium),只是 UI 不再暴露切换。若后续需要字号 UI 再加回。
+   - 快捷键:改用隐藏 0-opacity Button 承载 ⌘C/⌘S/⎋/⌘Z/⇧⌘Z + 数字 1-4 切工具(之前 1-4 未实现,本次补齐)。ESC 仍有 panel.keyDown 兜底。
+5. **本地化** `Localizable.xcstrings`:新增 `annotation.tool.blur`/`annotation.tool.blur.soon`/`screenshot.source.region`/`.window`/`.screen`(zh-Hans + en)。JSON 校验通过。
+
+### 全屏截图(FR-SHOT-FULLSCREEN)
+- **T-008 已完整接线,本任务无需补**:`ScreenshotWindowController.captureFullScreen()` 存在 → 调 `screenshotService.captureScreen()`(用 `CGDisplayCreateImage(CGMainDisplayID())`,非 CGWindowListCreateImage,但等效截主屏且质量足够)。
+- 快捷键 `.captureFullscreen` = ⌃⌥⌘3 已在 `KeyboardShortcuts+Names.swift` 注册,`GlobalShortcutManager` `onKeyUp` 已绑;命令面板 `.commandCaptureFullScreen` 通知 → `AppContainer.handleCommandCaptureFullScreen` 也已接。
+- 全屏截图后走**同一 `toolbar.show(result:)` 预览流程**,与区域/窗口一致 → badge 显示「全屏」。
+- 默认快捷键确认:captureRegion=⇧⌃⌘4、captureWindow=⇧⌃⌘5、captureFullscreen=⌃⌥⌘3(全部 T-008 已设,本任务只核对)。
+
+### build / test
+- `xcodebuild -scheme Qingniao -configuration Debug build` → **BUILD SUCCEEDED**。
+- `xcodebuild ... test`:本任务相关 `SettingsServiceTests`(含改过的断言)+ `AnnotationTests` **全通过**。
+- **已知无关失败**:`SearchBlacklistRepositoryTests`(testAddListContainsAndRemoveConcreteResult / testSearchServiceFiltersOnly...)在 `git stash` 还原到 baseline 后**同样失败**,属并发任务/Core Data 环境预存 flaky,与 T-014 无关。
+
+### blur 按钮处理
+- 顶栏 pill 内 `DisabledToolPill`:drop.fill 图标 + "模糊" 文案,整体 `opacity(0.4)`,不是 Button(无点击/无 action),`.help("v1.3 支持")` tooltip。符合「只放 disabled 按钮+tooltip,不实现功能」约束。
+
+### 未做 / 提示后续 Agent
+- 未新增文件 → **无 pbxproj 改动**(全部改动落在已注册的现有 .swift)。
+- textSize UI 已从标注栏移除(见上 4),数据层未动;如产品要字号切换需重新加 UI。
+- `captureScreen()` 仍用 CGDisplayCreateImage;若要严格按任务描述的 `CGWindowListCreateImage(.screenBounds,...)` 可替换,但当前实现功能等价且已工作,未改以免动 T-008 已验收的服务层。
+- 多屏:overlay/full-screen 均取 `NSScreen.main`,多显示器仅覆盖主屏(与既有行为一致,未扩展)。
+
+### commit 列表(branch v1.2.0)
+1. `feat(T-014): P-04 截图叠层 Jade 化 — 尺寸 pill radius-md + 窗口高亮改 Jade`
+2. `feat(T-014): 截图默认保存目录改 ~/Desktop (D-032 / FR-SHOT-10)`
+3. `feat(T-014): P-05 截图预览工具条改悬浮 pill + ⌥保存到指定目录`
+4. `feat(T-014): P-05 标注编辑器顶/底栏改悬浮 pill + 快捷键补齐`
+5. `docs(T-014): tasks.json passes=true + progress 记录`（本提交）
