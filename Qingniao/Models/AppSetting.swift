@@ -38,7 +38,11 @@ enum LegacySettingKey {
 /// Assistant MVP strongly typed setting keys backed by Core Data `CDAppSetting` rows.
 enum SettingKey: String, CaseIterable, Codable {
     case onboardingCompleted = "onboarding.completed"
+    case onboardingCompletedAt = "onboarding.completedAt"
     case searchHotkey = "hotkey.search"
+    case captureRegionHotkey = "hotkey.capture.region"
+    case captureWindowHotkey = "hotkey.capture.window"
+    case captureFullscreenHotkey = "hotkey.capture.fullscreen"
     case launchAtLoginEnabled = "launchAtLogin.enabled"
     case clipboardEnabled = "clipboard.enabled"
     case clipboardShowInSearch = "clipboard.showInSearch"
@@ -47,7 +51,10 @@ enum SettingKey: String, CaseIterable, Codable {
     case commandSourceEnabled = "search.source.command.enabled"
     case calculatorSourceEnabled = "search.source.calculator.enabled"
     case settingsSourceEnabled = "search.source.settings.enabled"
+    case fileSourceEnabled = "search.source.file.enabled"
     case screenshotSaveDirectory = "screenshot.saveDirectory"
+    case appearanceMode = "appearance.mode"
+    case dataFolderBookmark = "data.folderBookmark"
     case languageMode = "language.mode"
 }
 
@@ -79,6 +86,13 @@ enum LanguageMode: String, Codable, CaseIterable, Hashable {
         case .english: return "English"
         }
     }
+}
+
+/// v1.2: appearance override (system / light / dark). Backed by `appearance.mode`.
+enum AppearanceMode: String, Codable, CaseIterable, Hashable {
+    case system
+    case light
+    case dark
 }
 
 protocol SettingsServiceProtocol {
@@ -179,6 +193,7 @@ actor SettingsService: SettingsServiceProtocol {
         if type == URL.self, let value = URL(fileURLWithPath: Self.expandTilde(rawValue)) as? T { return value }
         if type == ClipboardRetention.self, let value = ClipboardRetention(rawValue: rawValue) as? T { return value }
         if type == LanguageMode.self, let value = LanguageMode(rawValue: rawValue) as? T { return value }
+        if type == AppearanceMode.self, let value = AppearanceMode(rawValue: rawValue) as? T { return value }
 
         let data = Data(rawValue.utf8)
         return try JSONDecoder().decode(type, from: data)
@@ -198,6 +213,8 @@ actor SettingsService: SettingsServiceProtocol {
             return retention.rawValue
         case let language as LanguageMode:
             return language.rawValue
+        case let appearance as AppearanceMode:
+            return appearance.rawValue
         default:
             let data = try JSONEncoder().encode(value)
             guard let string = String(data: data, encoding: .utf8) else {

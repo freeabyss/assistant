@@ -7,7 +7,7 @@ final class DatabaseManagerTests: XCTestCase {
         let url = DatabaseManager.databaseURL()
         XCTAssertTrue(url.path.hasSuffix("assistant.db"))
         XCTAssertTrue(url.path.contains("Application Support"))
-        XCTAssertTrue(url.path.contains("Assistant"))
+        XCTAssertTrue(url.path.contains("Qingniao"))
     }
 
     func testMigratorRegistration() {

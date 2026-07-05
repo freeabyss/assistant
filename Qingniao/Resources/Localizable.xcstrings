@@ -1,6 +1,108 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "management.data.reset.done": {
+      "comment": "Status message shown after all data has been reset",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All data has been cleared. Please restart Qingniao."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "所有数据已清空,请重启青鸟。"
+          }
+        }
+      }
+    },
+    "data.reset.failed": {
+      "comment": "Error shown when resetting all data fails. %@ is the underlying reason.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed to reset all data: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清空所有数据失败:%@"
+          }
+        }
+      }
+    },
+    "data.migration.failed.title": {
+      "comment": "Title of the alert shown when the data directory migration fell back to a backup",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Data migration needs attention"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "数据迁移需要注意"
+          }
+        }
+      }
+    },
+    "data.migration.failed.message": {
+      "comment": "Body of the migration fallback alert. %@ is the backup directory path.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We couldn't move your existing data to the new location, so a copy was saved to:\n%@\n\nQingniao started with a fresh library. Your old data is safe in the backup."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法将现有数据移动到新位置,已复制备份到:\n%@\n\n青鸟已使用新的空数据库启动,你的旧数据已安全保存在备份目录中。"
+          }
+        }
+      }
+    },
+    "data.migration.failed.reveal": {
+      "comment": "Button revealing the migration backup in Finder",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reveal Backup in Finder"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在访达中显示备份"
+          }
+        }
+      }
+    },
+    "data.migration.failed.dismiss": {
+      "comment": "Dismiss button on the migration fallback alert",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dismiss"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭"
+          }
+        }
+      }
+    },
     "settings.general": {
       "comment": "Tab title for General settings",
       "localizations": {

@@ -33,7 +33,7 @@ final class PersistenceControllerTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: fileSystem.thumbnailsDirectory.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: fileSystem.richTextDirectory.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: fileSystem.logsDirectory.path))
-        XCTAssertEqual(fileSystem.storeURL.lastPathComponent, "Assistant.sqlite")
+        XCTAssertEqual(fileSystem.storeURL.lastPathComponent, "Qingniao.sqlite")
     }
 
     func testUUIDResourcePathsAreRelativeToApplicationSupport() {

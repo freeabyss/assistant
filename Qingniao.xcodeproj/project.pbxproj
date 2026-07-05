@@ -71,7 +71,9 @@
 		A1000100000000000000003D /* PinyinHelperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003D; };
 		A1000100000000000000003F /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003F; };
 		A10001000000000000000040 /* AssistantFileSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000040; };
+		F00500000000000000000101 /* DataDirectoryMigrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00500000000000000000001 /* DataDirectoryMigrator.swift */; };
 		A10001000000000000000041 /* PersistenceControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000041; };
+		F00500000000000000000201 /* DataDirectoryMigratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00500000000000000000202 /* DataDirectoryMigratorTests.swift */; };
 		A10001000000000000000042 /* AssistantClipboardRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000042; };
 		A10001000000000000000043 /* AssistantClipboardRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000043; };
 		A10001000000000000000044 /* InMemorySearchIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000044; };
@@ -175,7 +177,9 @@
 		A1000000000000000000003E /* QingniaoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = QingniaoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1000000000000000000003F /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
 		A10000000000000000000040 /* AssistantFileSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantFileSystem.swift; sourceTree = "<group>"; };
+		F00500000000000000000001 /* DataDirectoryMigrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Database/DataDirectoryMigrator.swift; sourceTree = SOURCE_ROOT; };
 		A10000000000000000000041 /* PersistenceControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceControllerTests.swift; sourceTree = "<group>"; };
+		F00500000000000000000202 /* DataDirectoryMigratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QingniaoTests/DataDirectoryMigratorTests.swift; sourceTree = SOURCE_ROOT; };
 		A10000000000000000000042 /* AssistantClipboardRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantClipboardRepository.swift; sourceTree = "<group>"; };
 		A10000000000000000000043 /* AssistantClipboardRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantClipboardRepositoryTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000044 /* InMemorySearchIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InMemorySearchIndex.swift; sourceTree = "<group>"; };
@@ -324,6 +328,7 @@
 				A10000000000000000000004 /* DatabaseManager.swift */,
 				A1000000000000000000003F /* PersistenceController.swift */,
 				A10000000000000000000040 /* AssistantFileSystem.swift */,
+				F00500000000000000000001 /* DataDirectoryMigrator.swift */,
 				A10003000000000000000016 /* Migrations */,
 				A10003000000000000000017 /* Repositories */,
 			);
@@ -364,6 +369,7 @@
 				A1000000000000000000003C /* DatabaseManagerTests.swift */,
 				A1000000000000000000003D /* PinyinHelperTests.swift */,
 				A10000000000000000000041 /* PersistenceControllerTests.swift */,
+				F00500000000000000000202 /* DataDirectoryMigratorTests.swift */,
 				A10000000000000000000043 /* AssistantClipboardRepositoryTests.swift */,
 				A10000000000000000000045 /* InMemorySearchIndexTests.swift */,
 				B00500000000000000000004 /* SearchServiceCoreTests.swift */,
@@ -741,6 +747,7 @@
 				A1000100000000000000003C /* DatabaseManagerTests.swift in Sources */,
 				A1000100000000000000003D /* PinyinHelperTests.swift in Sources */,
 				A10001000000000000000041 /* PersistenceControllerTests.swift in Sources */,
+				F00500000000000000000201 /* DataDirectoryMigratorTests.swift in Sources */,
 				A10001000000000000000043 /* AssistantClipboardRepositoryTests.swift in Sources */,
 				A10001000000000000000045 /* InMemorySearchIndexTests.swift in Sources */,
 				B00500000000000000000003 /* SearchServiceCoreTests.swift in Sources */,
@@ -776,6 +783,7 @@
 				A10001000000000000000004 /* DatabaseManager.swift in Sources */,
 				A1000100000000000000003F /* PersistenceController.swift in Sources */,
 				A10001000000000000000040 /* AssistantFileSystem.swift in Sources */,
+				F00500000000000000000101 /* DataDirectoryMigrator.swift in Sources */,
 				A10001000000000000000042 /* AssistantClipboardRepository.swift in Sources */,
 				B00600000000000000000001 /* SearchBlacklistRepository.swift in Sources */,
 				A10001000000000000000005 /* ContentRepository.swift in Sources */,

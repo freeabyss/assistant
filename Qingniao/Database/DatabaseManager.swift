@@ -42,10 +42,15 @@ final class DatabaseManager {
     // MARK: - Database Location
 
     /// Returns the URL for the SQLite database file.
-    /// Location: ~/Library/Application Support/Assistant/assistant.db
+    /// Location: ~/Library/Application Support/Qingniao/assistant.db
+    ///
+    /// Legacy GRDB stack (v1.2 technical debt, see doc/architecture/db.md §14).
+    /// The directory moved from `Assistant/` to `Qingniao/` in v1.2 alongside the
+    /// Core Data store; the db file name stays `assistant.db` (no rename needed —
+    /// GRDB is read-compatible legacy and not renamed).
     static func databaseURL() -> URL {
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        return appSupport.appendingPathComponent("Assistant").appendingPathComponent("assistant.db")
+        return appSupport.appendingPathComponent(AssistantFileSystem.directoryName).appendingPathComponent("assistant.db")
     }
 
     // MARK: - Migrations

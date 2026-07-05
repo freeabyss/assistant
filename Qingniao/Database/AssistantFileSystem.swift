@@ -5,13 +5,30 @@ import Foundation
 struct AssistantFileSystem: Hashable {
     var rootDirectory: URL
 
+    /// The Application Support subdirectory name for the active data root.
+    /// v1.2: renamed from "Assistant" to "Qingniao" (brand rename). Migration of an
+    /// existing "Assistant" directory is handled by `DataDirectoryMigrator`.
+    static let directoryName = "Qingniao"
+
+    /// Legacy (pre-v1.2) Application Support subdirectory name, kept for migration.
+    static let legacyDirectoryName = "Assistant"
+
+    /// The Core Data SQLite store file name (v1.2: renamed from "Assistant.sqlite").
+    static let storeFileName = "Qingniao.sqlite"
+
+    /// Legacy (pre-v1.2) Core Data SQLite store file name, kept for migration.
+    static let legacyStoreFileName = "Assistant.sqlite"
+
+    static var applicationSupportDirectory: URL {
+        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+    }
+
     static var `default`: AssistantFileSystem {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        return AssistantFileSystem(rootDirectory: appSupport.appendingPathComponent("Assistant", isDirectory: true))
+        AssistantFileSystem(rootDirectory: applicationSupportDirectory.appendingPathComponent(directoryName, isDirectory: true))
     }
 
     var storeURL: URL {
-        rootDirectory.appendingPathComponent("Assistant.sqlite", isDirectory: false)
+        rootDirectory.appendingPathComponent(Self.storeFileName, isDirectory: false)
     }
 
     var clipboardDirectory: URL {

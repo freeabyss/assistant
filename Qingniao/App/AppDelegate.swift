@@ -91,6 +91,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         logger.info("Assistant launching")
 
+        // v1.2 (T-003): migrate the Application Support data directory from the
+        // legacy brand name (Assistant/) to the current one (Qingniao/) BEFORE any
+        // store is opened. Never throws; falls back to backup + fresh directory.
+        migrateDataDirectoryIfNeeded()
+
         // Initialize database
         do {
             try DatabaseManager.shared.setup()
@@ -925,10 +930,38 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         guard let appSupport = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             return
         }
-        let appDir = appSupport.appendingPathComponent("Assistant")
+        let appDir = appSupport.appendingPathComponent(AssistantFileSystem.directoryName)
         if !fileManager.fileExists(atPath: appDir.path) {
             try? fileManager.createDirectory(at: appDir, withIntermediateDirectories: true)
             logger.debug("Created Application Support directory at \(appDir.path, privacy: .public)")
+        }
+    }
+
+    /// v1.2 (T-003): run the Assistant/ -> Qingniao/ data directory migration and,
+    /// if the move failed and we fell back to a backup, alert the user.
+    private func migrateDataDirectoryIfNeeded() {
+        let outcome = DataDirectoryMigrator().migrateIfNeeded()
+        switch outcome {
+        case .alreadyMigrated, .freshInstall, .migrated:
+            logger.info("Data directory migration outcome: \(String(describing: outcome), privacy: .public)")
+        case .fallbackBackup(let backupURL, let underlying):
+            logger.error("Data directory migration fell back to backup at \(backupURL.path, privacy: .public): \(underlying, privacy: .public)")
+            DispatchQueue.main.async { [weak self] in
+                self?.presentMigrationFallbackAlert(backupURL: backupURL)
+            }
+        }
+    }
+
+    @MainActor
+    private func presentMigrationFallbackAlert(backupURL: URL) {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = L10n.localized("data.migration.failed.title")
+        alert.informativeText = L10n.localized("data.migration.failed.message", backupURL.path)
+        alert.addButton(withTitle: L10n.localized("data.migration.failed.reveal"))
+        alert.addButton(withTitle: L10n.localized("data.migration.failed.dismiss"))
+        if alert.runModal() == .alertFirstButtonReturn {
+            NSWorkspace.shared.activateFileViewerSelecting([backupURL])
         }
     }
 

@@ -25,7 +25,7 @@ final class PersistenceController {
 
     init(storeConfiguration: StoreConfiguration, fileSystem: AssistantFileSystem) {
         self.fileSystem = fileSystem
-        self.container = NSPersistentContainer(name: "Assistant", managedObjectModel: Self.managedObjectModel)
+        self.container = NSPersistentContainer(name: "Qingniao", managedObjectModel: Self.managedObjectModel)
 
         let description = NSPersistentStoreDescription()
         switch storeConfiguration {
@@ -301,8 +301,18 @@ extension CDAppSetting {
 
 struct AssistantSettingDefaults {
     static let values: [String: String] = [
+        // Legacy onboarding boolean retained for the current onboarding gating
+        // (AppDelegate/OnboardingViewModel). The onboarding gating rewire to
+        // `onboarding.completedAt` is out of scope for T-003.
         "onboarding.completed": "false",
+        // v1.2 (db.md §8.3): `onboarding.completedAt` (Date?, empty string == nil).
+        // Non-empty means completed/skipped. Added now; gating switch is deferred.
+        "onboarding.completedAt": "",
         "hotkey.search": "option+space",
+        // v1.2: screenshot capture hotkey defaults (mirror KeyboardShortcuts.Name defaults).
+        "hotkey.capture.region": "shift+ctrl+cmd+4",
+        "hotkey.capture.window": "shift+ctrl+cmd+5",
+        "hotkey.capture.fullscreen": "ctrl+option+cmd+3",
         "launchAtLogin.enabled": "true",
         "clipboard.enabled": "true",
         "clipboard.showInSearch": "true",
@@ -311,7 +321,13 @@ struct AssistantSettingDefaults {
         "search.source.command.enabled": "true",
         "search.source.calculator.enabled": "true",
         "search.source.settings.enabled": "true",
+        // v1.2: FileSearchSource display toggle.
+        "search.source.file.enabled": "true",
         "screenshot.saveDirectory": "~/Pictures/Screenshots",
+        // v1.2: appearance mode (system/light/dark).
+        "appearance.mode": "system",
+        // v1.2: security-scoped bookmark for a user-chosen data/screenshot directory (nil by default).
+        "data.folderBookmark": "",
         "language.mode": "system"
     ]
 }
