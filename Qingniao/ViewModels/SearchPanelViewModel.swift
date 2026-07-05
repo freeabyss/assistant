@@ -112,7 +112,7 @@ final class SearchPanelViewModel: ObservableObject {
     }
 
     /// Danger commands that require a `⏎` second confirmation (PRD §9.5 / T-011).
-    static let defaultDangerCommandIDs: Set<String> = [
+    nonisolated static let defaultDangerCommandIDs: Set<String> = [
         "clearClipboardHistory",
         "restartFinder",
         "restartDock"
