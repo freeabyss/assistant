@@ -213,7 +213,7 @@
         "REG-002"
       ],
       "done_definition": "grep 源码无 UnifiedSearch/MenuBarView/UnitConverterSource/OCRService/ContentStore/ContentRepository 引用（历史 doc/ 除外）；swift test 全绿、xcodebuild build+test 全绿",
-      "passes": false
+      "passes": true
     },
     {
       "id": "T-006",

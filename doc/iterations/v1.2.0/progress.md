@@ -280,3 +280,51 @@ TOK(6) 设计 token / BRAND(7) 改名一致性 / DATA(5) 数据迁移 / DI(3) Ap
 - DataManagementService 的 `resetAllData` 依赖 `PersistenceController.shared.container` 已加载；若在未 load 的实例上调用需注意。
 - 截图热键默认值只写进了 AppSetting 默认表（字符串形式），**并未接到 KeyboardShortcuts.Name / 实际热键注册**（KeyboardShortcuts+Names.swift 里 captureRegion/captureWindow 仍是 cmd+shift+a/w，无 fullscreen Name）。热键实际绑定/注册属截图相关任务。
 - 数据文件夹安全书签 `data.folderBookmark` 仅加了默认空值键，未实现书签解析/持久化逻辑（关闭 Sandbox 后的用户选择目录场景）。
+
+---
+
+## T-005 死代码清理（UnifiedSearch*/MenuBarView/UnitConverterSource/OCRService/ContentStore/Toast 收敛）— 完成
+
+### 变更概要
+按模块删除死代码 + 收敛重复实现，全程保持 Debug build / test-for-building / xcodebuild test 全绿。
+
+**1. UnitConverterSource（独立死代码）**
+- 删 `Services/SearchEngine/UnitConverterSource.swift`（仅 legacy UnifiedSearchSource 包装；单位换算已在 CalculatorSource 内）。
+- 删 `QingniaoTests/UnitConverterSourceTests.swift`，把其中走 `CalculatorSource.search(query:)` 的换算覆盖（cm/kg/数据大小/温度/拒绝币种体积时长）迁进 `CalculatorSourceTests`；仅删掉走已删类的 legacy wrapper 测试。
+- commit 1。
+
+**2. OCR / ContentStore / GRDB ContentRepository / UnifiedSearch / MenuBar（一体化，互相耦合）**
+- 删 orphan（pbxproj sources=0，从未编译）：`Services/OCRService/`、`Services/ContentStore/`。
+- 删死 GRDB 路径：`Database/Repositories/ContentRepository.swift`、`Services/ExportService/ExportService.swift`、`Services/SearchEngine/SearchService.swift`（ClipboardFTSSearchService/SearchScope/ClipboardFTSSearchResult/ClipboardSearchServiceProtocol）、`Services/SearchEngine/ClipboardSearchSource.swift`。这些都未被实例化；live 剪贴板搜索走 `AssistantClipboardSource`(Core Data)。
+- 删死 UI（仅经死的 MenuBarView #Preview 可达）：`Views/MenuBar/MenuBarView.swift`、`ViewModels/UnifiedSearchViewModel.swift`、`Views/SearchResults/UnifiedResultList|UnifiedResultRow|ResultGroupView.swift`、`Views/RecentContent/RecentContentView.swift`、`ViewModels/RecentContentViewModel.swift`（含 OCR 筛选段随文件删除）。
+- 删 legacy 搜索栈：`UnifiedSearchService.swift`、`UnifiedSearchTypes.swift`（SearchResultType/SystemCommand/SearchResultAction/UnifiedSearchResult/UnifiedSearchSource/UnifiedSearchResponse）。
+- **重接 live 消费者（不删）**：
+  - `DataCleanupService` 改用 Core Data `ClipboardRepository.cleanupExpired(now:)`（保留期从 clipboard.retention 设置内部读取）；去掉 GRDB storage-limit 清理（Core Data 库无 max_storage_mb 概念）。
+  - `AppDelegate.syncLaunchAtLoginPreference` 改用 `SettingsService`(Core Data) + `LaunchAtLoginService`，去掉 ContentRepository/LegacySettingKey。
+  - 从 MenuBarView 抽出 `AutoFocusTextField` + `.focusSearchField`/`.checkForUpdates` 到新文件 `Views/Components/AutoFocusTextField.swift`（live SearchPanelView/AppDelegate 使用）。
+  - 从 live 搜索源剥掉死的 UnifiedSearchSource 兼容段：AppSearchSource（删 AppSearchSourceProtocol/AppInfo/getAppInfo/sourceType/legacy search(query:limit:)）、SystemCommandSource（删 sourceType/legacy search/highlightRanges）、CalculatorSource（删 sourceType/legacy search）。
+  - **FileSearchSource 移植到新 SearchSource 协议**（该文件 sources=0 未编译，但 T-009 要保留，且 done_definition 禁止 UnifiedSearch 引用）：新增 `SearchAction.openFile/.revealInFinder`、`SourcePriority.file=75`、`SearchSourceID.file`；SearchCore.DefaultSearchActionExecutor + SearchPanelViewModel.execute 补两个 case。
+- 测试修正：删 `DatabaseManagerTests` 里两条 ExportItem 测试（ExportService 已删）；重写 `SystemCommandSourceTests` 的 legacy 测试到新 SearchSource 路径（.runCommand/CommandID）。
+- commit 2。
+
+**3. Toast 收敛**
+- 保留 `Views/Components/ToastView.swift`（ToastView+ToastModifier+.toast()）为唯一实现，注释标记为 T-007 JadeToast 基础；ClipboardListView/SearchPanelView 仍用它。
+- RecentContentView 内联 overlay toast 随死簇一并删除。
+- ScreenshotToolbarController 内联预览 toast 加 `// TODO: T-007` 标记（预览是独立 NSHostingView 且 JadeToast 未实现，本任务保留功能不重构）。
+- commit 3。
+
+### 验证结果
+- `xcodebuild -project Qingniao.xcodeproj -scheme Qingniao -configuration Debug build` → **BUILD SUCCEEDED**（每个模块删完都跑）。
+- `xcodebuild ... build-for-testing` → **TEST BUILD SUCCEEDED**。
+- `xcodebuild ... test` → **TEST SUCCEEDED**（全部测试套件通过）。
+- done_definition grep 门禁：`grep -rn "UnifiedSearch|MenuBarView|UnitConverterSource|OCRService|ContentStore|ContentRepository" --include=*.swift` 仅剩解释性注释（无 live 引用）。
+
+### 留给后续 agent 的提示
+- **FileSearchSource 已可用但未接线**：已移植到 SearchSource 协议（id=.file、weight 75、primaryAction=.openFile、secondary=[.revealInFinder,.copyText(path)]），但**未加入 AppDelegate.makeSearchPanelViewModel 的 sources 数组**，且未接 fileSourceEnabled 开关 / 索引预热 —— 这些是 T-009 的工作。`FileInfo.icon` 字段现未使用（改用 .appIcon(path)）。
+- **SearchAction 新增两 case**（.openFile/.revealInFinder）已在 SearchCore 默认执行器和 SearchPanelViewModel.execute 里实现（NSWorkspace.open / activateFileViewerSelecting）。若 T-009/T-011 有别的 SearchAction switch 记得覆盖。
+- **LegacySettingKey**（Models/AppSetting.swift）现已无任何使用者（消费者全删），是死枚举；未删以避免动 T-006 会重构的共享文件，可在 T-006 顺手清掉。
+- **Localizable.xcstrings 仍留 OCR 相关字符串**（recent.filter.ocr / preview.ocrText / "OCRService deallocated" 等）—— 孤立无害，未删（改 xcstrings 风险高且不影响 build/grep 门禁）；I18N 任务（T-017）可清理。
+- **DataCleanupService 不再做存储上限清理**：Core Data 库无 max_storage_mb 概念，只按 clipboard.retention 过期清理。若产品要恢复容量上限清理需在 Core Data 仓库层新增能力。
+- ClipboardMonitor 里 `ClipboardEvent`（legacy 形状）+ `.clipboardItemSaved` 声明保留（live ClipboardMonitor 仍 post 该通知，ClipboardListViewModel 订阅）。
+- GRDB 依赖仍在（DatabaseManager/ClipboardItem/Tag/AppSetting 模型），api.md 说 v1.2 保留兼容不写入；未在本任务移除。
+- ClipboardItemRow.swift / PreviewPanel.swift 保留（T-012 files_touch_hint 引用、各自有 #Preview 可独立编译），虽然当前无 live 调用点。
