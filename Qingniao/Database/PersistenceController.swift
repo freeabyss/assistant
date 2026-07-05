@@ -325,7 +325,7 @@ struct AssistantSettingDefaults {
         "search.source.settings.enabled": "true",
         // v1.2: FileSearchSource display toggle.
         "search.source.file.enabled": "true",
-        "screenshot.saveDirectory": "~/Pictures/Screenshots",
+        "screenshot.saveDirectory": "~/Desktop",
         // v1.2: appearance mode (system/light/dark).
         "appearance.mode": "system",
         // v1.2: security-scoped bookmark for a user-chosen data/screenshot directory (nil by default).

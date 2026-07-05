@@ -82,7 +82,7 @@ final class SettingsServiceTests: XCTestCase {
     func testScreenshotSaveDirectoryAndLaunchAtLoginPersist() async throws {
         let defaultDirectory = try await service.stringValue(for: .screenshotSaveDirectory)
         let defaultLaunchAtLogin = try await service.value(for: .launchAtLoginEnabled, as: Bool.self)
-        XCTAssertEqual(defaultDirectory, "~/Pictures/Screenshots")
+        XCTAssertEqual(defaultDirectory, "~/Desktop")
         XCTAssertTrue(defaultLaunchAtLogin)
 
         let customDirectory = tempDirectory.appendingPathComponent("Shots", isDirectory: true)

@@ -72,7 +72,7 @@ final class SettingsViewModel: ObservableObject {
     @Published var sourceToggles: [SearchSourceToggle] = SettingsViewModel.defaultSearchSourceToggles
     @Published var clipboardEnabled = true
     @Published var clipboardRetention: ClipboardRetention = .thirtyDays
-    @Published var screenshotSaveDirectory: URL = URL(fileURLWithPath: ("~/Pictures/Screenshots" as NSString).expandingTildeInPath)
+    @Published var screenshotSaveDirectory: URL = URL(fileURLWithPath: ("~/Desktop" as NSString).expandingTildeInPath)
     @Published var launchAtLoginEnabled = true
     @Published var languageMode: LanguageMode = .followSystem
     @Published var blacklistItems: [SearchBlacklistItemSnapshot] = []
