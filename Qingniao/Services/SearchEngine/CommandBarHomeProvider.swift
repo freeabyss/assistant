@@ -101,7 +101,7 @@ final class CommandBarHomeProvider: CommandBarHomeProviding {
             return []
         }
         return history
-            .filter { $0.isPinned }
+            .filter { $0.isPinned || $0.isFavorite }
             .prefix(limit)
             .map { snapshot in
                 SearchResult(
