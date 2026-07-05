@@ -217,6 +217,9 @@ final class MockPermissionService: PermissionServiceProtocol {
     var requestScreenRecordingResult: Bool = false
     private(set) var requestScreenRecordingCallCount: Int = 0
 
+    var onDemandAccessibilityResult: Bool = false
+    private(set) var onDemandAccessibilityCallCount: Int = 0
+
     func status(for permission: PermissionKind) -> PermissionStatus {
         statuses[permission] ?? .unknown
     }
@@ -234,6 +237,11 @@ final class MockPermissionService: PermissionServiceProtocol {
         callLog.append(.request(kind: .screenRecording))
         requestScreenRecordingCallCount += 1
         return requestScreenRecordingResult
+    }
+
+    func onDemandAccessibilityCheck() -> Bool {
+        onDemandAccessibilityCallCount += 1
+        return onDemandAccessibilityResult
     }
 }
 

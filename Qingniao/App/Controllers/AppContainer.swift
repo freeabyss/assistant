@@ -258,11 +258,26 @@ final class AppContainer: NSObject {
         }
     }
 
-    /// Reads the persisted onboarding completion flag from Core Data.
+    /// Reads the persisted onboarding completion state from Core Data.
+    ///
+    /// v1.2 (AC-6): 首选新键 `onboarding.completedAt`（Date?，非空即已完成/跳过），
+    /// 若为空则回落到 legacy 布尔 `onboarding.completed`（向后兼容旧安装）。
+    /// 只要任一表明已完成，重启即不重弹 onboarding。
     func loadOnboardingCompletionState() -> Bool {
         let context = PersistenceController.shared.viewContext
         var completed = false
         context.performAndWait {
+            // 1) 新键 onboarding.completedAt：非空字符串即已完成。
+            let completedAtRequest = CDAppSetting.fetchRequest()
+            completedAtRequest.fetchLimit = 1
+            completedAtRequest.predicate = NSPredicate(format: "key == %@", SettingKey.onboardingCompletedAt.rawValue)
+            let completedAt = (try? context.fetch(completedAtRequest).first?.value) ?? ""
+            if !completedAt.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                completed = true
+                return
+            }
+
+            // 2) legacy 布尔回落。
             let request = CDAppSetting.fetchRequest()
             request.fetchLimit = 1
             request.predicate = NSPredicate(format: "key == %@", SettingKey.onboardingCompleted.rawValue)

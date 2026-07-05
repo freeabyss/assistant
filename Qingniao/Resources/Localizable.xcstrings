@@ -8364,6 +8364,295 @@
           }
         }
       }
+    },
+    "onboarding.hotkey.title": {
+      "comment": "Onboarding hotkey card title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Command bar hotkey"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "命令栏热键"
+          }
+        }
+      }
+    },
+    "onboarding.clipboard.toggle": {
+      "comment": "Onboarding clipboard toggle title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable clipboard history"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用剪贴板历史"
+          }
+        }
+      }
+    },
+    "onboarding.clipboard.toggle.subtitle": {
+      "comment": "Onboarding clipboard toggle subtitle",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved locally; pause or clear anytime."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅保存在本地，可随时暂停或清空。"
+          }
+        }
+      }
+    },
+    "onboarding.launchAtLogin.toggle.subtitle": {
+      "comment": "Onboarding launch-at-login subtitle",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start Qingniao automatically when you log in."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "登录时自动启动青鸟。"
+          }
+        }
+      }
+    },
+    "onboarding.screenRecording.explain": {
+      "comment": "Onboarding screen recording explanation",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screen Recording permission is used for region, fullscreen, and window screenshots. All screenshots are processed locally."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "屏幕录制权限用于区域/全屏/窗口截图,所有截图均在本地处理。"
+          }
+        }
+      }
+    },
+    "onboarding.screenRecording.grant": {
+      "comment": "Onboarding grant screen recording button",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grant Screen Recording permission"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "授予屏幕录制权限"
+          }
+        }
+      }
+    },
+    "onboarding.screenRecording.granted": {
+      "comment": "Onboarding screen recording granted state",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Granted ✓"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已授予 ✓"
+          }
+        }
+      }
+    },
+    "onboarding.screenRecording.skip": {
+      "comment": "Onboarding skip screenshot button",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not now"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "暂不开启截图"
+          }
+        }
+      }
+    },
+    "onboarding.screenRecording.skipped": {
+      "comment": "Onboarding screenshot skipped hint",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Screenshots will ask for permission when first used."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "截图功能会在首次使用时申请权限。"
+          }
+        }
+      }
+    },
+    "onboarding.accessibility.explain": {
+      "comment": "Onboarding accessibility explanation",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accessibility permission is used for future quick actions (such as auto-paste and simulated shortcuts). You can grant it when you need it."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "辅助功能权限用于未来的快捷操作(如自动粘贴、模拟快捷键)。你可以在用到时再授予。"
+          }
+        }
+      }
+    },
+    "onboarding.accessibility.later": {
+      "comment": "Onboarding accessibility later button",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maybe later"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "稍后再说"
+          }
+        }
+      }
+    },
+    "onboarding.start": {
+      "comment": "Onboarding start button",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Get Started"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开始使用"
+          }
+        }
+      }
+    },
+    "onboarding.error.screenRecordingRequired": {
+      "comment": "Onboarding start blocked error",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Grant Screen Recording permission, or choose \"Not now\" to continue without screenshots."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先授予屏幕录制权限,或点击\"暂不开启截图\"以继续使用。"
+          }
+        }
+      }
+    },
+    "permission.onDemand.accessibility.title": {
+      "comment": "On-demand accessibility alert title",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accessibility permission needed"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要辅助功能权限"
+          }
+        }
+      }
+    },
+    "permission.onDemand.accessibility.message": {
+      "comment": "On-demand accessibility alert message",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This feature needs Accessibility permission for controlled automation such as auto-paste or simulated shortcuts. Open System Settings to grant it."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此功能需要辅助功能权限,用于受控自动化(如自动粘贴、模拟快捷键)。打开系统设置以授予。"
+          }
+        }
+      }
+    },
+    "permission.onDemand.accessibility.openSettings": {
+      "comment": "On-demand accessibility open settings button",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open System Settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开系统设置"
+          }
+        }
+      }
+    },
+    "permission.onDemand.accessibility.cancel": {
+      "comment": "On-demand accessibility cancel button",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

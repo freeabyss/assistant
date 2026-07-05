@@ -85,7 +85,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let view = OnboardingView(viewModel: viewModel)
             .tint(JadeColor.primary) // 全局主色注入（Design Token T-004）
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 680, height: 520),
+            contentRect: NSRect(x: 0, y: 0, width: 720, height: 520),
             styleMask: [.titled, .closable],
             backing: .buffered,
             defer: false

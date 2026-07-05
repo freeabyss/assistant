@@ -1,212 +1,256 @@
 import SwiftUI
 import KeyboardShortcuts
 
+/// 单屏 Onboarding（PRD §9.4 P-06）。
+///
+/// 整屏 720×520，`JadeRadius.xl` + `JadeShadow.xl`，padding 32。全部 token 化，
+/// 不硬编码颜色/尺寸/字号。辅助功能不在此触发 TCC（按需申请）。
 struct OnboardingView: View {
     @StateObject var viewModel: OnboardingViewModel
     @State private var showSkipConfirmation = false
+
+    private let privacyURL = URL(string: "https://github.com/freeabyss/assistant/blob/main/PRIVACY.md")
 
     init(viewModel: OnboardingViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
     }
 
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: JadeSpace.x6.value) {
             header
-            stepContent
+            configCards
+            screenRecordingSection
+            accessibilitySection
+            Spacer(minLength: 0)
             footer
         }
-        .padding(32)
-        .frame(width: 680, height: 520)
+        .jadePadding(.x8)
+        .frame(width: 720, height: 520)
+        .background(JadeColor.surface1)
+        .jadeRadius(.xl)
+        .jadeShadow(.xl, radius: .xl)
         .onAppear { viewModel.onAppear() }
-        .alert(
-            L10n.localized("onboarding.skip.confirm.title"),
-            isPresented: $showSkipConfirmation
+        .jadeConfirmationDialog(
+            LocalizedStringKey("onboarding.skip.confirm.title"),
+            isPresented: $showSkipConfirmation,
+            confirmTitle: LocalizedStringKey("onboarding.skip.confirm.action"),
+            cancelTitle: LocalizedStringKey("onboarding.skip.confirm.cancel"),
+            message: LocalizedStringKey("onboarding.skip.confirm.message")
         ) {
-            Button(L10n.localized("onboarding.skip.confirm.action"), role: .destructive) {
-                Task { await viewModel.skipOnboarding() }
-            }
-            Button(L10n.localized("onboarding.skip.confirm.cancel"), role: .cancel) {}
-        } message: {
-            Text(L10n.localized("onboarding.skip.confirm.message"))
+            Task { await viewModel.skipOnboarding() }
         }
     }
 
+    // MARK: - Header
+
     private var header: some View {
-        VStack(spacing: 8) {
-            Image(systemName: iconName)
-                .font(.system(size: 44, weight: .semibold))
-                .foregroundColor(.accentColor)
-            Text(title)
-                .font(.largeTitle.weight(.bold))
-            Text(subtitle)
-                .font(.body)
-                .foregroundColor(.secondary)
+        VStack(spacing: JadeSpace.x2.value) {
+            Image(systemName: "bird")
+                .font(.system(size: 80, weight: .semibold))
+                .foregroundStyle(JadeColor.primary)
+            Text(L10n.localized("onboarding.welcome.title"))
+                .font(JadeFont.display)
+                .foregroundStyle(JadeColor.textPrimary)
+            Text(L10n.localized("onboarding.welcome.subtitle"))
+                .font(JadeFont.body)
+                .foregroundStyle(JadeColor.textSecondary)
                 .multilineTextAlignment(.center)
         }
     }
 
-    @ViewBuilder
-    private var stepContent: some View {
-        switch viewModel.step {
-        case .welcome:
-            bulletList([
-                L10n.localized("onboarding.welcome.point.search"),
-                L10n.localized("onboarding.welcome.point.clipboard"),
-                L10n.localized("onboarding.welcome.point.screenshot")
-            ])
-        case .searchHotkey:
-            VStack(spacing: 14) {
-                Text(L10n.localized("onboarding.hotkey.description"))
-                    .multilineTextAlignment(.center)
-                KeyboardShortcuts.Recorder(for: .togglePanel)
+    // MARK: - 三配置卡片
+
+    private var configCards: some View {
+        VStack(spacing: JadeSpace.x3.value) {
+            configCard {
+                HStack {
+                    cardLabel(
+                        icon: "command",
+                        title: L10n.localized("onboarding.hotkey.title"),
+                        subtitle: L10n.localized("onboarding.hotkey.description")
+                    )
+                    Spacer()
+                    HotkeyRecorder(
+                        for: .togglePanel,
+                        isConflicting: .constant(viewModel.hotkeyValidation == .conflict),
+                        conflictMessage: .constant(viewModel.hotkeyValidation == .conflict
+                            ? L10n.localized("onboarding.hotkey.conflict") : nil)
+                    )
                     .onChange(of: KeyboardShortcuts.getShortcut(for: .togglePanel)) { _ in
                         viewModel.validateHotkey()
                     }
-                validationRow
-                Button(L10n.localized("onboarding.hotkey.recheck")) {
-                    viewModel.validateHotkey()
                 }
             }
-        case .clipboardPrivacy:
-            VStack(alignment: .leading, spacing: 14) {
-                bulletList([
-                    L10n.localized("onboarding.clipboard.point.defaultOn"),
-                    L10n.localized("onboarding.clipboard.point.localOnly"),
-                    L10n.localized("onboarding.clipboard.point.control")
-                ])
-                Toggle(isOn: Binding(get: { viewModel.clipboardAcknowledged }, set: { if $0 { viewModel.acknowledgeClipboard() } })) {
-                    Text(L10n.localized("onboarding.clipboard.acknowledge"))
+
+            configCard {
+                Toggle(isOn: $viewModel.clipboardEnabled) {
+                    cardLabel(
+                        icon: "doc.on.clipboard",
+                        title: L10n.localized("onboarding.clipboard.toggle"),
+                        subtitle: L10n.localized("onboarding.clipboard.toggle.subtitle")
+                    )
                 }
-                .toggleStyle(.checkbox)
+                .toggleStyle(.switch)
+                .tint(JadeColor.primary)
             }
-        case .screenRecording:
-            permissionStep(kind: .screenRecording)
-        case .accessibility:
-            permissionStep(kind: .accessibility)
-        case .launchAtLogin:
-            VStack(spacing: 12) {
-                Text(L10n.localized("onboarding.launchAtLogin.description"))
-                    .multilineTextAlignment(.center)
+
+            configCard {
                 Toggle(isOn: $viewModel.launchAtLoginEnabled) {
-                    Text(L10n.localized("onboarding.launchAtLogin.toggle"))
+                    cardLabel(
+                        icon: "power",
+                        title: L10n.localized("onboarding.launchAtLogin.toggle"),
+                        subtitle: L10n.localized("onboarding.launchAtLogin.toggle.subtitle")
+                    )
                 }
-                .toggleStyle(.checkbox)
-            }
-        case .done:
-            VStack(spacing: 12) {
-                Text(L10n.localized("onboarding.done.description"))
-                    .multilineTextAlignment(.center)
-                if let message = viewModel.completionErrorMessage {
-                    Text(message)
-                        .foregroundColor(.red)
-                        .multilineTextAlignment(.center)
-                }
+                .toggleStyle(.switch)
+                .tint(JadeColor.primary)
             }
         }
     }
 
-    private var footer: some View {
-        VStack(spacing: 10) {
-            ProgressView(value: Double(OnboardingStep.allCases.firstIndex(of: viewModel.step) ?? 0) + 1, total: Double(OnboardingStep.allCases.count))
-                .frame(width: 360)
-            HStack {
-                Button(L10n.localized("onboarding.quit")) {
-                    NSApp.terminate(nil)
+    // MARK: - 屏幕录制段（必选）
+
+    private var screenRecordingSection: some View {
+        VStack(alignment: .leading, spacing: JadeSpace.x2.value) {
+            Text(L10n.localized("onboarding.screenRecording.title"))
+                .font(JadeFont.title3)
+                .foregroundStyle(JadeColor.textPrimary)
+            Text(L10n.localized("onboarding.screenRecording.explain"))
+                .font(JadeFont.callout)
+                .foregroundStyle(JadeColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: JadeSpace.x3.value) {
+                if viewModel.screenRecordingAuthorized {
+                    Label(L10n.localized("onboarding.screenRecording.granted"), systemImage: "checkmark.circle.fill")
+                        .font(JadeFont.callout)
+                        .foregroundStyle(JadeColor.success)
+                } else {
+                    Button(L10n.localized("onboarding.screenRecording.grant")) {
+                        viewModel.requestScreenRecording()
+                    }
+                    .buttonStyle(.jadePrimary)
+
+                    Button(L10n.localized("onboarding.screenRecording.skip")) {
+                        viewModel.skipScreenshot()
+                    }
+                    .buttonStyle(.jadeGhost)
+
+                    if viewModel.screenshotSkipped {
+                        Text(L10n.localized("onboarding.screenRecording.skipped"))
+                            .font(JadeFont.caption)
+                            .foregroundStyle(JadeColor.textTertiary)
+                    }
                 }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - 辅助功能段（按需，不触发 TCC）
+
+    private var accessibilitySection: some View {
+        VStack(alignment: .leading, spacing: JadeSpace.x2.value) {
+            Text(L10n.localized("onboarding.accessibility.title"))
+                .font(JadeFont.title3)
+                .foregroundStyle(JadeColor.textPrimary)
+            Text(L10n.localized("onboarding.accessibility.explain"))
+                .font(JadeFont.callout)
+                .foregroundStyle(JadeColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button(L10n.localized("onboarding.accessibility.later")) {
+                viewModel.dismissAccessibility()
+            }
+            .buttonStyle(.jadeGhost)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - Footer
+
+    private var footer: some View {
+        VStack(spacing: JadeSpace.x2.value) {
+            if let message = viewModel.completionErrorMessage {
+                Text(message)
+                    .font(JadeFont.callout)
+                    .foregroundStyle(JadeColor.danger)
+                    .multilineTextAlignment(.center)
+            }
+            HStack {
                 Button(L10n.localized("onboarding.skip")) {
                     showSkipConfirmation = true
                 }
-                .buttonStyle(.link)
+                .buttonStyle(.jadeGhost)
+
                 Spacer()
-                Button(primaryButtonTitle) {
-                    viewModel.continueToNextStep()
+
+                Button(L10n.localized("onboarding.start")) {
+                    Task { await viewModel.start() }
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(!viewModel.canContinueCurrentStep)
+                .buttonStyle(.jadePrimary)
+                .disabled(!viewModel.canStart)
                 .keyboardShortcut(.defaultAction)
-            }
-        }
-    }
 
-    private var validationRow: some View {
-        HStack(spacing: 8) {
-            Image(systemName: viewModel.hotkeyValidation == .valid ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                .foregroundColor(viewModel.hotkeyValidation == .valid ? .green : .orange)
-            Text(hotkeyValidationText)
-                .foregroundColor(viewModel.hotkeyValidation == .valid ? .secondary : .orange)
-        }
-        .font(.callout)
-    }
+                Spacer()
 
-    private func permissionStep(kind: PermissionKind) -> some View {
-        VStack(spacing: 14) {
-            Text(kind == .screenRecording ? L10n.localized("onboarding.screenRecording.description") : L10n.localized("onboarding.accessibility.description"))
-                .multilineTextAlignment(.center)
-            if kind == .accessibility {
-                Text(L10n.localized("onboarding.accessibility.boundary"))
-                    .font(.callout)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            permissionStatusRow(kind: kind)
-            HStack {
-                Button(L10n.localized("onboarding.permission.openSettings")) {
-                    viewModel.openPermissionSettings(kind)
-                }
-                Button(L10n.localized("onboarding.permission.recheck")) {
-                    Task { await viewModel.refreshPermissions() }
-                }
-            }
-            Text(L10n.localized("onboarding.permission.required"))
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-    }
-
-    private func permissionStatusRow(kind: PermissionKind) -> some View {
-        let authorized = viewModel.permissionStatuses[kind]?.isAuthorized == true
-        return HStack(spacing: 8) {
-            Image(systemName: authorized ? "checkmark.circle.fill" : "lock.fill")
-                .foregroundColor(authorized ? .green : .orange)
-            Text(authorized ? L10n.localized("onboarding.permission.authorized") : L10n.localized("onboarding.permission.notAuthorized"))
-        }
-        .font(.callout)
-    }
-
-    private func bulletList(_ items: [String]) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            ForEach(items, id: \.self) { item in
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: "checkmark.circle")
-                        .foregroundColor(.accentColor)
-                    Text(item)
+                if let privacyURL {
+                    Link(L10n.localized("about.privacyPolicy"), destination: privacyURL)
+                        .font(JadeFont.callout)
+                        .foregroundStyle(JadeColor.primary)
                 }
             }
         }
-        .frame(maxWidth: 520, alignment: .leading)
     }
 
-    private var iconName: String {
-        switch viewModel.step {
-        case .welcome: return "sparkles"
-        case .searchHotkey: return "keyboard"
-        case .clipboardPrivacy: return "clipboard"
-        case .screenRecording: return "camera.viewfinder"
-        case .accessibility: return "accessibility"
-        case .launchAtLogin: return "power"
-        case .done: return "checkmark.seal"
+    // MARK: - Building blocks
+
+    private func configCard<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        content()
+            .jadePadding(.x3)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(JadeColor.surface2)
+            .jadeRadius(.md)
+    }
+
+    private func cardLabel(icon: String, title: String, subtitle: String) -> some View {
+        HStack(spacing: JadeSpace.x3.value) {
+            Image(systemName: icon)
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(JadeColor.primary)
+                .frame(width: 24)
+            VStack(alignment: .leading, spacing: JadeSpace.x1.value) {
+                Text(title)
+                    .font(JadeFont.body)
+                    .foregroundStyle(JadeColor.textPrimary)
+                Text(subtitle)
+                    .font(JadeFont.caption)
+                    .foregroundStyle(JadeColor.textSecondary)
+            }
         }
     }
+}
 
-    private var title: String { L10n.localized("onboarding.\(viewModel.step.rawValue).title") }
-    private var subtitle: String { L10n.localized("onboarding.\(viewModel.step.rawValue).subtitle") }
-    private var primaryButtonTitle: String { viewModel.step == .done ? L10n.localized("onboarding.finish") : L10n.localized("onboarding.continue") }
+// MARK: - Preview
 
-    private var hotkeyValidationText: String {
-        switch viewModel.hotkeyValidation {
-        case .valid: return L10n.localized("onboarding.hotkey.valid")
-        case .conflict: return L10n.localized("onboarding.hotkey.conflict")
-        case .invalid: return L10n.localized("onboarding.hotkey.invalid")
-        }
-    }
+#Preview("Onboarding · Light") {
+    OnboardingView(
+        viewModel: OnboardingViewModel(
+            permissionService: PermissionService(),
+            hotkeyService: HotkeyValidationService(),
+            settingsService: SettingsService(persistence: .shared)
+        )
+    )
+    .tint(JadeColor.primary)
+    .preferredColorScheme(.light)
+}
+
+#Preview("Onboarding · Dark") {
+    OnboardingView(
+        viewModel: OnboardingViewModel(
+            permissionService: PermissionService(),
+            hotkeyService: HotkeyValidationService(),
+            settingsService: SettingsService(persistence: .shared)
+        )
+    )
+    .tint(JadeColor.primary)
+    .preferredColorScheme(.dark)
 }

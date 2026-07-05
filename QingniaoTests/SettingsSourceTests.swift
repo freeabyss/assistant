@@ -191,6 +191,7 @@ final class StaticPermissionService: PermissionServiceProtocol {
         Dictionary(uniqueKeysWithValues: PermissionKind.allCases.map { ($0, .authorized) })
     }
     func requestScreenRecordingPrompt() -> Bool { true }
+    func onDemandAccessibilityCheck() -> Bool { true }
 }
 
 private final class NoopLaunchAtLoginService: LaunchAtLoginServiceProtocol {

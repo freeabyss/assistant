@@ -85,7 +85,7 @@
 		B00700000000000000000001 /* AppSearchSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00700000000000000000002; };
 		F00900000000000000000001 /* FileSearchSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00900000000000000000002; };
 					B01100000000000000000001 /* SearchPanelViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01100000000000000000002; };
-			B01100000000000000000003 /* SearchPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01100000000000000000004; };
+			B01100000000000000000003 /* CommandBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01100000000000000000004; };
 			B01100000000000000000005 /* AssistantClipboardSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01100000000000000000006; };
 			B01100000000000000000009 /* SearchPanelViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01100000000000000000008; };
 
@@ -195,7 +195,7 @@
 		F00900000000000000000002 /* FileSearchSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchSourceTests.swift; sourceTree = "<group>"; };
 		E01800000000000000000002 /* ReleaseInfoServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseInfoServiceTests.swift; sourceTree = "<group>"; };
 					B01100000000000000000002 /* SearchPanelViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanelViewModel.swift; sourceTree = "<group>"; };
-			B01100000000000000000004 /* SearchPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanelView.swift; sourceTree = "<group>"; };
+			B01100000000000000000004 /* CommandBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandBarView.swift; sourceTree = "<group>"; };
 			B01100000000000000000006 /* AssistantClipboardSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantClipboardSource.swift; sourceTree = "<group>"; };
 			B01100000000000000000008 /* SearchPanelViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanelViewModelTests.swift; sourceTree = "<group>"; };
 			C01400000000000000000002 /* PermissionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Services/Permissions/PermissionService.swift; sourceTree = SOURCE_ROOT; };
@@ -590,7 +590,7 @@
 		B01100000000000000000007 /* SearchPanel */ = {
 			isa = PBXGroup;
 			children = (
-				B01100000000000000000004 /* SearchPanelView.swift */,
+				B01100000000000000000004 /* CommandBarView.swift */,
 			);
 			path = SearchPanel;
 			sourceTree = "<group>";
@@ -869,7 +869,7 @@
 				A10001000000000000000036 /* AnnotationToolbar.swift in Sources */,
 				A10001000000000000000037 /* AnnotationEditorWindow.swift in Sources */,
 					B01100000000000000000001 /* SearchPanelViewModel.swift in Sources */,
-					B01100000000000000000003 /* SearchPanelView.swift in Sources */,
+					B01100000000000000000003 /* CommandBarView.swift in Sources */,
 					B01100000000000000000005 /* AssistantClipboardSource.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

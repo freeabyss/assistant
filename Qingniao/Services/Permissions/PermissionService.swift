@@ -29,6 +29,16 @@ protocol PermissionServiceProtocol {
     /// - Note: 首次调用会弹出系统权限 UI；必须在主线程调用。参见 Issue #3、v1.1.0 architecture §4.1。
     @MainActor
     func requestScreenRecordingPrompt() -> Bool
+
+    /// 按需检查辅助功能权限（v1.2，PRD FR-ONBOARD-ACCESSIBILITY-ONDEMAND / AC-7）。
+    ///
+    /// Onboarding **不**触发辅助功能 TCC；仅当用户首次真正触发需要辅助功能的能力
+    /// （如自动粘贴、模拟快捷键）时才调用本方法。若尚未授权，弹出说明 Alert，
+    /// 用户可选择「打开系统设置」跳转到辅助功能设置页。
+    ///
+    /// - Returns: 当前辅助功能是否已授权（`AXIsProcessTrusted()`）。已授权时不弹 Alert 直接返回 true。
+    @MainActor
+    func onDemandAccessibilityCheck() -> Bool
 }
 
 /// Thin macOS API wrapper for Screen Recording and Accessibility privacy permissions.
@@ -66,6 +76,31 @@ final class PermissionService: PermissionServiceProtocol {
     @MainActor
     func requestScreenRecordingPrompt() -> Bool {
         CGRequestScreenCaptureAccess()
+    }
+
+    @MainActor
+    func onDemandAccessibilityCheck() -> Bool {
+        if AXIsProcessTrusted() {
+            return true
+        }
+
+        let alert = NSAlert()
+        alert.alertStyle = .informational
+        alert.messageText = L10n.localized("permission.onDemand.accessibility.title")
+        alert.informativeText = L10n.localized("permission.onDemand.accessibility.message")
+        alert.addButton(withTitle: L10n.localized("permission.onDemand.accessibility.openSettings"))
+        alert.addButton(withTitle: L10n.localized("permission.onDemand.accessibility.cancel"))
+
+        if alert.runModal() == .alertFirstButtonReturn {
+            openAccessibilitySettings()
+        }
+        return false
+    }
+
+    /// 打开系统设置的「辅助功能」隐私页，并触发系统 prompt 让本 App 出现在列表中。
+    @MainActor
+    private func openAccessibilitySettings() {
+        openSystemSettings(for: .accessibility)
     }
 
     private func requestAccessibilityPromptIfNeeded() {
