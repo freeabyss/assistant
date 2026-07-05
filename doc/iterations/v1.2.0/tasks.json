@@ -321,7 +321,7 @@
         "CMD-001 回归"
       ],
       "done_definition": "6 个全局快捷键默认值正确；与系统或其他 App 冲突时设置页有红色提示；全屏截图 ⌃⌥⌘3 可工作",
-      "passes": false
+      "passes": true
     },
     {
       "id": "T-009",

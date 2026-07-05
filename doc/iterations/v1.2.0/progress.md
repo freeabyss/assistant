@@ -434,3 +434,56 @@ AppDelegate 通过 `container.onboardingGate = { self.ensureOnboardingGate() }` 
 - **HotkeyRecorder 冲突检测是 T-008**:组件只渲染 isConflicting/conflictMessage,检测逻辑由 T-008 监听 KeyboardShortcuts 变更后写入 binding。Recorder 无原生 focus 回调,当前用 onHover 近似高亮,T-008 若需精确 focus 态可再增强。
 - **JadePill capsule 判定**用 `text.count <= 2`(计数/短徽标),中文字符也按 count 计;如需更精确可换度量。
 - pbxproj 仍是手工 group 型工程,新增 .swift 记得四处接线(SwiftPM 侧 glob 自动)。
+
+---
+
+## T-008 全局快捷键管理（全屏热键 ⌃⌥⌘3 + 冲突检测 + 默认键修正, services, P0)
+
+### 状态
+✅ 完成。`xcodebuild -project Qingniao.xcodeproj -scheme Qingniao -configuration Debug build` → **BUILD SUCCEEDED**。新增 8 个单测全绿。tasks.json T-008 passes=true。
+
+### 快捷键默认值清单（PRD §9.6 / FR-UI-HOTKEYS，均用户可重绑）
+| Name | 功能 | 默认键 | 说明 |
+|------|------|--------|------|
+| togglePanel | 打开命令栏 | ⌥ Space | 保留 |
+| captureRegion | 区域截图 | ⇧⌃⌘4 | 修正（原 ⇧⌘A） |
+| captureWindow | 窗口截图 | ⇧⌃⌘5 | 修正（原 ⇧⌘W） |
+| captureFullscreen | 全屏截图 | ⌃⌥⌘3 | **新增** |
+| openClipboardHistory | 剪贴板历史 | ⌥⌘C | **新增** |
+| openSettings | 打开设置 | ⌥⌘, | **新增** |
+
+### 新增文件
+1. `Qingniao/Services/Hotkey/GlobalShortcutManager.swift`（@MainActor）— 统一注册 6 个热键回调（setupShortcuts / registerXxx / unregisterAll / resetAllShortcutsToDefaults / refreshConflicts）。全屏截图接 `ScreenshotWindowController.captureFullScreen()`（内部走既有 `ScreenshotService.captureScreen()`，命名保持不动，仅在 controller 层用 captureFullScreen 别名编排）；剪贴板历史接 `clipboardHistoryWindowController.show()`；设置接 `settingsWindowController.show(route:.settings)`。持有 `conflictDetector`。
+2. `Qingniao/Services/Hotkey/HotkeyConflictDetector.swift`（@MainActor, ObservableObject）— 基础版冲突检测：①与启用中的 macOS 符号热键冲突（复用 `HotkeyValidationService.enabledSystemShortcuts`）②我方 6 个热键之间重复绑定。`@Published conflictingNames: Set<Name>` + `conflictMessages: [Name:String]`。`scan()` 全量刷新；`evaluate(_:for:)` 单键评估返回 `.registered/.conflict(String)`。附 `HotkeyAction`（含 name 映射 + init?(name:)）与 `HotkeyRegistrationOutcome`（对齐 api.md §17）。init 为 nonisolated 以便默认参数求值。
+3. `QingniaoTests/HotkeyConflictDetectorTests.swift` — 8 测试：6 项默认值断言（SHORTCUT-001..004）、managedGlobalShortcuts 覆盖 6 槽、HotkeyAction<->Name 往返、系统冲突/内部重复 flagged、evaluate free/system。
+
+### 改写文件
+- `Qingniao/Utilities/KeyboardShortcuts+Names.swift` — 修正 captureRegion/Window 默认键，新增 captureFullscreen/openClipboardHistory/openSettings，新增 `static managedGlobalShortcuts: [Name]`（6 项）。
+- `Qingniao/App/Controllers/AppContainer.swift` — 注入 `globalShortcutManager` lazy 依赖。
+- `Qingniao/App/AppDelegate.swift` — 删除内联 3 键注册，改为 `container.globalShortcutManager.setupShortcuts()`；移除已无用的 KeyboardShortcuts import。
+- `Qingniao/ViewModels/SettingsViewModel.swift` — 注入 HotkeyConflictDetector；新增 `@Published conflictWarnings: [Name:String]`、`isShortcutConflict(_:)`、`conflictMessage(for:)`、`refreshShortcutConflicts()`、`resetAllShortcutsToDefaults()`（**供 T-013 绑定**）；`load()` 末尾刷新冲突。
+- `Qingniao/Views/Settings/SettingsView.swift` — 快捷键 section 补齐 6 项行，shortcutRow 加 name 参数：录制变更 onChange 刷新冲突 + 行内红色 exclamationmark.triangle 警告；重置按钮改走 `viewModel.resetAllShortcutsToDefaults()`。（未重写 UI，符合任务约束）
+- `Qingniao/Resources/Localizable.xcstrings` — 新增 management.shortcuts.captureFullscreen/clipboardHistory/openSettings + conflict.system/conflict.internal + shortcuts.reset（en/zh-Hans）。
+- `Qingniao.xcodeproj/project.pbxproj` — C014 前缀 UUID 接线 3 个新文件（2 源 + 1 测试），四处：PBXBuildFile / PBXFileReference / PBXGroup / PBXSourcesBuildPhase。
+
+### 暴露给 T-013 的 API（SettingsViewModel）
+- `@Published var conflictWarnings: [KeyboardShortcuts.Name: String]`
+- `func isShortcutConflict(_ name: KeyboardShortcuts.Name) -> Bool`
+- `func conflictMessage(for name: KeyboardShortcuts.Name) -> String?`
+- `func refreshShortcutConflicts()` — 录制变更后调用
+- `func resetAllShortcutsToDefaults()` — “重置为默认”按钮
+- 冲突文案 key：`management.shortcuts.conflict.system` / `management.shortcuts.conflict.internal`
+- T-007 的 `HotkeyRecorder` 组件已备好 `isConflicting`/`conflictMessage` binding，T-013 可用 `isShortcutConflict`/`conflictMessage` 驱动。
+
+### commit（3 次）
+1. `feat(T-008): GlobalShortcutManager + HotkeyConflictDetector service layer`
+2. `feat(T-008): expose shortcut conflict API to settings + inline warnings`
+3. `test(T-008): HotkeyConflictDetectorTests + pbxproj registration`
+（+本次 progress/tasks 记录 commit）
+
+### 留给后续 agent 的提示
+- **持久化**：KeyboardShortcuts 库自动经 UserDefaults 存用户自定义键，未自写持久化。
+- **⌥Space 与 Spotlight**：仅在设置页显示冲突提示，**未在代码里自动改键**（按任务约束）。检测依赖“启用中的系统符号热键”列表，Spotlight 是否被检出取决于系统是否将其登记为 symbolic hotkey。
+- **全屏截图命名**：ScreenshotService 协议方法仍是 `captureScreen()`，未改名；controller 层 `captureFullScreen()` 已是既有别名，GlobalShortcutManager 直接调它。
+- **HotkeyConflictDetector 有两个实例**：GlobalShortcutManager 持一个（用于启动期日志/刷新），SettingsViewModel 持一个（用于 UI）。二者都基于同一份 UserDefaults 持久化状态，读值一致；如需单例可后续收敛，但当前无状态共享问题（纯读 + @Published 各自驱动各自 UI）。
+- **预存在失败**：`FileSearchSourceTests` 3 处 `/var` vs `/private/var` 软链路径断言失败，属 FileSearchSource 任务遗留（工作区未提交改动），与 T-008 无关，未处理。
