@@ -28,8 +28,13 @@ final class StatusItemController: NSObject {
         statusMenu = makeMenu()
 
         if let button = item.button {
-            button.image = NSImage(systemSymbolName: "sparkles", accessibilityDescription: "青鸟 Qingniao")
-            button.image?.isTemplate = true
+            // 优先使用打包的 MenuBarIcon（jade bird 占位模板图标），
+            // 若资源缺失则回退到系统 `bird` SF Symbol（同为模板渲染，跟随菜单栏明暗）。
+            let icon = NSImage(named: "MenuBarIcon")
+                ?? NSImage(systemSymbolName: "bird", accessibilityDescription: "青鸟 Qingniao")
+            icon?.isTemplate = true
+            button.image = icon
+            button.image?.accessibilityDescription = "青鸟 Qingniao"
             button.action = #selector(statusItemClicked(_:))
             button.target = self
         }
