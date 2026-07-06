@@ -894,3 +894,34 @@ Dynamic Type（JadeFont.swift）：正文类字号（title2/title3/body/callout/
 ### 提示后续 Agent
 - **新增 Swift 文件务必同步登记 pbxproj**（4 处），否则 swift build 过但 xcodebuild 失败。
 - reduce motion / increase contrast 通过 `NSWorkspace` 即时读取；SwiftUI 在 macOS 对 `@Environment(\.accessibilityReduceMotion)` 支持不完整，故走 JadeAccessibility 封装。border 的 dynamicProvider 在每次绘制读对比度设置，系统切换后新绘制即生效（已存在视图可能需重绘触发）。
+
+## ⑤.3 T-019 —— 全量自动化回归
+
+**执行时间**：2026-07-06
+**执行人**：后台子 Agent（T-019）
+
+### 自动化回归结果（全绿）
+
+- `xcodebuild -project Qingniao.xcodeproj -scheme Qingniao -configuration Debug clean build` → **`** BUILD SUCCEEDED **`**
+- `xcodebuild build -configuration Release` → **`** BUILD SUCCEEDED **`**（ad-hoc 签名；note: Disabling hardened runtime with ad-hoc codesigning——无 Developer ID 证书环境，属预期，签名/公证留发布步骤）
+- `xcodebuild test -configuration Debug` → **148 / 148 通过、0 失败，`** TEST SUCCEEDED **`**
+- `swift test` → **159 / 159 通过、0 失败**（v1.1 基线 134 → 159）
+  - ⚠️ 首跑偶发一次 `libc++abi ... NSException` crash（既有 `SearchBlacklistRepositoryTests` fixture Core Data/NSSet 并发 flaky，与 v1.2 改动无关），重跑即 159/159 全绿。
+
+### 静态校验 a~f（全部通过）
+
+- a. `grep "Mac Super Assistant"`（swift/plist/entitlements，排除 CHANGELOG/doc）→ 无匹配 ✔
+- b. `grep "try!|as! |fatalError"`（排除 init(coder)）→ 仅 4 处 `fatalError("init(coder:) has not been implemented")`（允许的 NSCoder 样板），无其他危险强解包 ✔
+- c. `grep "SUPublicEDKey|SUFeedURL|SUEnableAutomaticChecks"` Info.plist → 无匹配 ✔（Sparkle 已删）
+- d. `grep "com.apple.security.app-sandbox"` Qingniao.entitlements → 值 `<false/>` ✔（Sandbox 已关）
+- e. `grep "TODO|FIXME|XXX"`（swift，排除 #Preview/test）→ 无匹配 ✔
+- f. `codesign -d --entitlements`（Release 产物）→ `app-sandbox=false`、`automation.apple-events=true`、`files.user-selected.read-write=true`、`get-task-allow=true`、`screencapture=true` ✔
+- 版本号三源一致：MARKETING_VERSION=1.2.0（pbxproj）、CFBundleShortVersionString=1.2.0（Info.plist）✔
+
+### 手工验收（待上线前人工验证，Agent 不虚构）
+
+系统交互 P0 手工项统一标「待上线前手工验证」：BRAND-005/006、SEARCH-F-005、SHOT-FS-002、ONB-V2-001/003/005/008、PERM-OD-002、DIST-003/004/005、SHOT-UI-001~005、SETNEW-001~005、ACC-001~005、I18N-002、REG-001~007，及上线前专项（feedback@qingniao.app 收件、qingniao.app 域名 URL）。详见 doc/test/report.md v1.2.0 节手工验收清单。
+
+### 结论
+
+自动化回归（swift 159/159、xcodebuild 148/148、Debug+Release build SUCCEEDED、静态 a~f 全过）**全绿，0 阻塞**。手工 P0 留待 PR 后人工验证。按任务约定「自动化全绿即 passes=true」，T-019 标记 passes=true。report.md v1.2.0 节实际数据已回填，README 状态推进至 ⑤ 完成、进入 Gate 4。

@@ -2,8 +2,8 @@
 
 - **主题**：青鸟 Qingniao —— 产品全面审视 + 品牌改名
 - **状态**：in_progress
-- **当前节点**：① 需求分析 + ② 产品设计
-- **模式**：manual
+- **当前节点**：⑤ 开发测试完成（T-019 自动化回归全绿），进入 Gate 4（开 PR）
+- **模式**：auto
 - **Issue**：#5
 - **分支**：v1.2.0
 - **PR**：-
@@ -29,8 +29,8 @@
 - [x] ④ 架构自审 —— doc/iterations/v1.2.0/architecture/review.md（APPROVED_WITH_MINOR_FIXES，0 阻塞），Gate 2 通过 by @user 2026-07-05
 - [x] ⑤.1 测试用例生成与评审 —— doc/test/cases.md 新增 98 条 TC，review APPROVED（0 阻塞），commit b404c0f
 - [x] ⑤.2 任务拆解 —— doc/iterations/v1.2.0/tasks.json（19 任务：P0×12/P1×4/P2×3），Gate 3 auto 模式跳过
-- [ ] ⑤.3 单任务开发闭环（进行中：T-001 开始）
-- [ ] ⑤.4 开 PR
+- [x] ⑤.3 单任务开发闭环（T-001~T-019 全部 passes=true；T-019 自动化回归全绿：swift 159/159、xcodebuild 148/148、Debug+Release build SUCCEEDED、静态校验 a~f 全过，2026-07-06）
+- [ ] ⑤.4 开 PR（Gate 4，主会话执行）
 - [ ] ⑥ 上线部署
 
 ## 关键节点
@@ -42,3 +42,4 @@
 - 2026-07-05 Gate 2 通过 by @user（"ok"）；模式切换为 auto（用户：后续操作自动批准）
 - 2026-07-05 测试用例 98 条 + 用例评审 APPROVED（0 阻塞，4 改善），commit b404c0f
 - 2026-07-05 任务拆解完成（19 任务），进入 ⑤.3 开发
+- 2026-07-06 T-019 全量自动化回归全绿（swift 159/159、xcodebuild 148/148、Debug+Release build SUCCEEDED、静态校验 a~f 全过，0 阻塞），⑤ 开发测试完成，进入 Gate 4；手工 P0 留待 PR 后人工验证

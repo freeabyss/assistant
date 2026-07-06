@@ -84,11 +84,11 @@
 
 ---
 
-## v1.2.0（2026-07-03 定稿用例；**开发未开始，本节为计划占位**，Issue #5）
+## v1.2.0（2026-07-03 定稿用例；开发完成，T-019 自动化回归全绿 2026-07-06，Issue #5）
 
 > 品牌改名青鸟 Qingniao 迭代。v1.2 测试用例已在 `cases.md` 第 11 节定稿（新增 98 条 TC，P0=49/P1=42/P2=7，前缀 TOK/BRAND/DATA/DI/SEARCH-F/SEARCH-E/SHOT-FS/SHOT-UI/ONB-V2/PERM-OD/CODE/DIST/UPD/SHORTCUT/SETNEW/REG/BUILD/ROBUST/ACC/I18N），并对第 5 节受 UI 重设计影响的旧 TC 就地标注「v1.2 修订」。评审记录见 `doc/iterations/v1.2.0/test/review.md`（结论 APPROVED_WITH_MINOR_FIXES，阻塞级 0）。
 >
-> **本节暂不填写执行结果**——开发（review.md §八 T-A~T-O 任务）尚未启动。以下为计划执行范围，待各开发任务完成后按批次回填实际通过数/失败详情。
+> **T-019 执行结果已回填**——见本节「自动化回归实际执行结果」「静态校验结果」「手工验收清单」「已知遗留」。以下为原计划执行范围，保留供追溯。
 
 ### 计划执行范围
 
@@ -113,13 +113,50 @@
   - 剪贴板/命令/截图/权限回归：REG-001~007。
 - **上线前专项校验**：反馈邮箱 feedback@qingniao.app 真实可收件（BRAND-004）；官网/隐私政策 URL（qingniao.app 域名）最终确定。
 
-### 待回填指标（开发完成后）
+### 自动化回归实际执行结果（T-019，2026-07-06）
+
+> 执行人：后台子 Agent（T-019 全量自动化回归）；macOS：Darwin 25.5.0（arm64）；构建方式：xcodebuild + swift test 命令行。手工/系统交互项未由 Agent 虚构，统一标「待上线前手工验证」。
 
 | 维度 | 计划 | 实际 |
 |------|------|------|
-| swift test | 全绿，基线重新核定 | 待回填 |
-| xcodebuild build | BUILD SUCCEEDED（target Qingniao） | 待回填 |
-| xcodebuild test | 全绿 | 待回填 |
-| P0 TC（49 条） | 全过 | 待回填 |
-| 手工验收（AC-FILE/FULLSCREEN/VERSION/ONBOARD/CMD-SANDBOX/SIGN 等） | 全过 | 待回填 |
-| 阻塞项 | 期望 0 | 待回填 |
+| `swift test` | 全绿，基线重新核定 | **159 / 159 通过、0 失败**（v1.1 基线 134 → 159，净增 25） |
+| `xcodebuild build`（Debug clean build） | BUILD SUCCEEDED（target Qingniao） | **`** BUILD SUCCEEDED **`** |
+| `xcodebuild build`（Release） | BUILD SUCCEEDED | **`** BUILD SUCCEEDED **`**（ad-hoc 签名，note: Disabling hardened runtime with ad-hoc codesigning） |
+| `xcodebuild test`（Debug） | 全绿 | **148 / 148 通过、0 失败，`** TEST SUCCEEDED **`** |
+| P0 TC（49 条） | 全过 | 自动化覆盖部分全绿；系统交互 P0 待上线前手工验证（清单见下） |
+| 阻塞项 | 期望 0 | **0**（Release build 未因 codesign 证书失败；ad-hoc 签名通过） |
+
+### 静态校验结果（脚本 a~f，全部通过）
+
+| 项 | 命令要点 | 结果 |
+|----|---------|------|
+| a | grep `Mac Super Assistant`（swift/plist/entitlements，排除 CHANGELOG/doc） | **无匹配** ✔ 品牌改名彻底 |
+| b | grep `try!` / `as! ` / `fatalError`（排除 init(coder)） | **仅 4 处 `fatalError("init(coder:) has not been implemented")`**（SettingsWindowController / ClipboardHistoryWindowController / AnnotationEditorWindow / ScreenshotOverlay），均为允许的 NSCoder 样板；无其他危险强解包 ✔ |
+| c | grep `SUPublicEDKey` / `SUFeedURL` / `SUEnableAutomaticChecks`（Info.plist） | **无匹配** ✔ Sparkle 残留已清 |
+| d | grep `com.apple.security.app-sandbox`（Qingniao.entitlements） | key 存在，值 **`<false/>`** ✔ Sandbox 已关 |
+| e | grep `TODO` / `FIXME` / `XXX`（swift，排除 #Preview/test） | **无匹配** ✔ 无剩余 TODO |
+| f | `codesign -d --entitlements`（Release build 产物） | `app-sandbox=false`、`automation.apple-events=true`、`files.user-selected.read-write=true`、`get-task-allow=true`、`screencapture=true` ✔ 与预期一致（DIST-001/002/003） |
+
+版本号三源一致（BRAND-007）：`MARKETING_VERSION = 1.2.0`（pbxproj）、`CFBundleShortVersionString = 1.2.0`（Info.plist）✔。
+
+### 手工验收清单（P0 手工项，待上线前人工验证）
+
+以下 P0 手工 TC 涉及真实系统权限弹窗、菜单栏交互、全局快捷键、真实截图捕获、Gatekeeper/公证等，后台 Agent 无法可靠执行,统一标注「**待上线前手工验证**」：
+
+- 品牌/图标：BRAND-005（菜单栏青鸟单色 template 图标）、BRAND-006（关于页显示 1.2.0）
+- 文件搜索 E2E：SEARCH-F-005（AC-FILE）
+- 全屏截图热键 E2E：SHOT-FS-002（AC-FULLSCREEN，⌃⌥⌘3）
+- Onboarding 单屏 + 屏幕录制 TCC + 辅助功能稍后 + 重启不重弹：ONB-V2-001 / ONB-V2-003 / ONB-V2-005 / ONB-V2-008、PERM-OD-002
+- 分发签名：DIST-003（AC-CMD-SANDBOX，AppleEvents 真实执行）、DIST-004 / DIST-005（AC-SIGN，Developer ID + Gatekeeper + 公证 staple）
+- 截图标注 UI：SHOT-UI-001~005（pill 工具条、mosaic、blur 禁用 tooltip）
+- 设置新页：SETNEW-001~005（外观/数据/清空/打开目录/侧栏分组）
+- 无障碍：ACC-001~005（VoiceOver、键盘遍历、对比度、减弱动效）
+- i18n：I18N-002（长英文不截断）
+- 剪贴板/命令/截图/权限回归：REG-001~007
+- 上线前专项：BRAND-004（反馈邮箱 feedback@qingniao.app 可收件）、qingniao.app 域名官网/隐私政策 URL 最终确定
+
+### 已知遗留
+
+- **`SearchBlacklistRepositoryTests` flaky**：`testAddList...` / `testSearchServiceFilters...` 偶发 `*** Collection was mutated while being enumerated (NSGenericException)`，为 Core Data/NSSet fixture 并发问题（与 v1.2 代码改动无关，`git stash` 剔除改动后仍可复现）。`swift test` 本次首跑亦偶发一次 NSException crash，重跑即绿（159/159）。建议后续单独任务修 fixture 并发。
+- Release build 采用 ad-hoc 签名（无 Developer ID 证书环境）；hardened runtime 在 ad-hoc 下被禁用。源码合入不受影响，Developer ID 签名 + Apple 公证 staple 属发布步骤，留待上线前执行（DIST-004/005）。
+- 既有 Swift 6 Sendable/NSLock concurrency warning 若干，不影响构建与测试通过。
