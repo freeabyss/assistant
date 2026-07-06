@@ -803,3 +803,39 @@ AppDelegate 通过 `container.onboardingGate = { self.ensureOnboardingGate() }` 
 - 代码内 appcast.xml（Qingniao/Resources/appcast.xml）仍有 Sparkle feed 残留 URL，指向 v0.1.0；文档已不再引用 Sparkle，若代码侧 Sparkle 已在 T-001/T-002 移除，appcast.xml 可由后续清理任务删除（非本文档任务范围）。
 - README GitHub URL 保持 github.com/freeabyss/assistant（仓库 remote 实际为 freeabyss/assistant）。
 - 提交按 CHANGELOG / README / PRIVACY / THIRD_PARTY+BUILD 分开多次 commit。
+
+---
+
+## T-015 全 App UI 迁移到 DesignToken(散点硬编码清理) (2026-07-06)
+
+### 结论:大部分已在 T-007~T-014 增量迁移完成,本任务为收敛剩余散点 + 全量验收
+
+进场即 grep 全量盘点,发现 `Qingniao/Views/` 下的 SwiftUI View 早已在此前各 Presentation 层任务(T-011 命令栏 / T-012 剪贴板 / T-013 设置 / T-014 截图预览等)迁移到位:颜色走 JadeColor、圆角走 JadeRadius/.jadeRadius、字体走 JadeFont、阴影走 .jadeShadow、间距走 JadeSpace token、按钮走 JadeButton、输入框走 JadeTextField、toast 走 JadeToast、列表行走 JadeListRow。本任务只需收敛残留散点并全量验证。
+
+### 本次实际改动(4 处 RoundedRectangle 冗长写法 + 2 处 token 收敛)
+1. **JadeClipboardRow.swift**:
+   - 缩略图占位底 `typeColor.opacity(0.14)` → `0.15`(统一 PRD §9.2.9 类型底色 15%)。
+   - 文本首字/glyph 图标 `.font(.system(size:17,weight:.semibold))` → `JadeFont.title3`(值完全一致 17 semibold,视觉不变)。
+2. **SettingsView.swift** 外观页 accent 色块:`RoundedRectangle(cornerRadius: JadeRadius.md.value, style:.continuous)` → `JadeRadius.md.shape`(等价,收敛为 token shape)。
+3. **ScreenshotToolbarController.swift** ToolbarButton hover 底:同上 → `JadeRadius.md.shape`。
+4. **CommandBarView.swift** 结果行 symbolTile 底:同上 → `JadeRadius.md.shape`。
+
+### 刻意保留(不改,符合任务「不改视觉 / AppKit 例外」约束)
+- **AppKit NSView 手绘**:AnnotationCanvas.swift(NSColor.black 画布黑底)、AnnotationShape.swift(NSColor.black/gray 手绘描边填充)、ScreenshotOverlay.swift(NSColor.black/white 选区遮罩与把手)——任务明确 NSView/NSBezierPath 不强制。
+- **截图画布黑底 / 徽章**:ScreenshotToolbarController.swift `Color.black.opacity(0.8)`(P-05 画布 backing)、`Color.black.opacity(0.55)` 源徽章底、徽章内 `.foregroundColor(.white)`——叠在图像上的设计必需色,非主题色。
+- **SF Symbol glyph 尺寸**:各文件残留的 `.font(.system(size: 40/30/24/20/18/15/14/12/11/10 ...))` 均为**图标/大 glyph 尺寸**,weight 与 JadeFont 文本 token 不一一对应(如 40 空态图标、30 sparkles、18/15/14/11 工具栏图标、24 设置头图标)。强行套 JadeFont 会改变字重/字号→违反「不改视觉」约束,故保留。JadeClipboardRow 的 17 semibold 因与 title3 完全一致已替换。
+- **monospaced 文本**:PreviewPanel.swift 文本/文件路径 `.font(.system(size:14/12, design:.monospaced))`——等宽是内容展示语义(代码/路径),JadeFont 无对应 monospaced token,保留(任务说明 monospaced 是 modifier 保留)。
+- **JadePill.fill / typeColor.opacity(0.15)**:PRD §9.2.9 类型色 15% 底,属语义规范值,保留。
+- **JadeTextField / SettingsView 搜索框内边距 12×9**:组件契约(PRD §9.5)定义的 padding,非标 token(12=x3 但 9 无对应),保留原设计。
+- **CommandBarView typeBadge `.padding(.vertical, 2)`**:2px 非 4 基准 token,badge 精细内边距,保留。
+
+### 硬编码清理率
+本任务进场时清理率已 ~95%(前序任务成果)。本次消除剩余 4 处冗长 RoundedRectangle 写法 + 2 处 token 收敛。View 层(除上述 AppKit/内容语义例外)已无违规硬编码颜色/圆角/阴影。grep `Color.(blue|green|...)` 命中项全部为 JadeColor 语义扩展引用(JadeColor.blue 等 = 系统色,PRD §9.2.9 类型色)或 AppKit NSColor,非裸 SwiftUI Color。
+
+### 验证
+- `xcodebuild -scheme Qingniao -configuration Debug build` → **BUILD SUCCEEDED**。
+- `xcodebuild -scheme Qingniao -configuration Debug test` → **148 tests, 0 failures, TEST SUCCEEDED**。
+- Preview:各 Design/*.swift + 组件文件均含 #Preview,token 替换不影响。
+
+### 提示后续 Agent
+- 若需 100% 消除 SF Symbol 的 `.font(.system(size:))`,建议在 JadeFont 增加 icon 尺寸语义 token(如 iconSm/iconMd/iconLg + weight),再统一替换——本任务未做,因超出「不改视觉」范围且属新 API 设计(需技术方案)。

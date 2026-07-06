@@ -489,7 +489,7 @@ private struct AppearancePage: View {
 
             SettingsSection("management.appearance.accent") {
                 HStack(spacing: JadeSpace.x3.value) {
-                    RoundedRectangle(cornerRadius: JadeRadius.md.value, style: .continuous)
+                    JadeRadius.md.shape
                         .fill(JadeColor.primary)
                         .frame(width: 40, height: 28)
                     VStack(alignment: .leading, spacing: 2) {

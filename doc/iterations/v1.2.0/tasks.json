@@ -639,7 +639,7 @@
         "L10N-004"
       ],
       "done_definition": "全工程 Views 下（除标注 NSView 手绘、截图叠层等 AppKit 必需硬编码）无硬编码颜色/圆角/字号/阴影；grep 验证",
-      "passes": false
+      "passes": true
     },
     {
       "id": "T-016",

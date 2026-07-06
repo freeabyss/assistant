@@ -465,7 +465,7 @@ private struct ToolbarButton: View {
             .foregroundColor(tint ?? JadeColor.textPrimary)
             .frame(width: 72, height: 40)
             .background(
-                RoundedRectangle(cornerRadius: JadeRadius.md.value, style: .continuous)
+                JadeRadius.md.shape
                     .fill(hovering ? JadeColor.surface3 : Color.clear)
             )
         }

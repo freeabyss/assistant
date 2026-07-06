@@ -89,7 +89,7 @@ struct JadeClipboardRow: View {
         } else {
             ZStack {
                 JadeRadius.md.shape
-                    .fill(typeColor.opacity(0.14))
+                    .fill(typeColor.opacity(0.15))
                     .frame(width: 40, height: 40)
                 if item.contentType == .text, let ch = firstCharacter {
                     Text(ch)
@@ -97,7 +97,7 @@ struct JadeClipboardRow: View {
                         .foregroundStyle(typeColor)
                 } else {
                     Image(systemName: iconName)
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(JadeFont.title3)
                         .foregroundStyle(typeColor)
                 }
             }

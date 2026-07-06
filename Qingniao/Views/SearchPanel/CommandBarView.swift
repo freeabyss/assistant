@@ -347,7 +347,7 @@ struct CommandBarResultRow: View {
 
     private func symbolTile(_ name: String) -> some View {
         ZStack {
-            RoundedRectangle(cornerRadius: JadeRadius.md.value, style: .continuous)
+            JadeRadius.md.shape
                 .fill(typeColor.opacity(0.15))
             Image(systemName: name)
                 .font(.system(size: 15, weight: .semibold))
