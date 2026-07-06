@@ -1,6 +1,125 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "a11y.clipboard.itemCount": {
+      "comment": "T-017 a11y: clipboard count pill label",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld items"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 个条目"
+          }
+        }
+      }
+    },
+    "a11y.commandBar.activateHint": {
+      "comment": "T-017 a11y: command bar result activate hint",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Press Return to activate"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按回车执行"
+          }
+        }
+      }
+    },
+    "a11y.commandBar.clear": {
+      "comment": "T-017 a11y: clear search field button",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清空"
+          }
+        }
+      }
+    },
+    "a11y.commandBar.dangerHint": {
+      "comment": "T-017 a11y: dangerous command hint",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dangerous action, confirmation required"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "危险操作，需二次确认"
+          }
+        }
+      }
+    },
+    "a11y.state.favorite": {
+      "comment": "T-017 a11y: favorite state",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Favorite"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已收藏"
+          }
+        }
+      }
+    },
+    "a11y.state.pinned": {
+      "comment": "T-017 a11y: pinned state",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pinned"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已置顶"
+          }
+        }
+      }
+    },
+    "a11y.state.selected": {
+      "comment": "T-017 a11y: selected state",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selected"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已选中"
+          }
+        }
+      }
+    },
     "about.checkUpdates": {
       "comment": "Check updates action title",
       "localizations": {
