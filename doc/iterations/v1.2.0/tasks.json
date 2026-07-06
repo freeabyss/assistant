@@ -739,7 +739,7 @@
         "BRAND-004"
       ],
       "done_definition": "Dock/Spotlight/About 页显示 Jade bird icon；菜单栏模板图标跟随菜单栏外观明暗",
-      "passes": false
+      "passes": true
     },
     {
       "id": "T-019",

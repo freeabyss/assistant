@@ -753,3 +753,32 @@ AppDelegate 通过 `container.onboardingGate = { self.ensureOnboardingGate() }` 
 2. `feat(T-013): rewrite SettingsView as NavigationSplitView management center (P-03)`
 3. `i18n(T-013): add 75 settings/management-center strings (en + zh-Hans)`
 4. `docs(T-013): tasks.json passes=true + progress 记录`（本提交）
+
+## T-018 AppIcon / Menubar icon（SF Symbol `bird` jade 占位）
+
+### 采用方案：脚本生成 PNG + 运行时模板回退（两者兼备）
+- **AppIcon**：脚本 `scripts/gen_icon.swift` 用 **AppKit NSBitmapImageRep**（非 SwiftUI ImageRenderer）把 SF Symbol `bird` 渲染成白色，叠加 jade 渐变 squircle 底（Jade500 #0A9488 → Jade600 #087A70，圆角半径≈边长×0.2237，四周 9% 留白），逐尺寸写出 PNG。此路径 headless `swift scripts/gen_icon.swift` 命令行可跑通（验证 10 张 PNG 全部生成，256px 目视确认为 jade 圆角底白鸟）。
+- **MenuBarIcon**：同脚本生成 18/36/54px 黑色 bird PNG，imageset Contents.json 带 `template-rendering-intent: template`。
+
+### 具体改动
+1. **StatusItemController.swift**：菜单栏图标由 `sparkles` 换为 `bird`——优先 `NSImage(named: "MenuBarIcon")`，缺失回退 `NSImage(systemSymbolName: "bird", …)`；`isTemplate = true`（跟随菜单栏黑/白），`accessibilityDescription = "青鸟 Qingniao"`。
+2. **AppIcon.appiconset/Contents.json**：10 个尺寸条目补齐 `filename`（icon_16…icon_1024.png），Dock/Spotlight/About 页可显示。
+3. **AppIconView（SettingsView.swift 内，About 页 96×96 / 64×64）**：`NSApp.applicationIconImage`（=打包 jade bird）优先，回退 jade `bird` SF Symbol（JadeColor.primary + primaryFill 底 + jadeRadius）。此前 T-013 已实现，本任务确认。
+4. **Onboarding 顶部 80×80**：`Image(systemName:"bird").font(.system(size:80,.semibold)).foregroundStyle(JadeColor.primary)`——jade 色，此前已就绪，本任务确认。
+5. **scripts/gen_icon.swift**：新增图标生成脚本（可重跑）。
+
+### AppIcon 占位策略
+当前 AppIcon/MenuBarIcon 为**脚本生成的 jade bird 占位图**（squircle + SF Symbol bird），v1.2 用于 Dock/Spotlight/About/菜单栏。**正式 icon 需在发布前由设计师补全**：提供 1024×1024 主视觉（含品牌细节/光影）+ 菜单栏专用 template glyph，替换 `AppIcon.appiconset/` 与 `MenuBarIcon.imageset/` 下 PNG（尺寸与 Contents.json 保持一致，或重跑脚本套用新符号）。
+
+### build
+- `xcodebuild -project Qingniao.xcodeproj -scheme Qingniao -configuration Debug build` → **BUILD SUCCEEDED**。
+
+### commit 列表（branch v1.2.0）
+1. `feat(T-018): menubar status item 使用 jade bird 模板图标`
+2. `chore(T-018): 新增 scripts/gen_icon.swift 占位图标生成脚本`
+3. `feat(T-018): 生成 jade bird 占位 AppIcon + MenuBarIcon PNG`
+4. `docs(T-018): tasks.json passes=true + progress 记录`（本提交）
+
+### 提示后续 Agent
+- 正式发布前用设计师终稿替换占位（见上「AppIcon 占位策略」）。重跑脚本：`swift scripts/gen_icon.swift`。
+- 之前本任务因 API 429 中断，代码/资源在上次会话已落盘但未提交，本次为补齐提交 + 验收。
