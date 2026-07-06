@@ -26,14 +26,14 @@ final class ReleaseInfoServiceTests: XCTestCase {
             "Slogan",
             "Core features",
             "Screenshots / demo GIF",
-            "Download the latest public beta",
+            "Download the latest release",
             "Version history",
             "Privacy policy",
-            "feedback@assistant.app",
+            "feedback@qingniao.app",
             "FAQ",
             "Screen Recording",
             "Accessibility",
-            "https://github.com/abyss/assistant/releases"
+            "https://github.com/freeabyss/assistant/releases"
         ] {
             XCTAssertTrue(readme.contains(required), "README.md should contain \\(required)")
         }
