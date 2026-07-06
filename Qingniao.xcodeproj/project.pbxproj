@@ -42,7 +42,6 @@
 		F00700000000000000000108 /* JadeConfirmationDialog.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00700000000000000000008 /* JadeConfirmationDialog.swift */; };
 		A1000100000000000000001A /* DataCleanupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001D; };
 		A1000100000000000000001B /* KeyboardShortcuts+Names.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001E; };
-		A1000100000000000000001C /* appcast.xml in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001F; };
 		A10001000000000000000024 /* AppSearchSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000024; };
 		A10001000000000000000025 /* FileSearchSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000025; };
 		A1000100000000000000002D /* SystemCommandSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002D; };
@@ -151,7 +150,6 @@
 		F00700000000000000000008 /* JadeConfirmationDialog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JadeConfirmationDialog.swift; sourceTree = "<group>"; };
 		A1000000000000000000001D /* DataCleanupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataCleanupService.swift; sourceTree = "<group>"; };
 		A1000000000000000000001E /* KeyboardShortcuts+Names.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "KeyboardShortcuts+Names.swift"; sourceTree = "<group>"; };
-		A1000000000000000000001F /* appcast.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = appcast.xml; sourceTree = "<group>"; };
 		A10000000000000000000024 /* AppSearchSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSearchSource.swift; sourceTree = "<group>"; };
 		A10000000000000000000025 /* FileSearchSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchSource.swift; sourceTree = "<group>"; };
 		A1000000000000000000002D /* SystemCommandSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemCommandSource.swift; sourceTree = "<group>"; };
@@ -375,7 +373,6 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000018 /* Assets.xcassets */,
-				A1000000000000000000001F /* appcast.xml */,
 				0CE8DD2E740FFABBB9BFE5BD /* Localizable.xcstrings */,
 			);
 			path = Resources;
@@ -694,7 +691,6 @@
 			packageProductDependencies = (
 				A10007000000000000000001 /* GRDB */,
 				A10007000000000000000002 /* KeyboardShortcuts */,
-				A10007000000000000000003 /* Sparkle */,
 			);
 			productName = Qingniao;
 			productReference = A1000000000000000000001B /* Qingniao.app */;
@@ -739,7 +735,6 @@
 			packageReferences = (
 				A10009000000000000000001 /* XCRemoteSwiftPackageReference "GRDB.swift" */,
 				A10009000000000000000002 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
-				A10009000000000000000003 /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			productRefGroup = A1000300000000000000000C /* Products */;
 			projectDirPath = "";
@@ -757,7 +752,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10001000000000000000018 /* Assets.xcassets in Resources */,
-				A1000100000000000000001C /* appcast.xml in Resources */,
 				83FEB8F66657416FBC33566D /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1133,14 +1127,6 @@
 				minimumVersion = 2.0.0;
 			};
 		};
-		A10009000000000000000003 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/sparkle-project/Sparkle.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.0.0;
-			};
-		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1153,11 +1139,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A10009000000000000000002 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */;
 			productName = KeyboardShortcuts;
-		};
-		A10007000000000000000003 /* Sparkle */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A10009000000000000000003 /* XCRemoteSwiftPackageReference "Sparkle" */;
-			productName = Sparkle;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

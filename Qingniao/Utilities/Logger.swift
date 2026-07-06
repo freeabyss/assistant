@@ -29,7 +29,7 @@ extension Logger {
     /// UI events (window management, user interactions).
     static let ui = Logger(subsystem: subsystem, category: "ui")
 
-    /// Auto-update (Sparkle integration, version checks).
+    /// Update checks (opens Releases page; no embedded auto-updater).
     static let update = Logger(subsystem: subsystem, category: "update")
 
     /// App lifecycle (startup, shutdown, general app events).
