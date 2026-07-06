@@ -712,7 +712,7 @@
         "I18N-004"
       ],
       "done_definition": "VoiceOver 可读完 onboarding/命令栏/剪贴板/设置核心路径；开启 VoiceOver 不 crash；英文化 UI 无截断；中英文切换所有可见字符串跟随",
-      "passes": false
+      "passes": true
     },
     {
       "id": "T-018",

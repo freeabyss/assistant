@@ -839,3 +839,58 @@ AppDelegate 通过 `container.onboardingGate = { self.ensureOnboardingGate() }` 
 
 ### 提示后续 Agent
 - 若需 100% 消除 SF Symbol 的 `.font(.system(size:))`,建议在 JadeFont 增加 icon 尺寸语义 token(如 iconSm/iconMd/iconLg + weight),再统一替换——本任务未做,因超出「不改视觉」范围且属新 API 设计(需技术方案)。
+
+---
+
+## T-017 无障碍与 i18n 串接 (2026-07-06)
+
+### 结论：i18n 进场即已基本完成（前序任务成果），本任务重心为 Accessibility 基础适配
+
+进场盘点：`Localizable.xcstrings` 已有 **621 条 key，全部 en + zh-Hans 双语齐备、无空值、无 new/needs_review 状态**（脚本校验通过）。grep 全量硬编码中文串，命中项**全部**位于 `#Preview` 画廊（StatCard/JadePill/JadeTextField/ToastView/HotkeyRecorder/JadeConfirmationDialog/PermissionGate 等的预览示例）或非用户可见的默认参数/枚举 displayName（LanguageMode.displayName UI 未使用，实际走 SettingsViewModel.languageTitle→xcstrings）。**无用户可见硬编码字符串遗漏**。故 i18n 主要工作已在 T-011~T-016 完成；本任务新增 7 条 a11y 专用 key。
+
+### 一、Accessibility 改动（a11y 批）
+
+新增 **`Qingniao/Views/Design/JadeAccessibility.swift`**（需同步登记进 `Qingniao.xcodeproj/project.pbxproj` —— SPM 按目录 glob，但 xcodebuild 用显式引用，忘记登记会导致 xcodebuild 编译失败 "cannot find in scope"，本次已加 4 处 pbxproj 引用：PBXBuildFile / PBXFileReference / Design PBXGroup / Sources phase，ID = F00400000000000000000007 / ...107）：
+- `JadeAccessibility.reduceMotion / increaseContrast / reduceTransparency` 读 `NSWorkspace.shared.accessibilityDisplay*`。
+- `JadeAccessibility.animation(_:)`：reduce motion 时把传入动画降级为 `.linear(duration: 0.1)`（等价无位移淡入淡出）。
+- `View.jadeAnimation(_:value:)` 便捷 modifier。
+
+补 accessibilityLabel / 隐藏装饰图标 / VoiceOver 合并的控件：
+1. **CommandBarResultRow**（CommandBarView.swift）：整行 `.accessibilityElement(children:.ignore)` + label 拼「标题, 副标题, 类型」+ value（选中态）+ hint（危险命令 vs 普通「按回车执行」）+ `.isButton` trait；危险 badge / typeBadge / ⏎ 提示 / 图标全 `.accessibilityHidden(true)`。修正清空按钮误用的 `commandBar.source.all` label → `a11y.commandBar.clear`。搜索 TextField 补 label。
+2. **JadeClipboardRow**：`.accessibilityElement(children:.ignore)` + label「内容摘要, 类型·大小·时间」+ value（置顶/收藏状态）；pin/star/warning 装饰图标 hidden。
+3. **StatCard**：`.accessibilityElement(children:.combine)`，图标 hidden（读「标题: 数值」）。
+4. **SettingsView**：权限行状态图标 hidden + 已授权按钮补 value（状态文案）；SettingsHeader 图标 chip hidden；AppIconView hidden（与应用名 Text 冗余）。
+5. **OnboardingView**：header bird glyph hidden；cardLabel 图标 hidden + `.combine`。
+6. **ScreenshotToolbarController**：ToolbarButton 补 `.accessibilityLabel`；sourceBadge 图标 hidden + `.combine`。
+7. **AnnotationToolbar**：ToolPill/ColorSwatch/IconButton（undo/redo，此前 icon-only 无 label）全补 accessibilityLabel + 选中态 `.isSelected` trait；DisabledToolPill（blur）合并 label + hint；ToolPill 内图标 hidden 避免重复朗读。
+8. **JadeTextField**：前缀图标 hidden；TextField 补 label（placeholder）；清空按钮 label 由裸 `"clear"` → `a11y.commandBar.clear`。
+
+Dynamic Type（JadeFont.swift）：正文类字号（title2/title3/body/callout/subhead/caption）由固定 `Font.system(size:)` 改为语义 `Font.system(.title/.title2/.body/.callout/.subheadline/.caption, weight:)`——macOS 各 TextStyle 默认点值恰与 Jade 字号一一对应（title=22 / title2=17 / body=13 / callout=12 / subheadline=11 / caption=10），默认档位视觉不变、放大系统字号时等比缩放（PRD §9.8 body 到 15pt）。display(40)/title1(28)/commandBarInput(20) 保持固定字号避免破版。
+
+减弱动态效果：ToastView spring → `jadeAnimation`；CommandBar / ClipboardHistory 滚动 `withAnimation` 包 `JadeAccessibility.animation()`；CommandBarController 面板 resize `NSAnimationContext.duration` reduce motion 时 0.001。
+
+增强对比度：JadeColor.border 改为 `dynamicProvider` 在绘制时读 `accessibilityDisplayShouldIncreaseContrast`，高对比模式边框 alpha 0.08 → 0.2（明暗都加深）。
+
+### 二、i18n 改动（i18n 批）
+
+- 新增 7 条 a11y key 到 `Localizable.xcstrings`（全部 en + zh-Hans）：`a11y.clipboard.itemCount`(%lld) / `a11y.commandBar.activateHint` / `a11y.commandBar.clear` / `a11y.commandBar.dangerHint` / `a11y.state.favorite` / `a11y.state.pinned` / `a11y.state.selected`。文件保持字母序（原文件即字母序），总 628 条。
+- 日期/大小已走 locale：L10n.relativeTime（DateFormatter）、ByteCountFormatter（JadeClipboardRow / SettingsViewModel）——进场核查已符合，无需改。
+- 长英文布局：设置页 SettingsSection/按钮均 `fixedSize(horizontal:true)` 或自适应宽度，无固定宽度截断风险（静态走查通过；实机长 locale 目测留 T-019）。
+
+### 验证
+- `swift build` → Build complete（仅 2 条既有 Swift6 concurrency 警告，与本任务无关）。
+- `swift test` → **159 / 159 passed**。
+- `xcodebuild -scheme Qingniao -configuration Debug build` → **BUILD SUCCEEDED**。
+- `xcodebuild -scheme Qingniao -configuration Debug test` → **148 / 148 passed，TEST SUCCEEDED**。
+  - ⚠️ `SearchBlacklistRepositoryTests`（testAddList... / testSearchServiceFilters...）为**既有 flaky**：`*** Collection was mutated while being enumerated (NSGenericException)`，Core Data/NSSet 并发问题。已 `git stash` 剔除本任务改动后复现（第 3 次跑失败），证明与 T-017 无关。重跑即绿。建议后续单独任务修 fixture 并发。
+
+### 未覆盖（留给 T-019 手工验收）
+- ACC-001/002：Accessibility Inspector 逐控件核查 label + 实机开 VoiceOver 走 onboarding→命令栏→剪贴板→设置全流程（不 crash）。本任务已从代码层补齐 label/hidden/合并，属静态就绪。
+- ACC-003：全键盘 Tab 遍历实测。设置页/表单原生支持 Tab；命令栏为「输入框聚焦 + ↑↓ 导航结果 + Tab 唯一前缀补全 + ⏎ 执行」的既有键控模型（未改动，核心操作可全键盘完成）。
+- ACC-004：明暗 + 增强对比度 + 降低透明度实机对比度目测（WCAG AA）。border 加深已实现，透明度降级依赖系统 material（未额外处理，留观察）。
+- ACC-005：系统开「减弱动态效果」+ 调大字体实机验证降级与缩放不破版。
+- I18N-002：切英文实机看设置/Onboarding/关于/权限页长英文不截断。
+
+### 提示后续 Agent
+- **新增 Swift 文件务必同步登记 pbxproj**（4 处），否则 swift build 过但 xcodebuild 失败。
+- reduce motion / increase contrast 通过 `NSWorkspace` 即时读取；SwiftUI 在 macOS 对 `@Environment(\.accessibilityReduceMotion)` 支持不完整，故走 JadeAccessibility 封装。border 的 dynamicProvider 在每次绘制读对比度设置，系统切换后新绘制即生效（已存在视图可能需重绘触发）。
