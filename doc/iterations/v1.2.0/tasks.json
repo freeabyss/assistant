@@ -676,7 +676,7 @@
         "UPD-003"
       ],
       "done_definition": "markdown 文档内无 Mac Super Assistant/SnapVault/Assistant 产品名残留（历史上下文除外）；CHANGELOG 版本号与 MARKETING_VERSION 一致",
-      "passes": false
+      "passes": true
     },
     {
       "id": "T-017",

@@ -782,3 +782,24 @@ AppDelegate 通过 `container.onboardingGate = { self.ensureOnboardingGate() }` 
 ### 提示后续 Agent
 - 正式发布前用设计师终稿替换占位（见上「AppIcon 占位策略」）。重跑脚本：`swift scripts/gen_icon.swift`。
 - 之前本任务因 API 429 中断，代码/资源在上次会话已落盘但未提交，本次为补齐提交 + 验收。
+
+---
+
+## T-016 CHANGELOG + 文档同步 + THIRD_PARTY_NOTICES 更新 (2026-07-06)
+
+### 完成内容
+- **CHANGELOG.md**：改为 Keep a Changelog 格式，新增 [1.2.0]/[1.1.0]/[1.0.1]/[1.0.0] 正式版本段；旧 0.1.0-mvp 草稿移到文件末尾「Early drafts」段（未删除，作历史留存）。
+- **README.md / README.zh-CN.md**：标题改为 Qingniao (青鸟)；slogan「Your jade-feathered Mac productivity companion」/「你的青羽 Mac 效率伙伴」；核心功能反映 v1.2（⌥Space 命令栏、⌥⌘C 剪贴板、⇧⌃⌘4/5 + ⌃⌥⌘3 截图、14 条白名单、⌘, 设置中心）；⌘1-6 切源；产品页 checklist 加 AppIcon/截图占位（assets/product/）；权限说明改「按需辅助功能」；邮箱 feedback@qingniao.app；分发 Developer ID + 公证。
+- **PRIVACY.md / PRIVACY.zh-CN.md**：产品名 → Qingniao/青鸟；数据目录 ~/Library/Application Support/Qingniao/；截图默认目录 ~/Desktop（原文误写 ~/Pictures/Screenshots，已修正）；邮箱 feedback@qingniao.app；辅助功能改按需；last updated 2026-07-06。
+- **THIRD_PARTY_NOTICES.md**：品牌替换；删除 Sparkle 条目（v1.2 已移除 Sparkle）；保留 GRDB（legacy）/KeyboardShortcuts。
+- **BUILD_README.md**：工程名/scheme/APP_PATH 全部 SnapVault → Qingniao；依赖去掉 Sparkle；数据目录/日志进程/defaults 域更新；发布段增补 Developer ID + 公证 + spctl 说明（build_for_release）。
+
+### 验证
+- grep 确认 .md 内无 Mac Super Assistant / SnapVault 产品名残留（CHANGELOG「Early drafts」历史段、Changed 段的「renamed SnapVault → Qingniao」为有意保留；BUILD_README 的 `defaults delete com.assistant.app` 为不变的 Bundle ID）。
+- `xcodebuild build -project Qingniao.xcodeproj -scheme Qingniao -configuration Debug` → **BUILD SUCCEEDED**（纯 .md 改动，不影响构建）。
+- tasks.json T-016 passes → true。
+
+### 提示后续 Agent
+- 代码内 appcast.xml（Qingniao/Resources/appcast.xml）仍有 Sparkle feed 残留 URL，指向 v0.1.0；文档已不再引用 Sparkle，若代码侧 Sparkle 已在 T-001/T-002 移除，appcast.xml 可由后续清理任务删除（非本文档任务范围）。
+- README GitHub URL 保持 github.com/freeabyss/assistant（仓库 remote 实际为 freeabyss/assistant）。
+- 提交按 CHANGELOG / README / PRIVACY / THIRD_PARTY+BUILD 分开多次 commit。
