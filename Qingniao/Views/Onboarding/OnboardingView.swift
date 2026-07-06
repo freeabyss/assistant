@@ -48,6 +48,7 @@ struct OnboardingView: View {
             Image(systemName: "bird")
                 .font(.system(size: 80, weight: .semibold))
                 .foregroundStyle(JadeColor.primary)
+                .accessibilityHidden(true)
             Text(L10n.localized("onboarding.welcome.title"))
                 .font(JadeFont.display)
                 .foregroundStyle(JadeColor.textPrimary)
@@ -217,6 +218,7 @@ struct OnboardingView: View {
                 .font(.system(size: 18, weight: .medium))
                 .foregroundStyle(JadeColor.primary)
                 .frame(width: 24)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: JadeSpace.x1.value) {
                 Text(title)
                     .font(JadeFont.body)
@@ -226,6 +228,7 @@ struct OnboardingView: View {
                     .foregroundStyle(JadeColor.textSecondary)
             }
         }
+        .accessibilityElement(children: .combine)
     }
 }
 

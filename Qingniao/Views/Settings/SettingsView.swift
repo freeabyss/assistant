@@ -561,6 +561,7 @@ private struct PermissionsPage: View {
             Image(systemName: status.isAuthorized ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
                 .font(JadeFont.title3)
                 .foregroundStyle(status.isAuthorized ? JadeColor.success : JadeColor.warning)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: JadeSpace.x1.value) {
                 Text(viewModel.permissionTitle(kind))
                     .font(JadeFont.body)
@@ -574,6 +575,7 @@ private struct PermissionsPage: View {
                 Button(L10n.localized("management.permission.authorized")) {}
                     .buttonStyle(.jadeSecondary)
                     .disabled(true)
+                    .accessibilityValue(Text(viewModel.statusTitle(status)))
             } else {
                 Button(L10n.localized("onboarding.permission.openSettings")) {
                     viewModel.openSystemSettings(for: kind)
@@ -999,6 +1001,7 @@ private struct SettingsHeader: View {
                 .frame(width: 44, height: 44)
                 .background(JadeColor.primaryFill)
                 .jadeRadius(.md)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(page.title)
                     .font(JadeFont.title2)
@@ -1109,6 +1112,7 @@ private struct AppIconView: View {
         }
         .frame(width: size, height: size)
         .jadeRadius(radius)
+        .accessibilityHidden(true)
     }
 }
 

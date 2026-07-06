@@ -99,11 +99,18 @@ public enum JadeColor {
 
     // MARK: - 描边 / 遮罩（PRD §9.2.2）
 
-    /// Border 分隔线 / 描边：Light `rgba(0,0,0,0.08)` / Dark `rgba(255,255,255,0.08)`
-    public static let borderNS = dynamic("Border", Pair(
-        light: NSColor(srgbRed: 0, green: 0, blue: 0, alpha: 0.08),
-        dark: NSColor(srgbRed: 1, green: 1, blue: 1, alpha: 0.08)
-    ))
+    /// Border 分隔线 / 描边：Light `rgba(0,0,0,0.08)` / Dark `rgba(255,255,255,0.08)`。
+    ///
+    /// PRD §9.8「增强对比度」：系统开启该辅助功能时，边框透明度加深到 0.2，
+    /// 使描边在高对比模式下清晰可辨。通过 `dynamicProvider` 在绘制时读取
+    /// `NSWorkspace` 的对比度设置，无需重建视图即可跟随系统切换。
+    public static let borderNS = NSColor(name: NSColor.Name("Jade.Border")) { appearance in
+        let isDark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        let alpha: CGFloat = NSWorkspace.shared.accessibilityDisplayShouldIncreaseContrast ? 0.2 : 0.08
+        return isDark
+            ? NSColor(srgbRed: 1, green: 1, blue: 1, alpha: alpha)
+            : NSColor(srgbRed: 0, green: 0, blue: 0, alpha: alpha)
+    }
     public static let border = Color(borderNS)
 
     /// Overlay 全屏遮罩：`rgba(0,0,0,0.4)`（明暗一致）

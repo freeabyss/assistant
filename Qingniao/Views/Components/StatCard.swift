@@ -36,6 +36,7 @@ public struct StatCard: View {
                 icon
                     .font(JadeFont.title3)
                     .foregroundStyle(tint)
+                    .accessibilityHidden(true)
                 Spacer()
             }
             Text(value)
@@ -51,6 +52,8 @@ public struct StatCard: View {
         .jadeRadius(.lg)
         .onHover { hovering in isHovering = hovering }
         .animation(.easeInOut(duration: 0.12), value: isHovering)
+        // VoiceOver：合并为 "标题: 数值"。
+        .accessibilityElement(children: .combine)
     }
 }
 

@@ -99,7 +99,7 @@ public struct JadeToastModifier: ViewModifier {
                 if position == .center { Spacer() }
             }
             .allowsHitTesting(false)
-            .animation(.spring(response: 0.35, dampingFraction: 0.8), value: isShowing)
+            .jadeAnimation(.spring(response: 0.35, dampingFraction: 0.8), value: isShowing)
         }
         .onChange(of: isShowing) { showing in
             dismissTask?.cancel()

@@ -391,6 +391,7 @@ private struct ScreenshotPreviewView: View {
         HStack(spacing: JadeSpace.x1.value) {
             Image(systemName: iconName(for: viewModel.result.sourceType))
                 .font(.system(size: 11, weight: .semibold))
+                .accessibilityHidden(true)
             Text(sourceLabel(for: viewModel.result.sourceType))
                 .font(JadeFont.caption)
             Text("\(viewModel.result.width)×\(viewModel.result.height)")
@@ -401,6 +402,7 @@ private struct ScreenshotPreviewView: View {
         .padding(.horizontal, JadeSpace.x3.value)
         .padding(.vertical, JadeSpace.x2.value)
         .background(Color.black.opacity(0.55), in: Capsule(style: .continuous))
+        .accessibilityElement(children: .combine)
     }
 
     private var floatingToolbar: some View {
@@ -471,6 +473,7 @@ private struct ToolbarButton: View {
         }
         .buttonStyle(.plain)
         .help(label)
+        .accessibilityLabel(Text(label))
         .onHover { hovering = $0 }
     }
 }

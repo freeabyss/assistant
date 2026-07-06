@@ -104,6 +104,7 @@
 			F00400000000000000000104 /* JadeFont.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000004 /* JadeFont.swift */; };
 			F00400000000000000000105 /* JadeShadow.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000005 /* JadeShadow.swift */; };
 			F00400000000000000000106 /* JadeMaterial.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000006 /* JadeMaterial.swift */; };
+			F00400000000000000000107 /* JadeAccessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000007 /* JadeAccessibility.swift */; };
 			G00100000000000000000002 /* AppContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = G00100000000000000000001 /* AppContainer.swift */; };
 			G00100000000000000000012 /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = G00100000000000000000011 /* StatusItemController.swift */; };
 			G00100000000000000000022 /* CommandBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = G00100000000000000000021 /* CommandBarController.swift */; };
@@ -213,6 +214,7 @@
 			F00400000000000000000004 /* JadeFont.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeFont.swift; sourceTree = SOURCE_ROOT; };
 			F00400000000000000000005 /* JadeShadow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeShadow.swift; sourceTree = SOURCE_ROOT; };
 			F00400000000000000000006 /* JadeMaterial.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeMaterial.swift; sourceTree = SOURCE_ROOT; };
+			F00400000000000000000007 /* JadeAccessibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeAccessibility.swift; sourceTree = SOURCE_ROOT; };
 			G00100000000000000000001 /* AppContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContainer.swift; sourceTree = "<group>"; };
 			G00100000000000000000011 /* StatusItemController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemController.swift; sourceTree = "<group>"; };
 			G00100000000000000000021 /* CommandBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandBarController.swift; sourceTree = "<group>"; };
@@ -639,6 +641,7 @@
 					F00400000000000000000004 /* JadeFont.swift */,
 					F00400000000000000000005 /* JadeShadow.swift */,
 					F00400000000000000000006 /* JadeMaterial.swift */,
+					F00400000000000000000007 /* JadeAccessibility.swift */,
 				);
 				path = Design;
 				sourceTree = "<group>";
@@ -805,6 +808,7 @@
 				F00400000000000000000104 /* JadeFont.swift in Sources */,
 				F00400000000000000000105 /* JadeShadow.swift in Sources */,
 				F00400000000000000000106 /* JadeMaterial.swift in Sources */,
+				F00400000000000000000107 /* JadeAccessibility.swift in Sources */,
 				A10001000000000000000001 /* QingniaoApp.swift in Sources */,
 				A10001000000000000000002 /* AppDelegate.swift in Sources */,
 				A10001000000000000000003 /* AppState.swift in Sources */,

@@ -134,6 +134,7 @@ struct ClipboardHistoryView: View {
             .focused($searchFocused)
 
             JadePill("\(viewModel.items.count)", style: .primary)
+                .accessibilityLabel(Text(L10n.localized("a11y.clipboard.itemCount", viewModel.items.count)))
         }
     }
 
@@ -162,7 +163,7 @@ struct ClipboardHistoryView: View {
             }
             .onChange(of: viewModel.selectedIndex) { _ in
                 guard let selected = viewModel.selectedItem else { return }
-                withAnimation(.easeInOut(duration: 0.12)) {
+                withAnimation(JadeAccessibility.animation(.easeInOut(duration: 0.12))) {
                     proxy.scrollTo(selected.id, anchor: .center)
                 }
             }
@@ -260,6 +261,7 @@ struct ClipboardHistoryView: View {
             Image(systemName: viewModel.isSearching ? "magnifyingglass" : "tray")
                 .font(.system(size: 40))
                 .foregroundStyle(JadeColor.textSecondary)
+                .accessibilityHidden(true)
             Text(viewModel.isSearching
                  ? L10n.localized("clipboard.empty.search.title")
                  : L10n.localized("clipboard.empty.title"))
@@ -279,6 +281,7 @@ struct ClipboardHistoryView: View {
             Image(systemName: "hand.raised.slash")
                 .font(.system(size: 40))
                 .foregroundStyle(JadeColor.textSecondary)
+                .accessibilityHidden(true)
             Text(L10n.localized("clipboard.empty.disabled.title"))
                 .font(JadeFont.title3)
                 .foregroundStyle(JadeColor.textSecondary)

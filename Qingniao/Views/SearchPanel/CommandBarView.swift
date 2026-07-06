@@ -82,6 +82,7 @@ struct CommandBarView: View {
             .foregroundStyle(JadeColor.textPrimary)
             .focused($isInputFocused)
             .onSubmit { viewModel.confirmSelection() }
+            .accessibilityLabel(Text("commandBar.placeholder"))
 
             if viewModel.isLoading {
                 ProgressView()
@@ -97,7 +98,7 @@ struct CommandBarView: View {
                         .foregroundStyle(JadeColor.textTertiary)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(Text("commandBar.source.all"))
+                .accessibilityLabel(Text("a11y.commandBar.clear"))
             }
         }
     }
@@ -141,7 +142,7 @@ struct CommandBarView: View {
             }
             .onChange(of: viewModel.selectedIndex) { _ in
                 if let selected = viewModel.selectedResult {
-                    withAnimation(.easeInOut(duration: 0.12)) {
+                    withAnimation(JadeAccessibility.animation(.easeInOut(duration: 0.12))) {
                         proxy.scrollTo(selected.id, anchor: .center)
                     }
                 }
@@ -299,15 +300,17 @@ struct CommandBarResultRow: View {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(JadeColor.warning)
-                    .accessibilityLabel(Text("commandBar.danger.confirmTitle"))
+                    .accessibilityHidden(true)
             }
 
             typeBadge
+                .accessibilityHidden(true)
 
             Text(L10n.localized("commandBar.enter"))
                 .font(JadeFont.caption)
                 .foregroundStyle(isSelected ? JadeColor.primary : JadeColor.textTertiary)
                 .frame(width: 20)
+                .accessibilityHidden(true)
         }
         .padding(.horizontal, JadeSpace.x3.value)
         .frame(height: 44)
@@ -316,6 +319,27 @@ struct CommandBarResultRow: View {
             in: JadeRadius.lg.shape
         )
         .contentShape(Rectangle())
+        // VoiceOver：把整行合并成单个可读元素——标题 + 副标题 + 类型，
+        // 选中/危险状态通过 value/hint 补充（PRD §9.8）。
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(accessibilityLabelText))
+        .accessibilityValue(Text(isSelected
+            ? L10n.localized("a11y.state.selected")
+            : ""))
+        .accessibilityHint(Text(isDangerous
+            ? L10n.localized("a11y.commandBar.dangerHint")
+            : L10n.localized("a11y.commandBar.activateHint")))
+        .accessibilityAddTraits(.isButton)
+    }
+
+    /// 拼出 "标题, 副标题, 类型" 的可读串（副标题可空)。
+    private var accessibilityLabelText: String {
+        var parts: [String] = [result.title]
+        if let subtitle = result.subtitle, !subtitle.isEmpty {
+            parts.append(subtitle)
+        }
+        parts.append(result.typeLabel)
+        return parts.joined(separator: ", ")
     }
 
     // 类型 badge：前景类型色 + 15% 底（PRD §9.2.9），走 Jade token。

@@ -184,7 +184,8 @@ final class CommandBarController: NSObject {
         }
 
         NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.12
+            // PRD §9.8：尊重系统「减弱动态效果」——开启时用极短时长近似无动画。
+            context.duration = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion ? 0.001 : 0.12
             context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
             panel.animator().setFrame(newFrame, display: true)
         }

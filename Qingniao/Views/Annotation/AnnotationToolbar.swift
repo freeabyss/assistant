@@ -93,6 +93,7 @@ private struct ToolPill: View {
             HStack(spacing: JadeSpace.x1.value) {
                 Image(systemName: tool.systemImage)
                     .font(.system(size: 12, weight: .semibold))
+                    .accessibilityHidden(true)
                 Text(tool.displayName)
                     .font(JadeFont.subhead)
             }
@@ -106,6 +107,8 @@ private struct ToolPill: View {
         }
         .buttonStyle(.plain)
         .help(tool.displayName)
+        .accessibilityLabel(Text(tool.displayName))
+        .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
         .onHover { hovering = $0 }
     }
 }
@@ -119,6 +122,7 @@ private struct DisabledToolPill: View {
         HStack(spacing: JadeSpace.x1.value) {
             Image(systemName: systemImage)
                 .font(.system(size: 12, weight: .semibold))
+                .accessibilityHidden(true)
             Text(label)
                 .font(JadeFont.subhead)
         }
@@ -127,6 +131,9 @@ private struct DisabledToolPill: View {
         .padding(.vertical, JadeSpace.x1.value + 1)
         .opacity(0.4)
         .help(tooltip)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(label))
+        .accessibilityHint(Text(tooltip))
     }
 }
 
@@ -149,6 +156,8 @@ private struct ColorSwatch: View {
         .buttonStyle(.plain)
         .frame(width: 26, height: 26)
         .help(color.displayName)
+        .accessibilityLabel(Text(color.displayName))
+        .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
         .onHover { hovering = $0 }
     }
 }
@@ -173,6 +182,7 @@ private struct IconButton: View {
         .buttonStyle(.plain)
         .disabled(disabled)
         .help(tooltip)
+        .accessibilityLabel(Text(tooltip))
         .onHover { hovering = $0 }
     }
 }

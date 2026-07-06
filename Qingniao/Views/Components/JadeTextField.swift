@@ -36,6 +36,7 @@ public struct JadeTextField: View {
                 icon
                     .font(JadeFont.body)
                     .foregroundStyle(JadeColor.textSecondary)
+                    .accessibilityHidden(true)
             }
 
             TextField(placeholder, text: $text)
@@ -43,6 +44,7 @@ public struct JadeTextField: View {
                 .font(JadeFont.body)
                 .foregroundStyle(JadeColor.textPrimary)
                 .focused($isFocused)
+                .accessibilityLabel(Text(placeholder))
 
             if !text.isEmpty {
                 Button {
@@ -54,7 +56,7 @@ public struct JadeTextField: View {
                         .foregroundStyle(JadeColor.textTertiary)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(Text("clear"))
+                .accessibilityLabel(Text("a11y.commandBar.clear"))
             }
         }
         .padding(.horizontal, 12)

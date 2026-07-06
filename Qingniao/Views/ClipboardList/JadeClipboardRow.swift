@@ -49,16 +49,19 @@ struct JadeClipboardRow: View {
                                 .font(JadeFont.caption)
                                 .foregroundStyle(JadeColor.primary)
                                 .rotationEffect(.degrees(45))
+                                .accessibilityHidden(true)
                         }
                         if item.isFavorite {
                             Image(systemName: "star.fill")
                                 .font(JadeFont.caption)
                                 .foregroundStyle(JadeColor.attention)
+                                .accessibilityHidden(true)
                         }
                         if item.failureReason != nil {
                             Image(systemName: "exclamationmark.triangle.fill")
                                 .font(JadeFont.caption)
                                 .foregroundStyle(JadeColor.warning)
+                                .accessibilityHidden(true)
                         }
                     }
 
@@ -68,12 +71,29 @@ struct JadeClipboardRow: View {
                         .lineLimit(1)
                 }
             }
+            // VoiceOver：合并成单个可读元素（内容 + 类型/大小/时间 + 置顶/收藏状态)。
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(accessibilityLabelText))
+            .accessibilityValue(Text(accessibilityStateText))
         }
         .task(id: item.id) {
             if item.contentType == .image, let data = await thumbnailProvider(item) {
                 thumbnail = NSImage(data: data)
             }
         }
+    }
+
+    /// "内容摘要, 类型 · 大小 · 时间" 的可读串。
+    private var accessibilityLabelText: String {
+        "\(primaryText), \(subtitleText)"
+    }
+
+    /// 置顶 / 收藏状态拼成 value。
+    private var accessibilityStateText: String {
+        var parts: [String] = []
+        if item.isPinned { parts.append(L10n.localized("a11y.state.pinned")) }
+        if item.isFavorite { parts.append(L10n.localized("a11y.state.favorite")) }
+        return parts.joined(separator: ", ")
     }
 
     // MARK: - Thumbnail
