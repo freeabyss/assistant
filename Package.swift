@@ -33,10 +33,7 @@ let package = Package(
                 "Qingniao.entitlements",
                 "Resources/Assets.xcassets",
                 "Resources/appcast.xml",
-                "Resources/Localizable.xcstrings",
-                "Services/ContentStore/ContentStore.swift",
-                "Services/OCRService/OCRService.swift",
-                "Services/SearchEngine/FileSearchSource.swift"
+                "Resources/Localizable.xcstrings"
             ]
         ),
         .testTarget(
