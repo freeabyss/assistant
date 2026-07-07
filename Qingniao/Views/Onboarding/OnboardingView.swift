@@ -1,0 +1,259 @@
+import SwiftUI
+import KeyboardShortcuts
+
+/// 单屏 Onboarding（PRD §9.4 P-06）。
+///
+/// 整屏 720×520，`JadeRadius.xl` + `JadeShadow.xl`，padding 32。全部 token 化，
+/// 不硬编码颜色/尺寸/字号。辅助功能不在此触发 TCC（按需申请）。
+struct OnboardingView: View {
+    @StateObject var viewModel: OnboardingViewModel
+    @State private var showSkipConfirmation = false
+
+    private let privacyURL = URL(string: "https://github.com/freeabyss/assistant/blob/main/PRIVACY.md")
+
+    init(viewModel: OnboardingViewModel) {
+        _viewModel = StateObject(wrappedValue: viewModel)
+    }
+
+    var body: some View {
+        VStack(spacing: JadeSpace.x6.value) {
+            header
+            configCards
+            screenRecordingSection
+            accessibilitySection
+            Spacer(minLength: 0)
+            footer
+        }
+        .jadePadding(.x8)
+        .frame(width: 720, height: 520)
+        .background(JadeColor.surface1)
+        .jadeRadius(.xl)
+        .jadeShadow(.xl, radius: .xl)
+        .onAppear { viewModel.onAppear() }
+        .jadeConfirmationDialog(
+            LocalizedStringKey("onboarding.skip.confirm.title"),
+            isPresented: $showSkipConfirmation,
+            confirmTitle: LocalizedStringKey("onboarding.skip.confirm.action"),
+            cancelTitle: LocalizedStringKey("onboarding.skip.confirm.cancel"),
+            message: LocalizedStringKey("onboarding.skip.confirm.message")
+        ) {
+            Task { await viewModel.skipOnboarding() }
+        }
+    }
+
+    // MARK: - Header
+
+    private var header: some View {
+        VStack(spacing: JadeSpace.x2.value) {
+            Image(systemName: "bird")
+                .font(.system(size: 80, weight: .semibold))
+                .foregroundStyle(JadeColor.primary)
+                .accessibilityHidden(true)
+            Text(L10n.localized("onboarding.welcome.title"))
+                .font(JadeFont.display)
+                .foregroundStyle(JadeColor.textPrimary)
+            Text(L10n.localized("onboarding.welcome.subtitle"))
+                .font(JadeFont.body)
+                .foregroundStyle(JadeColor.textSecondary)
+                .multilineTextAlignment(.center)
+        }
+    }
+
+    // MARK: - 三配置卡片
+
+    private var configCards: some View {
+        VStack(spacing: JadeSpace.x3.value) {
+            configCard {
+                HStack {
+                    cardLabel(
+                        icon: "command",
+                        title: L10n.localized("onboarding.hotkey.title"),
+                        subtitle: L10n.localized("onboarding.hotkey.description")
+                    )
+                    Spacer()
+                    HotkeyRecorder(
+                        for: .togglePanel,
+                        isConflicting: .constant(viewModel.hotkeyValidation == .conflict),
+                        conflictMessage: .constant(viewModel.hotkeyValidation == .conflict
+                            ? L10n.localized("onboarding.hotkey.conflict") : nil)
+                    )
+                    .onChange(of: KeyboardShortcuts.getShortcut(for: .togglePanel)) { _ in
+                        viewModel.validateHotkey()
+                    }
+                }
+            }
+
+            configCard {
+                Toggle(isOn: $viewModel.clipboardEnabled) {
+                    cardLabel(
+                        icon: "doc.on.clipboard",
+                        title: L10n.localized("onboarding.clipboard.toggle"),
+                        subtitle: L10n.localized("onboarding.clipboard.toggle.subtitle")
+                    )
+                }
+                .toggleStyle(.switch)
+                .tint(JadeColor.primary)
+            }
+
+            configCard {
+                Toggle(isOn: $viewModel.launchAtLoginEnabled) {
+                    cardLabel(
+                        icon: "power",
+                        title: L10n.localized("onboarding.launchAtLogin.toggle"),
+                        subtitle: L10n.localized("onboarding.launchAtLogin.toggle.subtitle")
+                    )
+                }
+                .toggleStyle(.switch)
+                .tint(JadeColor.primary)
+            }
+        }
+    }
+
+    // MARK: - 屏幕录制段（必选）
+
+    private var screenRecordingSection: some View {
+        VStack(alignment: .leading, spacing: JadeSpace.x2.value) {
+            Text(L10n.localized("onboarding.screenRecording.title"))
+                .font(JadeFont.title3)
+                .foregroundStyle(JadeColor.textPrimary)
+            Text(L10n.localized("onboarding.screenRecording.explain"))
+                .font(JadeFont.callout)
+                .foregroundStyle(JadeColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: JadeSpace.x3.value) {
+                if viewModel.screenRecordingAuthorized {
+                    Label(L10n.localized("onboarding.screenRecording.granted"), systemImage: "checkmark.circle.fill")
+                        .font(JadeFont.callout)
+                        .foregroundStyle(JadeColor.success)
+                } else {
+                    Button(L10n.localized("onboarding.screenRecording.grant")) {
+                        viewModel.requestScreenRecording()
+                    }
+                    .buttonStyle(.jadePrimary)
+
+                    Button(L10n.localized("onboarding.screenRecording.skip")) {
+                        viewModel.skipScreenshot()
+                    }
+                    .buttonStyle(.jadeGhost)
+
+                    if viewModel.screenshotSkipped {
+                        Text(L10n.localized("onboarding.screenRecording.skipped"))
+                            .font(JadeFont.caption)
+                            .foregroundStyle(JadeColor.textTertiary)
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - 辅助功能段（按需，不触发 TCC）
+
+    private var accessibilitySection: some View {
+        VStack(alignment: .leading, spacing: JadeSpace.x2.value) {
+            Text(L10n.localized("onboarding.accessibility.title"))
+                .font(JadeFont.title3)
+                .foregroundStyle(JadeColor.textPrimary)
+            Text(L10n.localized("onboarding.accessibility.explain"))
+                .font(JadeFont.callout)
+                .foregroundStyle(JadeColor.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button(L10n.localized("onboarding.accessibility.later")) {
+                viewModel.dismissAccessibility()
+            }
+            .buttonStyle(.jadeGhost)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    // MARK: - Footer
+
+    private var footer: some View {
+        VStack(spacing: JadeSpace.x2.value) {
+            if let message = viewModel.completionErrorMessage {
+                Text(message)
+                    .font(JadeFont.callout)
+                    .foregroundStyle(JadeColor.danger)
+                    .multilineTextAlignment(.center)
+            }
+            HStack {
+                Button(L10n.localized("onboarding.skip")) {
+                    showSkipConfirmation = true
+                }
+                .buttonStyle(.jadeGhost)
+
+                Spacer()
+
+                Button(L10n.localized("onboarding.start")) {
+                    Task { await viewModel.start() }
+                }
+                .buttonStyle(.jadePrimary)
+                .disabled(!viewModel.canStart)
+                .keyboardShortcut(.defaultAction)
+
+                Spacer()
+
+                if let privacyURL {
+                    Link(L10n.localized("about.privacyPolicy"), destination: privacyURL)
+                        .font(JadeFont.callout)
+                        .foregroundStyle(JadeColor.primary)
+                }
+            }
+        }
+    }
+
+    // MARK: - Building blocks
+
+    private func configCard<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        content()
+            .jadePadding(.x3)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(JadeColor.surface2)
+            .jadeRadius(.md)
+    }
+
+    private func cardLabel(icon: String, title: String, subtitle: String) -> some View {
+        HStack(spacing: JadeSpace.x3.value) {
+            Image(systemName: icon)
+                .font(.system(size: 18, weight: .medium))
+                .foregroundStyle(JadeColor.primary)
+                .frame(width: 24)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: JadeSpace.x1.value) {
+                Text(title)
+                    .font(JadeFont.body)
+                    .foregroundStyle(JadeColor.textPrimary)
+                Text(subtitle)
+                    .font(JadeFont.caption)
+                    .foregroundStyle(JadeColor.textSecondary)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+// MARK: - Preview
+
+#Preview("Onboarding · Light") {
+    OnboardingView(
+        viewModel: OnboardingViewModel(
+            permissionService: PermissionService(),
+            hotkeyService: HotkeyValidationService(),
+            settingsService: SettingsService(persistence: .shared)
+        )
+    )
+    .tint(JadeColor.primary)
+    .preferredColorScheme(.light)
+}
+
+#Preview("Onboarding · Dark") {
+    OnboardingView(
+        viewModel: OnboardingViewModel(
+            permissionService: PermissionService(),
+            hotkeyService: HotkeyValidationService(),
+            settingsService: SettingsService(persistence: .shared)
+        )
+    )
+    .tint(JadeColor.primary)
+    .preferredColorScheme(.dark)
+}

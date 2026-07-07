@@ -1,15 +1,15 @@
 #!/bin/bash
 
-# SnapVault 构建并启动脚本
+# Qingniao 构建并启动脚本
 # 用法: ./build_and_run.sh [clean|build|run|all]
 
 set -e  # 遇到错误立即退出
 
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_NAME="SnapVault"
-SCHEME_NAME="SnapVault"
+PROJECT_NAME="Qingniao"
+SCHEME_NAME="Qingniao"
 DERIVED_DATA_PATH="${PROJECT_DIR}/DerivedData"
-APP_PATH="${DERIVED_DATA_PATH}/Build/Products/Debug/Assistant.app"
+APP_PATH="${DERIVED_DATA_PATH}/Build/Products/Debug/Qingniao.app"
 
 # 颜色输出
 RED='\033[0;31m'
@@ -118,9 +118,86 @@ run_app() {
     fi
 }
 
+# Release 构建 + 签名 + 公证 + 装订（Developer ID 分发）
+#
+# 需要的环境变量：
+#   DEVELOPER_ID_APP   Developer ID Application 证书名（如
+#                      "Developer ID Application: Your Name (TEAMID)"）
+#   AC_NOTARY_PROFILE  notarytool 已保存的 keychain profile 名
+#                      （由 `xcrun notarytool store-credentials` 预先创建）
+# 可选：
+#   RELEASE_APP_PATH   输出 .app 路径（默认 Release 产物）
+build_for_release() {
+    local release_derived="${PROJECT_DIR}/DerivedData"
+    local release_app="${RELEASE_APP_PATH:-${release_derived}/Build/Products/Release/${PROJECT_NAME}.app}"
+    local entitlements="${PROJECT_DIR}/${PROJECT_NAME}/${PROJECT_NAME}.entitlements"
+
+    if [ -z "${DEVELOPER_ID_APP}" ]; then
+        log_error "缺少环境变量 DEVELOPER_ID_APP（Developer ID Application 证书名）"
+        log_info "示例: export DEVELOPER_ID_APP=\"Developer ID Application: Your Name (TEAMID)\""
+        return 1
+    fi
+
+    log_info "编译 Release 配置..."
+    xcodebuild \
+        -project "${PROJECT_DIR}/${PROJECT_NAME}.xcodeproj" \
+        -scheme "${SCHEME_NAME}" \
+        -configuration Release \
+        -derivedDataPath "${release_derived}" \
+        clean build \
+        CODE_SIGN_STYLE=Manual \
+        CODE_SIGN_IDENTITY="${DEVELOPER_ID_APP}" \
+        || { log_error "Release 编译失败"; return 1; }
+
+    if [ ! -d "${release_app}" ]; then
+        log_error "未找到 Release 产物: ${release_app}"
+        return 1
+    fi
+
+    # 深度签名（Hardened Runtime + entitlements + secure timestamp）
+    log_info "使用 Developer ID 签名并启用 Hardened Runtime..."
+    codesign --force --deep --options runtime --timestamp \
+        --entitlements "${entitlements}" \
+        --sign "${DEVELOPER_ID_APP}" \
+        "${release_app}" \
+        || { log_error "codesign 失败"; return 1; }
+
+    codesign --verify --deep --strict --verbose=2 "${release_app}" \
+        || { log_error "签名校验失败"; return 1; }
+    log_success "签名完成"
+
+    # 公证（需 notarytool profile）
+    if [ -z "${AC_NOTARY_PROFILE}" ]; then
+        log_warn "未设置 AC_NOTARY_PROFILE，跳过公证与装订（仅完成签名）"
+        log_info "配置方法: xcrun notarytool store-credentials <profile> --apple-id <id> --team-id <TEAMID> --password <app-specific-pwd>"
+        return 0
+    fi
+
+    local zip_path="${release_derived}/${PROJECT_NAME}-notarize.zip"
+    log_info "打包并提交公证..."
+    /usr/bin/ditto -c -k --keepParent "${release_app}" "${zip_path}" \
+        || { log_error "打包 zip 失败"; return 1; }
+
+    xcrun notarytool submit "${zip_path}" \
+        --keychain-profile "${AC_NOTARY_PROFILE}" \
+        --wait \
+        || { log_error "notarytool 公证失败"; return 1; }
+
+    # 装订票据
+    log_info "装订公证票据..."
+    xcrun stapler staple "${release_app}" \
+        || { log_error "stapler 装订失败"; return 1; }
+
+    # Gatekeeper 评估
+    spctl --assess -vvv --type execute "${release_app}" \
+        || log_warn "spctl 评估未通过，请检查签名/公证"
+
+    log_success "Release 签名 + 公证 + 装订完成: ${release_app}"
+}
+
 # 显示帮助信息
 show_help() {
-    echo "SnapVault 构建并启动脚本"
+    echo "Qingniao 构建并启动脚本"
     echo ""
     echo "用法: $0 [命令]"
     echo ""
@@ -129,6 +206,7 @@ show_help() {
     echo "  build    编译项目"
     echo "  run      启动应用（需要先编译）"
     echo "  all      清理、编译并启动（默认）"
+    echo "  release  Release 编译 + Developer ID 签名 + 公证 + 装订"
     echo "  help     显示此帮助信息"
     echo ""
     echo "示例:"
@@ -136,6 +214,7 @@ show_help() {
     echo "  $0 build    # 仅编译"
     echo "  $0 run      # 仅启动"
     echo "  $0 clean    # 仅清理"
+    echo "  $0 release  # 分发构建（需 DEVELOPER_ID_APP / AC_NOTARY_PROFILE）"
 }
 
 # 主函数
@@ -151,6 +230,9 @@ main() {
             ;;
         run)
             run_app
+            ;;
+        release)
+            build_for_release
             ;;
         all)
             clean_build

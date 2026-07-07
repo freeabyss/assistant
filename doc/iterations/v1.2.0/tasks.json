@@ -1,0 +1,781 @@
+{
+ "version": "v1.2.0",
+ "issue": 5,
+ "mode": "auto",
+ "createdAt": "2026-07-05",
+ "tasks": [
+  {
+   "id": "T-001",
+   "title": "工程与品牌改名（Xcode 项目/Target/源目录/显示名/Bundle 资源）",
+   "priority": "P0",
+   "depends_on": [],
+   "layer": "infrastructure",
+   "files_touch_hint": [
+    "SnapVault.xcodeproj/project.pbxproj",
+    "SnapVault/Info.plist",
+    "SnapVault/SnapVault.entitlements",
+    "SnapVault/Resources/",
+    "SnapVault/App/SnapVaultApp.swift",
+    "build_and_run.sh",
+    "Package.swift"
+   ],
+   "steps": [
+    "源码目录 SnapVault/ 重命名为 Qingniao/",
+    "Xcode 工程文件 SnapVault.xcodeproj 内 target 名 SnapVault→Qingniao、Tests target SnapVaultTests→QingniaoTests、PRODUCT_NAME Assistant→Qingniao",
+    "更新 project.pbxproj 里所有 SnapVault 路径引用为 Qingniao",
+    "CFBundleDisplayName 设为 Qingniao；CFBundleName 设为 青鸟（用于菜单栏/关于页中文名，Localizable 中补充中英显示）",
+    "NSHumanReadableCopyright、NSScreenCaptureUsageDescription、NSAppleEventsUsageDescription 等权限文案里的 Mac Super Assistant 改为「青鸟 Qingniao」",
+    "CFBundleShortVersionString 0.1.0 → 1.2.0，CURRENT_PROJECT_VERSION 升为 120（与营销版本对齐）",
+    "MARKETING_VERSION=1.2.0",
+    "SnapVault.entitlements 重命名为 Qingniao.entitlements，project.pbxproj 内引用同步",
+    "Info.plist 里删除 SUPublicEDKey、SUFeedURL、SUEnableAutomaticChecks 等 Sparkle 残留键",
+    "Logger subsystem 保持 com.assistant.app（Bundle ID 不变）",
+    "ReleaseInfoService 里 appName 改为 Qingniao、版权字符串、反馈邮件 feedback@qingniao.app（主题「青鸟 Qingniao 反馈」）、GitHub URL 保持 github.com/freeabyss/assistant 但文案更新",
+    "AppDelegate 状态栏 accessibilityDescription 从 Mac Super Assistant 改为「青鸟 Qingniao」",
+    "build_and_run.sh 里 PROJECT_NAME/APP_PATH/pgrep -x SnapVault 全部改为 Qingniao",
+    "build_and_run.sh 里 scheme SnapVault → Qingniao",
+    "grep -r 全工程确认无 Mac Super Assistant/SnapVault 残留（除 CHANGELOG 历史记录、doc/iterations/ 历史归档）",
+    "项目根 README 产品名改为青鸟 Qingniao（en/zh-CN 两份同步）",
+    "PRIVACY.md / PRIVACY.zh-CN.md 产品名同步",
+    "THIRD_PARTY_NOTICES.md 如有旧名同步"
+   ],
+   "test_cases": [
+    "BRAND-001",
+    "BRAND-002",
+    "BRAND-003",
+    "BRAND-004",
+    "BRAND-005",
+    "BRAND-006",
+    "BRAND-007",
+    "BUILD-001",
+    "BUILD-002",
+    "UPD-001",
+    "UPD-002",
+    "L10N-001",
+    "L10N-002",
+    "L10N-003",
+    "L10N-004"
+   ],
+   "done_definition": "xcodebuild build -scheme Qingniao -configuration Debug 成功；运行产品：菜单栏、关于页、权限弹窗、状态栏 accessibilityDescription 全部显示 Qingniao / 青鸟；grep 产品源码和 Info.plist 无 Mac Super Assistant/SnapVault 残留；版本号关于页显示 1.2.0(120)",
+   "passes": true
+  },
+  {
+   "id": "T-002",
+   "title": "关闭 Sandbox + 配置 hardened runtime 与 Developer ID 签名/entitlements",
+   "priority": "P0",
+   "depends_on": [
+    "T-001"
+   ],
+   "layer": "infrastructure",
+   "files_touch_hint": [
+    "Qingniao/Qingniao.entitlements",
+    "Qingniao.xcodeproj/project.pbxproj",
+    "build_and_run.sh"
+   ],
+   "steps": [
+    "关闭 entitlements 里 com.apple.security.app-sandbox = true（改为 false 或移除）",
+    "启用 hardened runtime（ENABLE_HARDENED_RUNTIME=YES）",
+    "保留/添加 com.apple.security.automation.apple-events = true（让 restartFinder/Dock/toggleAppearance 可用）",
+    "确认 com.apple.security.files.user-selected.read-write（截图保存目录选择需要）",
+    "在 build_and_run.sh 增补 build_for_release 函数：codesign + notarytool + staple（用环境变量中的 Developer ID 证书）",
+    "在本地 Debug 配置下先不做签名公证，跑 swift test + xcodebuild test 验证",
+    "验证 toggleAppearance/restartFinder/restartDock/emptyTrash 等命令在关闭 sandbox 后可正常执行"
+   ],
+   "test_cases": [
+    "DIST-001",
+    "DIST-002",
+    "DIST-003",
+    "DIST-004",
+    "DIST-005",
+    "DIST-006",
+    "CMD-001 回归",
+    "CMD-006 回归",
+    "CMD-007 回归",
+    "CMD-008 回归"
+   ],
+   "done_definition": "entitlements 无 app-sandbox=true；14 条白名单命令在本地非 sandbox 环境下全部可执行；Release 配置签名后 spctl --assess -vvv Qingniao.app 返回 accepted",
+   "passes": true
+  },
+  {
+   "id": "T-003",
+   "title": "数据目录迁移 Assistant/ → Qingniao/ 与清空所有数据",
+   "priority": "P0",
+   "depends_on": [
+    "T-001"
+   ],
+   "layer": "infrastructure",
+   "files_touch_hint": [
+    "Qingniao/Database/PersistenceController.swift",
+    "Qingniao/Database/DatabaseManager.swift",
+    "Qingniao/Services/Clipboard/",
+    "Qingniao/Utilities/Logger.swift",
+    "Qingniao/App/AppDelegate.swift",
+    "Qingniao/ViewModels/SettingsViewModel.swift"
+   ],
+   "steps": [
+    "Application Support 旧路径 ~/Library/Application Support/Assistant/ 检测：存在且新路径 Qingniao/ 不存在时 FileManager.moveItem 迁移；记录 Logger",
+    "迁移失败（权限/磁盘）时 fallback：不移动，复制一份到 Qingniao-migration-backup-<ts>/ 并创建新空库，alert 用户",
+    "Core Data store URL 改为 Qingniao/Qingniao.sqlite；启用 lightweight migration（NSMigratePersistentStoresAutomaticallyOption + NSInferMappingModelAutomaticallyOption = true）",
+    "GRDB DatabaseManager 标注为 legacy（后续 T-005 处理），但本次保留实例不破坏编译；剪贴板文件资源目录 Clipboard/ 等路径同步更新到 Qingniao/",
+    "AppSetting 默认值新增：onboardingCompletedAt=null、appearanceMode=system、三个截图默认快捷键、fileSourceEnabled=true、clipboardRetention 保持原默认、dataFolderBookmark=null",
+    "实现「清空所有数据」动作（设置→数据页）：删除 Core Data sqlite、删除文件资源目录、删除 UserDefaults 中 Qingniao 域、提示重启，重启后回到 onboarding",
+    "实现「打开数据目录」按钮：NSWorkspace.open 打开 ~/Library/Application Support/Qingniao/",
+    "导出数据按钮 UI 预留为 disabled，tooltip「v1.3 支持」"
+   ],
+   "test_cases": [
+    "DATA-001",
+    "DATA-002",
+    "DATA-003",
+    "DATA-004",
+    "DATA-005",
+    "SETNEW-003",
+    "SETNEW-004",
+    "SETNEW-005"
+   ],
+   "done_definition": "新装环境下启动在 Qingniao/ 建库；从 v1.1 升级（手工复制旧 Assistant 目录）时自动迁移；清空所有数据后重启回到 onboarding；打开数据目录能在 Finder 定位",
+   "passes": true
+  },
+  {
+   "id": "T-004",
+   "title": "DesignToken 层建立（JadeColor/JadeRadius/JadeSpace/JadeFont/JadeShadow/JadeMaterial）+ SwiftUI 扩展",
+   "priority": "P0",
+   "depends_on": [
+    "T-001"
+   ],
+   "layer": "presentation",
+   "files_touch_hint": [
+    "Qingniao/Views/Design/",
+    "Qingniao/Views/Components/"
+   ],
+   "steps": [
+    "新建 Views/Design/JadeColor.swift：static let jade500/jade600/jade50 + semantic token (primary/primaryHover/primaryFill/textPrimary/textSecondary/textTertiary/surface1/surface2/surface3/border/overlay)，自动明暗适配（NSColor 桥接或 @Environment(\\.colorScheme)）",
+    "JadeRadius.swift：sm=6/md=8/lg=12/xl=16/xxl=20，统一 .continuous 圆角方法",
+    "JadeSpace.swift：x1=4/x2=8/x3=12/x4=16/x6=24/x8=32",
+    "JadeFont.swift：display/title1/title2/title3/body/callout/subhead/caption/commandBarInput（SF Pro，映射到 Font.system(size:weight:)）",
+    "JadeShadow.swift：sm/md/lg/xl 阴影扩展（View Modifier）",
+    "JadeMaterial.swift：commandBar 用 .ultraThinMaterial，工具条/pill 用 .ultraThinMaterial，sheet 用 .thinMaterial",
+    "AccentColor.colorset 在 Assets.xcassets 建立，设 Jade 500/600（Light/Dark）",
+    "根 View .tint(JadeColor.primary) 全局注入",
+    "测试 Colorset 在 Preview 下明暗切换正确"
+   ],
+   "test_cases": [
+    "TOK-001",
+    "TOK-002",
+    "TOK-003",
+    "TOK-004",
+    "TOK-005",
+    "TOK-006",
+    "ACC-005"
+   ],
+   "done_definition": "所有 DesignToken 编译通过，Preview 可显示 JadeColor 明暗双模式、各 token 值与 PRD §9.2 表一致",
+   "passes": true
+  },
+  {
+   "id": "T-005",
+   "title": "死代码清理（UnifiedSearch*/MenuBarView/UnitConverterSource/OCRService/ContentStore/Toast 收敛）",
+   "priority": "P0",
+   "depends_on": [
+    "T-004"
+   ],
+   "layer": "presentation",
+   "files_touch_hint": [
+    "Qingniao/Views/MenuBar/MenuBarView.swift",
+    "Qingniao/ViewModels/UnifiedSearchViewModel.swift",
+    "Qingniao/Services/SearchEngine/UnifiedSearchService.swift",
+    "Qingniao/Views/SearchResults/UnifiedResultList.swift",
+    "Qingniao/Views/SearchResults/UnifiedResultRow.swift",
+    "Qingniao/Views/SearchResults/ResultGroupView.swift",
+    "Qingniao/Services/SearchEngine/UnitConverterSource.swift",
+    "Qingniao/Services/OCRService/",
+    "Qingniao/Database/ContentStore.swift",
+    "Qingniao/Database/ContentRepository.swift",
+    "Qingniao/Views/Components/ToastView.swift",
+    "Qingniao/Views/RecentContent/RecentContentView.swift",
+    "Qingniao/Views/Components/ScreenshotToolbarController.swift"
+   ],
+   "steps": [
+    "删除 MenuBarView.swift 整块（仅在 #Preview 用）+ UnifiedSearchViewModel + UnifiedSearchService + UnifiedResultList + UnifiedResultRow + ResultGroupView；检查任何 AppDelegate/菜单/组装处的引用全部移除",
+    "删除 UnitConverterSource.swift 及对应 Tests；CalculatorSource 内的 UnitConverter 保留，确保单位换算通过 CalculatorSource 路径可用",
+    "删除 OCRService/ 目录、ContentStore.swift、ContentRepository.swift；DB 里 ocr_text 列在新版 Core Data model 中移除（用 lightweight migration 兼容旧库含该列）；RecentContentView 中 OCR 筛选段删除",
+    "统一 Toast：保留并升级 ToastView.swift 为 JadeToast（位置 center/bottom、slide+fade、auto dismiss 3s、primary/danger 两种）；删除 RecentContentView 内联 overlay toast；删除 ScreenshotToolbarController 内联 toast；所有使用点改 JadeToast",
+    "删除 ClipboardRepository(GRDB)，保留 AssistantClipboardRepository(Core Data) 为唯一实现，所有引用切到 AssistantClipboardRepository",
+    "更新测试文件：删除 UnitConverterSourceTests、OCR 相关 tests、ContentRepository 相关 tests；路径从 SnapVaultTests 改 QingniaoTests（T-001 之后）",
+    "确保 swift test / xcodebuild test 全绿"
+   ],
+   "test_cases": [
+    "CODE-001",
+    "CODE-002",
+    "CODE-003",
+    "CODE-004",
+    "CODE-005",
+    "I18N-004",
+    "REG-001",
+    "REG-002"
+   ],
+   "done_definition": "grep 源码无 UnifiedSearch/MenuBarView/UnitConverterSource/OCRService/ContentStore/ContentRepository 引用（历史 doc/ 除外）；swift test 全绿、xcodebuild build+test 全绿",
+   "passes": true
+  },
+  {
+   "id": "T-006",
+   "title": "AppContainer DI 容器 + 窗口控制器拆分（解耦 AppDelegate）",
+   "priority": "P0",
+   "depends_on": [
+    "T-001",
+    "T-003",
+    "T-005"
+   ],
+   "layer": "application",
+   "files_touch_hint": [
+    "Qingniao/App/AppDelegate.swift",
+    "Qingniao/App/AppContainer.swift",
+    "Qingniao/App/",
+    "Qingniao/Services/"
+   ],
+   "steps": [
+    "新建 AppContainer.swift：@MainActor 共享单例，持有所有 Service/ViewModel/Repository，构造时统一组装（替代 AppDelegate.makeSearchPanelViewModel 散落式组装）",
+    "新建 StatusItemController：管理 NSStatusItem、菜单（打开剪贴板/打开设置/关于/退出）",
+    "新建 CommandBarController：管理 NSPanel 浮层（⌥Space 唤起、居中 y=120、宽 680、20px 圆角、ultraThinMaterial）、加载 CommandBarView、键盘事件",
+    "新建 ClipboardHistoryWindowController：NSWindowController（min 880x600、split view、侧栏+列表），⌥⌘C 唤起",
+    "新建 SettingsWindowController：NSWindowController（min 920x640、NavigationSplitView），⌘, 唤起，承载 SettingsView",
+    "Annotation/Screenshot 窗口保留现有 AnnotationEditorWindow + ScreenshotPreviewWindow，从 AppDelegate 抽出到 ScreenshotWindowController（薄封装即可，不重写）",
+    "AppDelegate 瘦身为：applicationDidFinishLaunching 构造 AppContainer、调用 StatusItemController 安装状态项、注册全局快捷键、启动 onboarding 判定；其他逻辑全部搬走",
+    "所有强制解包点（localEventMonitor!、URL(string:)!、as! NSTextView、try! NSRegularExpression 等）改为 guard/if let/try?，保留 fatalError 仅用于 AppKit 必需的 init(coder) 样板"
+   ],
+   "test_cases": [
+    "DI-001",
+    "DI-002",
+    "DI-003",
+    "ROBUST-001",
+    "ROBUST-002",
+    "MENU-001",
+    "MENU-002",
+    "MENU-003",
+    "REG-007"
+   ],
+   "done_definition": "AppDelegate.swift 行数 < 200；所有窗口通过独立 controller 管理；swift test 通过、xcodebuild build 通过、无 ! 强解（除 init(coder) 和显式 fatalError）",
+   "passes": true
+  },
+  {
+   "id": "T-007",
+   "title": "统一 Jade 组件库（JadeButton/JadeTextField/JadeListRow/JadePill/HotkeyRecorder/StatCard/ConfirmationDialog/PermissionGate）",
+   "priority": "P1",
+   "depends_on": [
+    "T-004"
+   ],
+   "layer": "presentation",
+   "files_touch_hint": [
+    "Qingniao/Views/Components/",
+    "Qingniao/Views/Design/"
+   ],
+   "steps": [
+    "JadeButton：primary/secondary/destructive/ghost 四种样式，使用 JadeColor+JadeRadius+JadeFont，hover/pressed/disabled 三态",
+    "JadeTextField：左图标前缀、右 xmark.circle.fill 清空按钮、focus 时 jade 边框 1.5pt、未 focus 时 border 色",
+    "HotkeyRecorder：基于 KeyboardShortcuts.Recorder，封装 jade 风格，冲突时行内显示 conflict 警告",
+    "JadeListRow：统一 44px（紧凑）/64px（舒适）行高，选中态 Jade 50 底+圆角 lg、hover 时右侧出现 IconButton 组",
+    "JadePill/Badge：类型 badge/计数/快捷键徽标/工具 pill，统一 capsule 样式",
+    "StatCard：概览页统计卡片，图标+标题+数值",
+    "PermissionGate：权限未授予时的占位+引导按钮组件",
+    "JadeConfirmationDialog：统一危险操作弹窗（红色标题、Cancel+Destructive 双按钮）",
+    "每个组件有 #Preview 覆盖 normal/hover/disabled/selected/dark/light 状态"
+   ],
+   "test_cases": [
+    "TOK-001",
+    "TOK-002",
+    "TOK-003",
+    "ACC-001",
+    "ACC-002",
+    "ACC-003"
+   ],
+   "done_definition": "所有组件 #Preview 可在 Xcode Canvas 查看；参数化 API 干净；暂不强制全 App 接入（后续 T 逐步替换）",
+   "passes": true
+  },
+  {
+   "id": "T-008",
+   "title": "全局快捷键管理（全屏热键 ⌃⌥⌘3 + 冲突检测 + 默认键修正）",
+   "priority": "P0",
+   "depends_on": [
+    "T-006"
+   ],
+   "layer": "services",
+   "files_touch_hint": [
+    "Qingniao/Services/Hotkey/GlobalShortcutManager.swift",
+    "Qingniao/App/AppDelegate.swift",
+    "Qingniao/ViewModels/SettingsViewModel.swift",
+    "Qingniao/Services/Screenshot/ScreenshotService.swift"
+   ],
+   "steps": [
+    "GlobalShortcutManager.register 增加 conflict 回调：Carbon RegisterEventHotKey 返回 0 时回调 ConflictHandler",
+    "修正默认键：togglePanel=⌥Space、captureRegion=⇧⌃⌘4、captureWindow=⇧⌃⌘5、captureFullscreen=⌃⌥⌘3（新增）、openClipboardHistory=⌥⌘C、openSettings=⌥⌘,",
+    "注册全屏快捷键 → ScreenshotService.captureFullScreen() 接好；若 AppDelegate 里现有 captureScreen 方法复用即可",
+    "设置页快捷键冲突时 HotkeyRecorder 行内显示警告，提供「重置为默认」"
+   ],
+   "test_cases": [
+    "SHOT-FS-001",
+    "SHOT-FS-002",
+    "SHOT-FS-003",
+    "SHOT-FS-004",
+    "SHORTCUT-001",
+    "SHORTCUT-002",
+    "SHORTCUT-003",
+    "SHORTCUT-004",
+    "CMD-001 回归"
+   ],
+   "done_definition": "6 个全局快捷键默认值正确；与系统或其他 App 冲突时设置页有红色提示；全屏截图 ⌃⌥⌘3 可工作",
+   "passes": true
+  },
+  {
+   "id": "T-009",
+   "title": "文件搜索接入 FileSearchSource（默认 ~/Desktop/Documents/Downloads）",
+   "priority": "P0",
+   "depends_on": [
+    "T-006",
+    "T-004"
+   ],
+   "layer": "services",
+   "files_touch_hint": [
+    "Qingniao/Services/SearchEngine/FileSearchSource.swift",
+    "Qingniao/Services/SearchEngine/SearchService.swift",
+    "Qingniao/App/AppContainer.swift"
+   ],
+   "steps": [
+    "FileSearchSource 现有 522 行代码审一遍：构造时接三个目录、用 FileManager.enumerator 做首次遍历+内存缓存（后续 V1.x 做 FS 监听增量），输入 2 字符触发搜索",
+    "在 AppContainer 里把 FileSearchSource 加入 SearchService 的 sources 数组（权重 75）",
+    "FileSearchResult 类型：显示文件名+路径+大小+修改时间、图标用 NSWorkspace.shared.icon(forFile:)",
+    "动作：⏎ 用默认应用打开文件、⌘C 复制文件路径、⌘R revealInFinder",
+    "v1.2 不做索引持久化；首次打开命令栏时后台触发索引，索引期间其他源仍可用；空查询不返回文件结果",
+    "更新设置页搜索源开关增加「文件」项（默认 true）",
+    "确保 Performance：三个目录下文件数在普通用户机器 10w 文件以内时，搜索 <100ms"
+   ],
+   "test_cases": [
+    "SEARCH-F-001",
+    "SEARCH-F-002",
+    "SEARCH-F-003",
+    "SEARCH-F-004",
+    "SEARCH-F-005",
+    "SEARCH-F-006",
+    "SEARCH-F-007",
+    "SEARCH-F-008",
+    "SEARCH-F-009",
+    "SET-001 回归"
+   ],
+   "done_definition": "⌥Space 输入文件名能搜到 ~/Desktop/Documents/Downloads 下文件；⏎ 打开、⌘R 在 Finder 中显示、⌘C 复制路径；权重 75 排序正确",
+   "passes": true
+  },
+  {
+   "id": "T-010",
+   "title": "Onboarding 单屏重构（辅助功能按需 + 屏幕录制前置）",
+   "priority": "P0",
+   "depends_on": [
+    "T-006",
+    "T-004",
+    "T-007"
+   ],
+   "layer": "presentation",
+   "files_touch_hint": [
+    "Qingniao/Views/Onboarding/OnboardingView.swift",
+    "Qingniao/ViewModels/OnboardingViewModel.swift",
+    "Qingniao/Services/Permission/PermissionService.swift",
+    "Qingniao/App/AppDelegate.swift"
+   ],
+   "steps": [
+    "OnboardingView 改为单屏布局 720x520，radius-xl、shadow-xl、Jade bird glyph/SF Symbol `bird` 大图标 jade 色",
+    "三配置卡片：⌥Space 热键录制（KeyboardShortcuts.Recorder）、剪贴板历史开关 Toggle、开机启动 Toggle",
+    "屏幕录制段：解释文案 + primary 按钮「授予屏幕录制权限」（点击调用 CGRequestScreenCaptureAccess() + CGPreflightScreenCaptureAccess() 判断）",
+    "辅助功能段：解释文案 + ghost 按钮「稍后再说」，不默认弹 TCC；权限请求改为按需：PermissionService.onDemandAccessibilityCheck() 在真正需要时才弹",
+    "主按钮「开始使用」disabled 规则：屏幕录制未决时 disabled（用户点了「授予」后或点了「暂不开启」才 enabled）；提供「暂不开启」次按钮（截图功能会在用到时再申请）",
+    "底部：左「跳过设置」link（带 confirm dialog）、右「隐私政策」link",
+    "完成后 onboardingCompletedAt = Date()，写入 AppSetting/UserDefaults，不再弹出",
+    "AppDelegate 启动判定：onboardingCompletedAt == null 时显示 onboarding，否则不显示",
+    "重启不重弹（v1.1 遗留 AC-6 验证）"
+   ],
+   "test_cases": [
+    "ONB-V2-001",
+    "ONB-V2-002",
+    "ONB-V2-003",
+    "ONB-V2-004",
+    "ONB-V2-005",
+    "ONB-V2-006",
+    "ONB-V2-007",
+    "ONB-V2-008",
+    "PERM-OD-001",
+    "PERM-OD-002",
+    "PERM-OD-003",
+    "REG-005",
+    "REG-006"
+   ],
+   "done_definition": "首次启动单屏 onboarding 显示；辅助功能不自动弹 TCC；屏幕录制按钮正常触发；重启不重弹；跳过设置后能进入主界面且截图功能在首次使用时提示",
+   "passes": true
+  },
+  {
+   "id": "T-011",
+   "title": "Command Bar 重写（P-01）：20px 圆角 + 毛玻璃 + 空态最近/收藏 + ⌘1-6 切源 + 结果样式",
+   "priority": "P0",
+   "depends_on": [
+    "T-006",
+    "T-007",
+    "T-009",
+    "T-008"
+   ],
+   "layer": "presentation",
+   "files_touch_hint": [
+    "Qingniao/Views/SearchPanel/",
+    "Qingniao/ViewModels/SearchPanelViewModel.swift",
+    "Qingniao/Views/Components/"
+   ],
+   "steps": [
+    "重写 SearchPanelView 为 CommandBarView：680 宽、动态高 120-560、radius-xxl(20)、JadeMaterial.commandBar、shadow-xl、y-offset 120 居中",
+    "顶部输入框 48px 高、JadeTextField（左 jade 放大镜、placeholder「搜索应用、命令、文件、剪贴板...」），commandBarInput 字号 20pt",
+    "空态（无输入）：显示「最近使用」5 条（最近打开的 app/执行的命令/复制的剪贴板项，按 UsageStat） + 「收藏」5 条（置顶剪贴板/收藏命令）",
+    "结果行：高 44px、左 32x32 类型图标（底色按类型 jade/blue/purple/indigo/orange/green/pink opacity 0.15）+ 标题（title3 字号）+ 副标题、右 type badge + ⏎",
+    "选中态 Jade 50 底 + jade 主色图标、radius-lg",
+    "底部 hint bar 44px：caption、tertiary 色、居中快捷键提示（⌘1-6 切源、↑↓⏎⎋⌘K⌘C⌘,）",
+    "⌘1-6 切源过滤：所有/应用/命令/剪贴板/文件/设置；⌘K 清空输入；Tab 唯一补全；⌘C 复制当前项值（文本/路径）",
+    "计算器/换算触发时答案固定在第一行高亮显示",
+    "ESC 关闭、点外部关闭、切换 App 关闭、再次按 ⌥Space 关闭",
+    "结果最多 12 条、无分组标题",
+    "危险命令行右侧显示 ⚠️ 橙色标记，⏎ 触发 JadeConfirmationDialog 二次确认"
+   ],
+   "test_cases": [
+    "SEARCH-E-001",
+    "SEARCH-E-002",
+    "SEARCH-E-003",
+    "SEARCH-E-004",
+    "SEARCH-E-005",
+    "SEARCH-001 回归",
+    "SEARCH-002 回归",
+    "SEARCH-003 回归",
+    "SEARCH-004 回归",
+    "SEARCH-005 回归",
+    "SEARCH-006 回归",
+    "SEARCH-007 回归",
+    "REG-003"
+   ],
+   "done_definition": "⌥Space 唤起命令栏符合 P-01 规范；空态显示最近+收藏；⌘1-6 切源生效；计算器结果首行；危险命令二次确认；ESC/点外关闭",
+   "passes": true
+  },
+  {
+   "id": "T-012",
+   "title": "剪贴板历史窗口（P-02）+ RecentContent 改造（去 OCR/GRDB 依赖）",
+   "priority": "P0",
+   "depends_on": [
+    "T-006",
+    "T-007",
+    "T-005",
+    "T-003"
+   ],
+   "layer": "presentation",
+   "files_touch_hint": [
+    "Qingniao/Views/ClipboardList/ClipboardListView.swift",
+    "Qingniao/Views/ClipboardList/ClipboardItemRow.swift",
+    "Qingniao/ViewModels/ClipboardListViewModel.swift",
+    "Qingniao/Views/RecentContent/RecentContentView.swift",
+    "Qingniao/Views/Preview/PreviewPanel.swift"
+   ],
+   "steps": [
+    "ClipboardHistoryWindowController 承载 ClipboardHistoryView，min 880x600",
+    "两栏 NavigationSplitView：侧栏 180（过滤：全部/文本/图片/RTF/文件/置顶/收藏 + 时间分组：今天/昨天/更早 + 底部操作：清空全部/设置）；主列表 LazyVStack 行高 64px",
+    "行 JadeListRow 64px：左 40x40 radius-md 缩略图（图片显示缩略图/RTF 显示富文本预览/文本显示首字/文件显示 icon）、主标题+副信息（类型·大小·时间）、hover 右侧 4 个 IconButton（置顶/复制/预览/删除）",
+    "ClipboardItemRow 与 ClipboardHistoryRow 合并为统一 JadeClipboardRow，删除重复",
+    "RecentContentView 改造：去掉 ContentRepository/GRDB 依赖，改为只用 AssistantClipboardRepository(Core Data)；去掉 OCR 筛选段",
+    "PreviewPanel 改造：强制解包 as! NSTextView 改 guard；图片 MagnificationGesture 保留；删除/复制按钮 jade 样式",
+    "⌘F 聚焦搜索框、⌘A 全选、↑↓/jk 选择、⏎/⌘C 复制并关闭、空格/⌘Y 预览 sheet、⌫ 删除、swipe actions（右滑收藏/左滑删除）、context menu 保留",
+    "底部状态栏 Jade 风格：总条数/存储占用/保留期",
+    "空态：首次使用 tray icon + 「剪贴板历史为空」 + 引导；剪贴板关闭时 hand.raised.slash + 「剪贴板历史已关闭」 + [开启]；搜索无结果 magnifyingglass"
+   ],
+   "test_cases": [
+    "CLIP-001 回归",
+    "CLIP-002 回归",
+    "CLIP-003 回归",
+    "CLIP-004 回归",
+    "CLIP-005 回归",
+    "CLIP-006 回归",
+    "CLIP-007 回归",
+    "CLIP-008 回归",
+    "CLIP-009 回归",
+    "CLIP-010 回归",
+    "CLIP-011 回归",
+    "CLIP-012 回归",
+    "SEARCH-E-001",
+    "REG-004"
+   ],
+   "done_definition": "⌥⌘C 打开剪贴板窗口；四类型（text/rtf/image/file）显示正确；hover 操作/快捷键/手势正常；空态正确；PreviewSheet 无崩溃",
+   "passes": true
+  },
+  {
+   "id": "T-013",
+   "title": "设置/管理中心（P-03）：NavigationSplitView 新布局 + 外观页 + 数据页 + 概览卡片",
+   "priority": "P1",
+   "depends_on": [
+    "T-006",
+    "T-007",
+    "T-003",
+    "T-008"
+   ],
+   "layer": "presentation",
+   "files_touch_hint": [
+    "Qingniao/Views/Settings/SettingsView.swift",
+    "Qingniao/ViewModels/SettingsViewModel.swift"
+   ],
+   "steps": [
+    "SettingsWindowController 承载 SettingsView（min 920x640）；NavigationSplitView 侧栏 200px",
+    "侧栏分组：顶部（概览）、核心能力（剪贴板/快捷键/截图/搜索源）、系统（外观/权限/数据/更新/关于/反馈）",
+    "概览页：96x96 AppIcon（radius-xl jade 鸟 glyph）+ 版本 1.2.0(120) + 版权「© 2026 Qingniao」；2×N StatCard（使用天数/日均启动/剪贴数/截图数，从 UsageStat 取）；常用开关（开机启动/外观 segmented（系统/浅/深）/更新提醒）",
+    "快捷键页：每行 HotkeyRecorder，冲突时行内红警告 + 「重置为默认」",
+    "外观页：accent 色预览（v1.2 仅 Jade 一种，V1.x 自定义）、减小动态效果开关（绑定系统 accessibilityDisplayShouldReduceMotion）",
+    "数据页：存储占用条、保留期 Picker、「打开数据目录」按钮、「导出数据...」按钮（disabled+tooltip「v1.3 支持」）、「清空所有数据」红色按钮（JadeConfirmationDialog 确认）",
+    "权限页：每个权限（屏幕录制/辅助功能/剪贴板/Apple Events）一行，绿点/橙三角 状态 + [打开系统设置]/[重试]",
+    "关于页：版本号、PRIVACY、THIRD_PARTY_NOTICES、Check for Updates（跳 GitHub Releases）、反馈按钮打开 FeedbackSheet",
+    "FeedbackSheet 邮件主题改为「青鸟 Qingniao 反馈」，收件人 feedback@qingniao.app（带 app 版本+build+macOS 版本）",
+    "⌘F 聚焦设置搜索（侧边栏/内容过滤）、⌘W/⎋ 关闭",
+    "TextEditor 硬编码 .border 改为 Jade 样式"
+   ],
+   "test_cases": [
+    "SETNEW-001",
+    "SETNEW-002",
+    "SETNEW-003",
+    "SETNEW-004",
+    "SETNEW-005",
+    "SET-001 回归",
+    "SET-002 回归",
+    "SET-003 回归",
+    "SET-004 回归",
+    "SET-005 回归",
+    "ABOUT-001 回归",
+    "ABOUT-002 回归",
+    "PRIV-001 回归"
+   ],
+   "done_definition": "⌘, 打开设置窗口；侧栏所有页面可达；概览卡片显示正确；清空数据/打开目录/检查更新/反馈邮件都工作",
+   "passes": true
+  },
+  {
+   "id": "T-014",
+   "title": "截图标注 UI 重构（P-04/P-05）：悬浮 pill 工具条 + 全屏热键接 captureFullScreen",
+   "priority": "P1",
+   "depends_on": [
+    "T-008",
+    "T-004",
+    "T-007"
+   ],
+   "layer": "presentation",
+   "files_touch_hint": [
+    "Qingniao/Views/Components/ScreenshotOverlay.swift",
+    "Qingniao/Views/Components/ScreenshotToolbarController.swift",
+    "Qingniao/Views/Annotation/AnnotationToolbar.swift",
+    "Qingniao/Views/Annotation/AnnotationEditorWindow.swift",
+    "Qingniao/Views/Annotation/AnnotationCanvas.swift",
+    "Qingniao/Views/Annotation/AnnotationShape.swift"
+   ],
+   "steps": [
+    "ScreenshotOverlay 保持现有 NSView 手绘，尺寸标签改为 jade 风格 pill；选区白边保留（截图叠层特殊处理）",
+    "ScreenshotPreviewView 工具条改为悬浮 pill（居中底部、ultraThinMaterial、radius-xl、高 52）：矩形/箭头/文字/马赛克；blur 禁用（opacity 0.4 + help「v1.3 支持」）",
+    "Annotation 编辑器顶/底栏也改为 jade 风格悬浮 pill；颜色 swatch 选中环 jade；线宽/字号 segmented 统一 jade 风格",
+    "全屏截图 captureFullScreen 实现：用 CGWindowListCreateImage 截主屏幕，触发后进入 ScreenshotPreviewView（与 region/window 一致）",
+    "⌥点击保存弹 NSSavePanel；⌘S 默认保存（若用户改过目录则用用户目录，否则 ~/Desktop）",
+    "默认截图目录 ~/Desktop（首次保存自动创建）",
+    "Toast 用 JadeToast 替代内联实现",
+    "ESC 取消、⌘Z/⇧⌘Z 撤销重做、⌘C 复制、⌘S 保存",
+    "区域/窗口快捷键使用 ⇧⌃⌘4/5（与 FR-SHOT 一致）"
+   ],
+   "test_cases": [
+    "SHOT-FS-001",
+    "SHOT-FS-002",
+    "SHOT-FS-003",
+    "SHOT-FS-004",
+    "SHOT-UI-001",
+    "SHOT-UI-002",
+    "SHOT-UI-003",
+    "SHOT-UI-004",
+    "SHOT-UI-005",
+    "SHOT-001 回归",
+    "SHOT-002 回归",
+    "SHOT-003 回归",
+    "SHOT-004 回归",
+    "SHOT-005 回归",
+    "SHOT-006 回归",
+    "SHOT-007 回归",
+    "SHOT-008 回归",
+    "SHOT-009 回归"
+   ],
+   "done_definition": "区域/窗口/全屏三种截图都可触发；预览工具条为悬浮 pill 形态；blur 禁用显示 tooltip；保存/复制/标注/取消流程正常",
+   "passes": true
+  },
+  {
+   "id": "T-015",
+   "title": "全 App UI 迁移到 DesignToken + Jade 组件（散点硬编码清理）",
+   "priority": "P1",
+   "depends_on": [
+    "T-007",
+    "T-010",
+    "T-011",
+    "T-012",
+    "T-013",
+    "T-014"
+   ],
+   "layer": "presentation",
+   "files_touch_hint": [
+    "Qingniao/Views/**/*.swift"
+   ],
+   "steps": [
+    "grep -rE '\\.cornerRadius\\([0-9]+\\)' Qingniao/Views —— 替换为 JadeRadius",
+    "grep -rE '\\.font\\(\\.system\\(size:' Qingniao/Views —— 替换为 JadeFont",
+    "grep -rE 'Color\\.(blue|green|orange|red|purple|pink|indigo|gray|yellow|black|white)' Qingniao/Views —— 替换为 JadeColor 或语义色（状态色保留 system*）",
+    "grep -rE '\\.shadow\\(color:' Qingniao/Views —— 替换为 JadeShadow",
+    "grep -rE 'padding\\([0-9]+\\)' Qingniao/Views —— 非特殊情况统一为 JadeSpace token",
+    "描边 .white.opacity / .black.opacity 改 JadeColor.border 或语义色",
+    "按钮统一用 JadeButton",
+    "TextField 统一用 JadeTextField",
+    "toast 统一用 JadeToast（T-005 已删其他实现，此处确保无残留）",
+    "确保明暗双模式切换无对比问题（Xcode Environment Overrides 预览检查）",
+    "选中态 opacity 统一 0.12（原 0.13/0.15/0.16/0.18 收敛）"
+   ],
+   "test_cases": [
+    "TOK-001",
+    "TOK-002",
+    "TOK-003",
+    "TOK-004",
+    "TOK-005",
+    "TOK-006",
+    "ACC-005",
+    "L10N-004"
+   ],
+   "done_definition": "全工程 Views 下（除标注 NSView 手绘、截图叠层等 AppKit 必需硬编码）无硬编码颜色/圆角/字号/阴影；grep 验证",
+   "passes": true
+  },
+  {
+   "id": "T-016",
+   "title": "CHANGELOG + 文档同步 + THIRD_PARTY_NOTICES 更新",
+   "priority": "P2",
+   "depends_on": [
+    "T-001"
+   ],
+   "layer": "documentation",
+   "files_touch_hint": [
+    "CHANGELOG.md",
+    "README.md",
+    "README.zh-CN.md",
+    "PRIVACY.md",
+    "PRIVACY.zh-CN.md",
+    "THIRD_PARTY_NOTICES.md",
+    "BUILD_README.md"
+   ],
+   "steps": [
+    "CHANGELOG.md 补全 v1.0.0 / v1.0.1 / v1.1.0 / v1.2.0 条目（Keep a Changelog 格式）；删除或归档旧的 0.1.0-mvp 草稿标题",
+    "README.md 品牌改为青鸟 Qingniao、slogan「你的本地 Mac 效率中心」、核心功能反映 v1.2（文件搜索已接入、全屏热键、新 UI）、截图/隐私/FAQ 里旧名替换",
+    "README.zh-CN.md 同步",
+    "PRIVACY.md / PRIVACY.zh-CN.md 产品名替换；确认数据目录路径改为 Qingniao/、邮箱 feedback@qingniao.app",
+    "THIRD_PARTY_NOTICES.md：移除 Sparkle 条目（若有）；其他保留",
+    "BUILD_README.md 同步工程名/构建命令",
+    "更新根 README 里产品页 checklist（assets/ 占位保留，实际截图 v1.2 发布前再截）"
+   ],
+   "test_cases": [
+    "BRAND-007",
+    "L10N-001",
+    "L10N-002",
+    "L10N-003",
+    "L10N-004",
+    "UPD-003"
+   ],
+   "done_definition": "markdown 文档内无 Mac Super Assistant/SnapVault/Assistant 产品名残留（历史上下文除外）；CHANGELOG 版本号与 MARKETING_VERSION 一致",
+   "passes": true
+  },
+  {
+   "id": "T-017",
+   "title": "无障碍与 i18n 串接（基础 VoiceOver/动态类型 + 新字符串全入 Localizable.xcstrings）",
+   "priority": "P2",
+   "depends_on": [
+    "T-015"
+   ],
+   "layer": "presentation",
+   "files_touch_hint": [
+    "Qingniao/Resources/Localizable.xcstrings",
+    "Qingniao/Views/**/*.swift"
+   ],
+   "steps": [
+    "所有新/旧用户可见字符串确认用 String(localized:) 或 NSLocalizedString，无硬编码英文/中文（SF Symbol 名/路径/数字格式除外）",
+    "为所有按钮/输入框/设置项补 accessibilityLabel，装饰性图标 .accessibilityHidden(true)",
+    "Tab 键遍历主路径（命令栏结果/设置侧栏/表单）",
+    "Dynamic Type：JadeFont 支持相对缩放；设置里开启大/小字号时不破版（基础适配）",
+    "减弱动态效果：检测 accessibilityDisplayShouldReduceMotion 时用 opacity 过渡替代 spring",
+    "增强对比度：高对比下边框色加深",
+    "英文翻译补齐（Localizable.xcstrings 里所有 zh-Hans 都要有 en 对应）",
+    "Layout 保证长英文不截断（测试长 locale：de 最坏情况）"
+   ],
+   "test_cases": [
+    "ACC-001",
+    "ACC-002",
+    "ACC-003",
+    "ACC-004",
+    "ACC-005",
+    "I18N-001",
+    "I18N-002",
+    "I18N-003",
+    "I18N-004"
+   ],
+   "done_definition": "VoiceOver 可读完 onboarding/命令栏/剪贴板/设置核心路径；开启 VoiceOver 不 crash；英文化 UI 无截断；中英文切换所有可见字符串跟随",
+   "passes": true
+  },
+  {
+   "id": "T-018",
+   "title": "App Icon / Menubar icon（SF Symbol 鸟 glyph jade 色占位）",
+   "priority": "P2",
+   "depends_on": [
+    "T-001",
+    "T-004"
+   ],
+   "layer": "resources",
+   "files_touch_hint": [
+    "Qingniao/Resources/Assets.xcassets/AppIcon.appiconset/",
+    "Qingniao/App/StatusItemController.swift"
+   ],
+   "steps": [
+    "AppIcon.appiconset 用 SF Symbol `bird` 渲染 jade 色填充，导出所有尺寸 PNG 作为 v1.2 占位 icon（正式 icon 后补）",
+    "Menubar icon（NSStatusItem）：同样 bird 符号的模板图标（NSImage.isTemplate = true，自动适应菜单栏黑/白），保留 jade 高亮态",
+    "About 页 96×96 显示同一 icon",
+    "Onboarding 顶部大 glyph 80×80 用同一 icon 渲染（jade 色）"
+   ],
+   "test_cases": [
+    "BRAND-001",
+    "BRAND-002",
+    "BRAND-004"
+   ],
+   "done_definition": "Dock/Spotlight/About 页显示 Jade bird icon；菜单栏模板图标跟随菜单栏外观明暗",
+   "passes": true
+  },
+  {
+   "id": "T-019",
+   "title": "全量回归 + v1.2 手工验收（对应 cases.md 所有 P0）",
+   "priority": "P0",
+   "depends_on": [
+    "T-002",
+    "T-010",
+    "T-011",
+    "T-012",
+    "T-013",
+    "T-014",
+    "T-015",
+    "T-016",
+    "T-017",
+    "T-018"
+   ],
+   "layer": "testing",
+   "files_touch_hint": [],
+   "steps": [
+    "swift test 全绿",
+    "xcodebuild build -scheme Qingniao -configuration Debug + Release 都 SUCCEEDED",
+    "xcodebuild test -scheme Qingniao -configuration Debug 全绿",
+    "手工按 cases.md v1.2 P0 清单走一遍：从全新安装（清空 ~/Library/Application Support/Qingniao/、defaults delete com.assistant.app）跑 onboarding→命令栏→搜索应用/文件/命令/剪贴板/设置/换算→剪贴板历史→三种截图+标注→清空数据→重启不重弹 onboarding→辅助功能按需申请",
+    "v1.1 遗留 AC-6/AC-7 闭环验证（重启不重弹、hotkey 按需申请）",
+    "脚本校验：grep 源码无 Mac Super Assistant/SnapVault 残留；无 try! / as! 强制解包（init(coder) 除外）；无 SUPublicEDKey/SUFeedURL/SUEnableAutomaticChecks 等 Sparkle 键",
+    "spctl/签名验证（Release 配置）",
+    "把结果写回 doc/test/report.md 的 v1.2.0 节（填实际数据：swift N/N、xcodebuild N/N、手工清单条数/通过数）",
+    "任何失败或新发现 bug 修复后重跑对应 TC"
+   ],
+   "test_cases": [
+    "全部 P0 49 条",
+    "REG-* 7 条"
+   ],
+   "done_definition": "swift test 100% 通过；xcodebuild test 100% 通过；手工 P0 全部通过；v1.1 AC-6/AC-7 闭环验证通过；doc/test/report.md v1.2.0 节指标填满且全绿",
+   "passes": true
+  }
+ ]
+}

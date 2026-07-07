@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- v1.2: App Sandbox 关闭（Developer ID 分发，非 Mac App Store）。
+         关闭后 AppleEvents 命令（重启 Finder/Dock、切换深浅色等）可靠执行，
+         文件搜索可访问主目录常用位置；屏幕录制/辅助功能仍由 TCC 管控。见 design.md §18。 -->
+    <key>com.apple.security.app-sandbox</key>
+    <false/>
+
+    <!-- Apple Events 自动化：restartFinder/restartDock/toggleAppearance 及控制其他 App -->
+    <key>com.apple.security.automation.apple-events</key>
+    <true/>
+
+    <!-- Read-write access to user-selected files (截图保存目录 / 数据目录选择) -->
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+
+    <!-- Screen capture permission (非 sandbox 下由 TCC 管控) -->
+    <key>com.apple.security.screencapture</key>
+    <true/>
+</dict>
+</plist>
