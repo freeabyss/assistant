@@ -84,7 +84,7 @@
 
 ---
 
-## v1.2.0（2026-07-03 定稿用例；开发完成，T-019 自动化回归全绿 2026-07-06，Issue #5）
+## v1.2.0（2026-07-03 定稿用例；开发完成，T-019 自动化回归全绿 2026-07-06；2026-07-07 上线，Issue #5、PR #6）
 
 > 品牌改名青鸟 Qingniao 迭代。v1.2 测试用例已在 `cases.md` 第 11 节定稿（新增 98 条 TC，P0=49/P1=42/P2=7，前缀 TOK/BRAND/DATA/DI/SEARCH-F/SEARCH-E/SHOT-FS/SHOT-UI/ONB-V2/PERM-OD/CODE/DIST/UPD/SHORTCUT/SETNEW/REG/BUILD/ROBUST/ACC/I18N），并对第 5 节受 UI 重设计影响的旧 TC 就地标注「v1.2 修订」。评审记录见 `doc/iterations/v1.2.0/test/review.md`（结论 APPROVED_WITH_MINOR_FIXES，阻塞级 0）。
 >
