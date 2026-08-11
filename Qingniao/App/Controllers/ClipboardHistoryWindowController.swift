@@ -22,7 +22,6 @@ final class ClipboardHistoryWindowController: NSWindowController, NSWindowDelega
     }
 
     func show() {
-        guard container.ensureOnboardingReady() else { return }
         container.commandBarController.hide(animate: false)
 
         if window == nil {

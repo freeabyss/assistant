@@ -101,6 +101,7 @@ struct ManagementCenterView: View {
         .onReceive(NotificationCenter.default.publisher(for: .focusSettingsSearch)) { _ in
             sidebarSearchFocused = true
         }
+        .accessibilityIdentifier("settings.sidebar")
     }
 
     private var filteredPages: [ManagementCenterPage] {

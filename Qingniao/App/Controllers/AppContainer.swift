@@ -53,20 +53,12 @@ final class AppContainer: NSObject {
     /// hotkeys and the basic conflict detector surfaced to the settings page.
     private(set) lazy var globalShortcutManager = GlobalShortcutManager(container: self)
 
-    /// Onboarding gate. Returns `true` when the full experience is unlocked.
-    /// While onboarding is pending the AppDelegate installs a closure that
-    /// re-presents the onboarding window and returns `false`, so window/command
-    /// controllers stay gated behind first-run setup.
-    var onboardingGate: () -> Bool = { true }
-
     /// Task that consumes clipboard events from the monitor stream.
     private var monitorTask: Task<Void, Never>?
 
     nonisolated override init() {
         super.init()
     }
-
-    func ensureOnboardingReady() -> Bool { onboardingGate() }
 
     // MARK: - Command routing (notifications)
 
@@ -290,6 +282,56 @@ final class AppContainer: NSObject {
         }
         return completed
     }
+
+    #if DEBUG
+    // MARK: - UITest hooks (DEBUG only, review C-1)
+
+    /// Clears onboarding completion markers (`onboarding.completedAt` + legacy
+    /// `onboarding.completed`) so the app enters first-run state.
+    ///
+    /// Must be called AFTER `bootstrapDataStack` (store ready) and BEFORE
+    /// `loadOnboardingCompletionState()` (review C-8).
+    func resetOnboardingState() {
+        let context = PersistenceController.shared.viewContext
+        context.performAndWait {
+            for key in [SettingKey.onboardingCompletedAt.rawValue, SettingKey.onboardingCompleted.rawValue] {
+                let request = CDAppSetting.fetchRequest()
+                request.predicate = NSPredicate(format: "key == %@", key)
+                if let records = try? context.fetch(request) {
+                    records.forEach { context.delete($0) }
+                }
+            }
+            try? context.save()
+        }
+    }
+
+    /// Writes onboarding completion markers so the app skips onboarding on launch.
+    /// Called between `bootstrapDataStack` and `loadOnboardingCompletionState`.
+    func markOnboardingCompletedForUITest() {
+        let context = PersistenceController.shared.viewContext
+        let timestamp = ISO8601DateFormatter().string(from: Date())
+        context.performAndWait {
+            for (key, value) in [
+                (SettingKey.onboardingCompletedAt.rawValue, timestamp),
+                (SettingKey.onboardingCompleted.rawValue, "true")
+            ] {
+                let request = CDAppSetting.fetchRequest()
+                request.fetchLimit = 1
+                request.predicate = NSPredicate(format: "key == %@", key)
+                if let existing = try? context.fetch(request).first {
+                    existing.value = value
+                    existing.updatedAt = Date()
+                } else {
+                    let setting = CDAppSetting(context: context)
+                    setting.key = key
+                    setting.value = value
+                    setting.updatedAt = Date()
+                }
+            }
+            try? context.save()
+        }
+    }
+    #endif
 
     // MARK: - Factories
 

@@ -73,6 +73,7 @@ struct ClipboardHistoryView: View {
         .safeAreaInset(edge: .bottom) {
             sidebarFooter
         }
+        .accessibilityIdentifier("clipboard.sidebar")
     }
 
     private func sidebarRow(_ row: ClipboardListViewModel.SidebarSelection) -> some View {
@@ -132,6 +133,7 @@ struct ClipboardHistoryView: View {
                 icon: Image(systemName: "magnifyingglass")
             )
             .focused($searchFocused)
+            .accessibilityIdentifier("clipboard.searchField")
 
             JadePill("\(viewModel.items.count)", style: .primary)
                 .accessibilityLabel(Text(L10n.localized("a11y.clipboard.itemCount", viewModel.items.count)))

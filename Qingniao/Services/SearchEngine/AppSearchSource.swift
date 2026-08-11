@@ -1,7 +1,7 @@
 import AppKit
 import CoreData
 import Foundation
-import os.log
+import os
 
 // MARK: - App source domain models
 
@@ -47,7 +47,7 @@ protocol UsageStatRepositoryProtocol: SearchUsageStoreProtocol {
 }
 
 /// Core Data backed UsageStat repository used by AppSource and later CommandSource.
-final class UsageStatRepository: UsageStatRepositoryProtocol {
+final class UsageStatRepository: UsageStatRepositoryProtocol, @unchecked Sendable {
     static let applicationTargetType = "application"
     static let commandTargetType = "command"
 
@@ -237,7 +237,7 @@ final class AppSearchSource: AppSourceProtocol {
     private let fileManager: FileManager
     private let usageRepository: UsageStatRepositoryProtocol
     private let allowedSearchDirectories: [URL]
-    private let lock = NSLock()
+    private let lock = OSAllocatedUnfairLock()
 
     private var apps: [ApplicationIndexItem] = []
     private var isReady = false
@@ -312,10 +312,11 @@ final class AppSearchSource: AppSourceProtocol {
             SearchTextMatcher.normalize($0.displayName) < SearchTextMatcher.normalize($1.displayName)
         }
 
-        lock.lock()
-        apps = indexed
-        isReady = true
-        lock.unlock()
+        let indexedSnapshot = indexed
+        lock.withLock {
+            apps = indexedSnapshot
+            isReady = true
+        }
 
         let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1000
         logger.info("Indexed \(indexed.count) applications in \(String(format: "%.1f", elapsed))ms")
@@ -326,9 +327,7 @@ final class AppSearchSource: AppSourceProtocol {
     }
 
     func application(for id: ApplicationID) -> ApplicationIndexItem? {
-        lock.lock()
-        defer { lock.unlock() }
-        return apps.first { $0.id == id }
+        lock.withLock { apps.first { $0.id == id } }
     }
 
     func recordApplicationLaunch(_ id: ApplicationID) async {
@@ -607,33 +606,29 @@ final class AppSearchSource: AppSourceProtocol {
     // MARK: - State helpers
 
     private func readySnapshot() -> Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        return isReady
+        lock.withLock { isReady }
     }
 
     private func appSnapshot() -> [ApplicationIndexItem] {
-        lock.lock()
-        defer { lock.unlock() }
-        return apps
+        lock.withLock { apps }
     }
 
     private func updateUsageStats(for id: ApplicationID, stat: UsageStatSnapshot) {
-        lock.lock()
-        defer { lock.unlock() }
-        apps = apps.map { item in
-            guard item.id == id else { return item }
-            return ApplicationIndexItem(
-                id: item.id,
-                bundleIdentifier: item.bundleIdentifier,
-                displayName: item.displayName,
-                localizedName: item.localizedName,
-                path: item.path,
-                pinyin: item.pinyin,
-                initials: item.initials,
-                launchCount: stat.useCount,
-                lastLaunchAt: stat.lastUsedAt
-            )
+        lock.withLock {
+            apps = apps.map { item in
+                guard item.id == id else { return item }
+                return ApplicationIndexItem(
+                    id: item.id,
+                    bundleIdentifier: item.bundleIdentifier,
+                    displayName: item.displayName,
+                    localizedName: item.localizedName,
+                    path: item.path,
+                    pinyin: item.pinyin,
+                    initials: item.initials,
+                    launchCount: stat.useCount,
+                    lastLaunchAt: stat.lastUsedAt
+                )
+            }
         }
     }
 

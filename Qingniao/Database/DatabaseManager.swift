@@ -32,7 +32,7 @@ final class DatabaseManager {
         self.dbQueue = queue
 
         // Register and run migrations
-        var migrator = Self.migrator()
+        let migrator = Self.migrator()
         try migrator.migrate(queue)
 
         isReady = true
@@ -44,14 +44,30 @@ final class DatabaseManager {
     /// Returns the URL for the SQLite database file.
     /// Location: ~/Library/Application Support/Qingniao/assistant.db
     ///
-    /// Legacy GRDB stack (v1.2 technical debt, see doc/architecture/db.md §14).
+    /// Legacy GRDB stack (v1.2 technical debt, see docs/architecture/db.md §14).
     /// The directory moved from `Assistant/` to `Qingniao/` in v1.2 alongside the
     /// Core Data store; the db file name stays `assistant.db` (no rename needed —
     /// GRDB is read-compatible legacy and not renamed).
     static func databaseURL() -> URL {
+        #if DEBUG
+        if let override = _debugDatabaseURL {
+            return override
+        }
+        #endif
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         return appSupport.appendingPathComponent(AssistantFileSystem.directoryName).appendingPathComponent("assistant.db")
     }
+
+    #if DEBUG
+    /// DEBUG-only override for UITest data isolation (`--uitest-data-dir`).
+    /// Must be set before `setup()` is called.
+    private static var _debugDatabaseURL: URL?
+
+    /// Redirect the GRDB database to a custom path for `--uitest-data-dir` (DEBUG only).
+    static func setDebugDatabaseURL(_ url: URL) {
+        _debugDatabaseURL = url
+    }
+    #endif
 
     // MARK: - Migrations
 

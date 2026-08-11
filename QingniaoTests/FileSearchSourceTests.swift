@@ -219,12 +219,12 @@ private actor MockToggleSettingsService: SettingsServiceProtocol {
         enabled = value
     }
 
-    func value<T: Decodable>(for key: SettingKey, as type: T.Type) async throws -> T {
+    func value<T: Decodable & Sendable>(for key: SettingKey, as type: T.Type) async throws -> T {
         if type == Bool.self, let value = enabled as? T { return value }
         throw SettingsServiceError.missingDefault(key.rawValue)
     }
 
-    func set<T: Encodable>(_ value: T, for key: SettingKey) async throws {
+    func set<T: Encodable & Sendable>(_ value: T, for key: SettingKey) async throws {
         if let boolValue = value as? Bool { enabled = boolValue }
     }
 

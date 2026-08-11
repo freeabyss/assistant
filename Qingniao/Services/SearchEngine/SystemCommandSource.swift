@@ -230,7 +230,7 @@ enum AssistantCommandCatalog {
 /// Search source for the Assistant MVP built-in command whitelist.
 ///
 /// The catalog is intentionally closed: it exposes exactly the 14 commands in
-/// `doc/architecture_api.md` section 10.1. It does not parse arbitrary user text
+/// `docs/architecture/api.md` section 10.1. It does not parse arbitrary user text
 /// as shell, and it does not include shutdown, system restart, logout, sudo,
 /// file deletion, process killing, or custom command execution.
 final class SystemCommandSource: CommandSourceProtocol {

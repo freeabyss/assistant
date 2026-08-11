@@ -27,7 +27,6 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     }
 
     func show(route: SettingsRoute = .settings) {
-        guard container.ensureOnboardingReady() else { return }
         container.commandBarController.hide(animate: false)
 
         if window == nil {

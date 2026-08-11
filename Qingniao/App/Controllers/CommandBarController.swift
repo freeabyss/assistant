@@ -38,7 +38,6 @@ final class CommandBarController: NSObject {
     // MARK: - Public API
 
     func toggle() {
-        guard container.ensureOnboardingReady() else { return }
         if let panel, panel.isVisible {
             hide()
         } else {
@@ -47,7 +46,6 @@ final class CommandBarController: NSObject {
     }
 
     func show() {
-        guard container.ensureOnboardingReady() else { return }
         logger.info("CommandBar show")
         // Always recreate the panel for fresh focus state.
         hide(animate: false)

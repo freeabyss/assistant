@@ -58,7 +58,7 @@ enum SettingKey: String, CaseIterable, Codable {
     case languageMode = "language.mode"
 }
 
-enum ClipboardRetention: String, Codable, CaseIterable, Hashable {
+enum ClipboardRetention: String, Codable, CaseIterable, Hashable, Sendable {
     case sevenDays = "7d"
     case thirtyDays = "30d"
     case ninetyDays = "90d"
@@ -74,7 +74,7 @@ enum ClipboardRetention: String, Codable, CaseIterable, Hashable {
     }
 }
 
-enum LanguageMode: String, Codable, CaseIterable, Hashable {
+enum LanguageMode: String, Codable, CaseIterable, Hashable, Sendable {
     case followSystem = "system"
     case simplifiedChinese = "zh-Hans"
     case english = "en"
@@ -89,15 +89,15 @@ enum LanguageMode: String, Codable, CaseIterable, Hashable {
 }
 
 /// v1.2: appearance override (system / light / dark). Backed by `appearance.mode`.
-enum AppearanceMode: String, Codable, CaseIterable, Hashable {
+enum AppearanceMode: String, Codable, CaseIterable, Hashable, Sendable {
     case system
     case light
     case dark
 }
 
 protocol SettingsServiceProtocol {
-    func value<T: Decodable>(for key: SettingKey, as type: T.Type) async throws -> T
-    func set<T: Encodable>(_ value: T, for key: SettingKey) async throws
+    func value<T: Decodable & Sendable>(for key: SettingKey, as type: T.Type) async throws -> T
+    func set<T: Encodable & Sendable>(_ value: T, for key: SettingKey) async throws
     func reset(key: SettingKey) async throws
     func stringValue(for key: SettingKey) async throws -> String
 }
@@ -117,12 +117,12 @@ actor SettingsService: SettingsServiceProtocol {
         self.now = now
     }
 
-    func value<T: Decodable>(for key: SettingKey, as type: T.Type) async throws -> T {
+    func value<T: Decodable & Sendable>(for key: SettingKey, as type: T.Type) async throws -> T {
         let rawValue = try await stringValue(for: key)
         return try decode(rawValue, as: type)
     }
 
-    func set<T: Encodable>(_ value: T, for key: SettingKey) async throws {
+    func set<T: Encodable & Sendable>(_ value: T, for key: SettingKey) async throws {
         let encoded = try encode(value)
         try await context.perform { [context, now] in
             let setting = try Self.fetchOrInsert(key: key, in: context)
