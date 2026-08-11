@@ -1,7 +1,7 @@
 import Foundation
 import AppKit
 import UniformTypeIdentifiers
-import os.log
+import os
 
 /// A single indexed file entry held in the in-memory cache.
 ///
@@ -67,7 +67,7 @@ final class FileSearchSource: FileSearchSourceProtocol {
     /// Per-source result cap.
     private let resultLimit: Int
 
-    private let lock = NSLock()
+    private let lock = OSAllocatedUnfairLock()
     private var items: [FileIndexItem] = []
     private var isReady = false
 
@@ -158,10 +158,11 @@ final class FileSearchSource: FileSearchSourceProtocol {
             scan(root: root, into: &indexed, seen: &seen)
         }
 
-        lock.lock()
-        items = indexed
-        isReady = true
-        lock.unlock()
+        let indexedSnapshot = indexed
+        lock.withLock {
+            items = indexedSnapshot
+            isReady = true
+        }
 
         let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1000
         logger.info("FileSearchSource indexed \(indexed.count) files in \(String(format: "%.1f", elapsed))ms")
@@ -319,15 +320,11 @@ final class FileSearchSource: FileSearchSourceProtocol {
     // MARK: - Snapshot helpers
 
     private func readySnapshot() -> Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        return isReady
+        lock.withLock { isReady }
     }
 
     private func itemsSnapshot() -> [FileIndexItem] {
-        lock.lock()
-        defer { lock.unlock() }
-        return items
+        lock.withLock { items }
     }
 
     // MARK: - Normalization

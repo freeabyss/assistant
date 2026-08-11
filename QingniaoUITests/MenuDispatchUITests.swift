@@ -1,0 +1,206 @@
+import XCTest
+
+/// TC-UI-011~015：菜单分发用例（用 `--uitest-trigger` 绕过 status item 点击）
+///
+/// 依据：`docs/iterations/v1.2.1/test/cases.md` TC-UI-011~015
+/// 通用约定：见 cases.md §0（临时数据目录隔离、`--uitest-skip-shortcuts`、`app.activate()`、`waitForExistence`）
+/// trigger 等价性：见 cases.md §0.4 与设计文档 §5.5（trigger 直接调用对应 controller.show()，
+///   菜单分发逻辑本身退回代码审查 + 手动）
+///
+/// 前置：`--uitest-mark-onboarding-completed`（已完成态，门禁放行）+ `--uitest-data-dir` + `--uitest-skip-shortcuts`
+final class MenuDispatchUITests: XCTestCase {
+
+    private var app: XCUIApplication!
+    private var tmpDirURL: URL?
+
+    override func setUpWithError() throws {
+        continueAfterFailure = false
+        app = XCUIApplication()
+    }
+
+    override func tearDownWithError() throws {
+        if let app = app, app.state != .notRunning {
+            app.terminate()
+        }
+        if let url = tmpDirURL {
+            try? FileManager.default.removeItem(at: url)
+            tmpDirURL = nil
+        }
+    }
+
+    // MARK: - Helpers
+
+    /// 创建按用例名隔离的临时数据目录（cases.md §0.1），返回绝对路径并记录到 `tmpDirURL` 供 tearDown 清理。
+    @discardableResult
+    private func makeTmpDir(for caseName: String) -> String {
+        let path = NSTemporaryDirectory()
+            + "QingniaoUITest/MenuDispatchUITests/\(caseName)"
+        let url = URL(fileURLWithPath: path)
+        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        tmpDirURL = url
+        return url.path
+    }
+
+    /// 通用 launch arguments（cases.md §0.1）：数据隔离 + 跳过热键注册。
+    private func baseArgs(tmpDir: String) -> [String] {
+        ["--uitest-data-dir", tmpDir, "--uitest-skip-shortcuts"]
+    }
+
+    /// 已完成 onboarding 态 + 指定 trigger（cases.md §0.3 时序：mark 在 bootstrap 之后、loadState 之前）。
+    private func completedArgs(tmpDir: String, trigger: String) -> [String] {
+        baseArgs(tmpDir: tmpDir)
+            + ["--uitest-mark-onboarding-completed", "--uitest-trigger", trigger]
+    }
+
+    // MARK: - TC-UI-011　菜单分发 -> Command Bar 呈现
+
+    /// 覆盖：AC-02；US-002/003；FR-UI-3；FR-SEARCH-1；全局 PRD §9.4 P-01
+    /// 前置：`--uitest-mark-onboarding-completed` + `--uitest-trigger openSearch`
+    /// 硬依赖（cases.md §0.5）：`commandBar.searchField`
+    /// trigger 等价性（§0.4）：`openSearch` 直接调 `commandBarController.show()`，门禁已移除，与菜单路径等价。
+    func testTCUI011OpenSearchPresentsCommandBar() throws {
+        let tmpDir = makeTmpDir(for: "TC-UI-011")
+        app.launchArguments = completedArgs(tmpDir: tmpDir, trigger: "openSearch")
+        app.launch()
+        app.activate()
+
+        let searchField = app.textFields["commandBar.searchField"]
+        XCTAssertTrue(
+            searchField.waitForExistence(timeout: 10),
+            "TC-UI-011: trigger openSearch 后 Command Bar 搜索框应呈现"
+        )
+        XCTAssertTrue(
+            searchField.isHittable,
+            "TC-UI-011: Command Bar 搜索框应可聚焦输入"
+        )
+    }
+
+    // MARK: - TC-UI-012　菜单分发 -> 剪贴板窗口呈现
+
+    /// 覆盖：AC-03；US-002/008；FR-UI-3；全局 PRD §9.4 P-02
+    /// 前置：mark-completed + `--uitest-trigger openClipboard`
+    /// 硬依赖（§0.5）：`clipboard.searchField`
+    /// trigger 等价性（§0.4）：`openClipboard` 直接调 `clipboardHistoryWindowController.show()`。
+    ///
+    /// 文案偏差说明：cases.md §TC-UI-012 引用空态文案"剪贴板历史为空"，实际 L10n key
+    /// `clipboard.empty.title` 的 zh-Hans 值为"暂无剪贴板记录"。本用例用实际 L10n 文案，
+    /// 并以搜索框 identifier 作为窗口呈现的主信号（空态文案为辅）。
+    func testTCUI012OpenClipboardPresentsWindow() throws {
+        let tmpDir = makeTmpDir(for: "TC-UI-012")
+        app.launchArguments = completedArgs(tmpDir: tmpDir, trigger: "openClipboard")
+        app.launch()
+        app.activate()
+
+        let searchField = app.textFields["clipboard.searchField"]
+        let fieldExists = searchField.waitForExistence(timeout: 10)
+
+        // 隔离数据目录下剪贴板为空，应走空态。实际 L10n: "暂无剪贴板记录"（clipboard.empty.title）。
+        let emptyState = app.staticTexts["暂无剪贴板记录"]
+        let emptyExists = fieldExists
+            ? emptyState.waitForExistence(timeout: 3)
+            : emptyState.waitForExistence(timeout: 10)
+
+        XCTAssertTrue(
+            fieldExists || emptyExists,
+            "TC-UI-012: trigger openClipboard 后应呈现剪贴板窗口（搜索框或空态文案可见）"
+        )
+        if fieldExists {
+            XCTAssertTrue(
+                searchField.isHittable,
+                "TC-UI-012: 剪贴板搜索框应可聚焦"
+            )
+        }
+    }
+
+    // MARK: - TC-UI-013　截图入口 -> 权限提示（未授权）
+
+    /// 覆盖：AC-04；US-002/009；FR-UI-4；FR-SHOT-1
+    /// 前置：mark-completed + `--uitest-mock-screen-recording-denied`
+    ///       + `--uitest-trigger startScreenshot` + `--uitest-skip-screenshot-capture`
+    /// trigger 等价性（§0.4）：`startScreenshot` 调 `screenshotWindowController.captureRegion()`
+    ///       （配合 `--uitest-skip-screenshot-capture`），门禁已移除，走 `ensureScreenRecordingPermission()` 检查。
+    /// 验证 v1.2.1 修复点：截图入口不再被 onboarding 门禁劫持到欢迎页，而是走自身权限提示逻辑。
+    /// 不测真实截图捕获（C 级，退回手动）。
+    func testTCUI013ScreenshotEntryShowsPermissionPrompt() throws {
+        let tmpDir = makeTmpDir(for: "TC-UI-013")
+        app.launchArguments = baseArgs(tmpDir: tmpDir)
+            + ["--uitest-mark-onboarding-completed",
+               "--uitest-mock-screen-recording-denied",
+               "--uitest-trigger", "startScreenshot",
+               "--uitest-skip-screenshot-capture"]
+        app.launch()
+        app.activate()
+
+        // 权限提示 NSAlert（cases.md §TC-UI-013：查 app.alerts.firstMatch 或 alert button 文案）
+        let alert = app.alerts.firstMatch
+        let alertExists = alert.waitForExistence(timeout: 10)
+
+        // 兜底：macOS 权限提示有时以 sheet 形式呈现
+        let sheet = app.sheets.firstMatch
+        let sheetExists = !alertExists && sheet.waitForExistence(timeout: 2)
+
+        XCTAssertTrue(
+            alertExists || sheetExists,
+            "TC-UI-013: 截图入口在未授权时应弹出权限提示（Alert 或 Sheet），不进入 onboarding 门禁"
+        )
+    }
+
+    // MARK: - TC-UI-014　菜单分发 -> 设置窗口呈现
+
+    /// 覆盖：AC-05；US-002/011；FR-UI-3/5；全局 PRD §9.4 P-03
+    /// 前置：mark-completed + `--uitest-trigger openSettings`
+    /// 硬依赖（§0.5）：`settings.sidebar`
+    /// trigger 等价性（§0.4）：`openSettings` 调 `settingsWindowController.show(route: .settings)`。
+    func testTCUI014OpenSettingsPresentsWindow() throws {
+        let tmpDir = makeTmpDir(for: "TC-UI-014")
+        app.launchArguments = completedArgs(tmpDir: tmpDir, trigger: "openSettings")
+        app.launch()
+        app.activate()
+
+        let sidebar = app.groups["settings.sidebar"]
+        let sidebarExists = sidebar.waitForExistence(timeout: 10)
+
+        // 兜底：若 sidebar identifier 查询不到，按侧栏项文本查询（"概览"/"剪贴板历史"，实际 L10n）
+        let overviewText = app.staticTexts["概览"]
+        let clipboardText = app.staticTexts["剪贴板历史"]
+        let textExists = sidebarExists
+            ? (overviewText.exists || clipboardText.exists)
+            : (overviewText.waitForExistence(timeout: 3) || clipboardText.exists)
+
+        XCTAssertTrue(
+            sidebarExists || textExists,
+            "TC-UI-014: trigger openSettings 后应呈现设置窗口与侧栏"
+        )
+    }
+
+    // MARK: - TC-UI-015　菜单分发 -> 关于页呈现
+
+    /// 覆盖：AC-05；US-002/011；FR-UI-8；FR-UI-ABOUT-VERSION
+    /// 前置：mark-completed + `--uitest-trigger openAbout`
+    /// trigger 等价性（§0.4）：`openAbout` 调 `settingsWindowController.show(route: .about)`。
+    /// 关于页内容（全局 PRD §9.4 P-03）：图标 + 应用名 + 版本号 + 版权 + 反馈入口。
+    /// 应用名"青鸟 Qingniao"在 OverviewPage 与 AboutPage 中均以字面量/Bundle appName 出现。
+    func testTCUI015OpenAboutPresentsPage() throws {
+        let tmpDir = makeTmpDir(for: "TC-UI-015")
+        app.launchArguments = completedArgs(tmpDir: tmpDir, trigger: "openAbout")
+        app.launch()
+        app.activate()
+
+        // 关于页内容含 "青鸟" 或 "Qingniao"（实际：AboutPage 用 about.appName，OverviewPage 用字面量"青鸟 Qingniao"）
+        let qingniaoText = app.staticTexts.containing(
+            NSPredicate(format: "label CONTAINS %@", "青鸟")
+        ).firstMatch
+        let pinyinText = app.staticTexts.containing(
+            NSPredicate(format: "label CONTAINS %@", "Qingniao")
+        ).firstMatch
+        let qingniaoExists = qingniaoText.waitForExistence(timeout: 10)
+        let pinyinExists = qingniaoExists
+            ? pinyinText.exists
+            : pinyinText.waitForExistence(timeout: 3)
+
+        XCTAssertTrue(
+            qingniaoExists || pinyinExists,
+            "TC-UI-015: trigger openAbout 后应呈现关于页（含 \"青鸟\" 或 \"Qingniao\" 文案）"
+        )
+    }
+}

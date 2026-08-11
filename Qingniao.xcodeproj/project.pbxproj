@@ -7,31 +7,96 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		83FEB8F66657416FBC33566D /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 0CE8DD2E740FFABBB9BFE5BD /* Localizable.xcstrings */; };
+		93566319C8B49A482D84E301 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A83119274E3E3D3FA6D9AB0 /* L10n.swift */; };
+		A10001000000000000000001 /* QingniaoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001 /* QingniaoApp.swift */; };
+		A10001000000000000000002 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002 /* AppDelegate.swift */; };
+		A10001000000000000000003 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000003 /* AppState.swift */; };
+		A10001000000000000000004 /* DatabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000004 /* DatabaseManager.swift */; };
+		A10001000000000000000006 /* ClipboardItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000006 /* ClipboardItem.swift */; };
+		A10001000000000000000007 /* Tag.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000007 /* Tag.swift */; };
+		A10001000000000000000008 /* AppSetting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000008 /* AppSetting.swift */; };
+		A10001000000000000000009 /* SnapVaultError.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000009 /* SnapVaultError.swift */; };
+		A1000100000000000000000A /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000A /* Logger.swift */; };
+		A1000100000000000000000B /* CryptoHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000B /* CryptoHelper.swift */; };
+		A1000100000000000000000C /* ClipboardMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000C /* ClipboardMonitor.swift */; };
+		A10001000000000000000010 /* UpdateService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000010 /* UpdateService.swift */; };
+		A10001000000000000000012 /* ClipboardHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012 /* ClipboardHistoryView.swift */; };
+		A10001000000000000000013 /* JadeClipboardRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* JadeClipboardRow.swift */; };
+		A10001000000000000000014 /* PreviewPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000014 /* PreviewPanel.swift */; };
+		A10001000000000000000015 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000015 /* SettingsView.swift */; };
+		A10001000000000000000016 /* ClipboardListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000016 /* ClipboardListViewModel.swift */; };
+		A10001000000000000000017 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000017 /* SettingsViewModel.swift */; };
+		A10001000000000000000018 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000018 /* Assets.xcassets */; };
+		A10001000000000000000019 /* ToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001C /* ToastView.swift */; };
+		A1000100000000000000001A /* DataCleanupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001D /* DataCleanupService.swift */; };
+		A1000100000000000000001B /* KeyboardShortcuts+Names.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001E /* KeyboardShortcuts+Names.swift */; };
+		A10001000000000000000024 /* AppSearchSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000024 /* AppSearchSource.swift */; };
+		A10001000000000000000025 /* FileSearchSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000025 /* FileSearchSource.swift */; };
+		A10001000000000000000026 /* ScreenshotService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000026 /* ScreenshotService.swift */; };
+		A10001000000000000000027 /* ScreenshotOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000027 /* ScreenshotOverlay.swift */; };
+		A1000100000000000000002C /* KeyEventHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002C /* KeyEventHandler.swift */; };
+		A1000100000000000000002D /* SystemCommandSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002D /* SystemCommandSource.swift */; };
+		A1000100000000000000002E /* CalculatorSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002E /* CalculatorSource.swift */; };
+		A10001000000000000000030 /* PinyinHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000030 /* PinyinHelper.swift */; };
+		A10001000000000000000033 /* ScreenshotToolbarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000033 /* ScreenshotToolbarController.swift */; };
+		A10001000000000000000034 /* AnnotationShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000034 /* AnnotationShape.swift */; };
+		A10001000000000000000035 /* AnnotationCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000035 /* AnnotationCanvas.swift */; };
+		A10001000000000000000036 /* AnnotationToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000036 /* AnnotationToolbar.swift */; };
+		A10001000000000000000037 /* AnnotationEditorWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000037 /* AnnotationEditorWindow.swift */; };
+		A10001000000000000000038 /* CalculatorSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000038 /* CalculatorSourceTests.swift */; };
+		A10001000000000000000039 /* SystemCommandSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000039 /* SystemCommandSourceTests.swift */; };
+		A1000100000000000000003B /* CryptoHelperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003B /* CryptoHelperTests.swift */; };
+		A1000100000000000000003C /* DatabaseManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003C /* DatabaseManagerTests.swift */; };
+		A1000100000000000000003D /* PinyinHelperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003D /* PinyinHelperTests.swift */; };
+		A1000100000000000000003F /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003F /* PersistenceController.swift */; };
+		A10001000000000000000040 /* AssistantFileSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000040 /* AssistantFileSystem.swift */; };
+		A10001000000000000000041 /* PersistenceControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000041 /* PersistenceControllerTests.swift */; };
+		A10001000000000000000042 /* AssistantClipboardRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000042 /* AssistantClipboardRepository.swift */; };
+		A10001000000000000000043 /* AssistantClipboardRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000043 /* AssistantClipboardRepositoryTests.swift */; };
+		A10001000000000000000044 /* InMemorySearchIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000044 /* InMemorySearchIndex.swift */; };
+		A10001000000000000000045 /* InMemorySearchIndexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000045 /* InMemorySearchIndexTests.swift */; };
+		A100010000000000000000A1 /* AutoFocusTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000000000000000000A1 /* AutoFocusTextField.swift */; };
+		AAA28A5DF20569584F97BA6F /* QingniaoUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41884CD75E2103FD7C2B56EA /* QingniaoUITests.swift */; };
+		B00500000000000000000001 /* SearchCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00500000000000000000002 /* SearchCore.swift */; };
+		B00500000000000000000003 /* SearchServiceCoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00500000000000000000004 /* SearchServiceCoreTests.swift */; };
+		B00600000000000000000001 /* SearchBlacklistRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00600000000000000000002 /* SearchBlacklistRepository.swift */; };
+		B00600000000000000000003 /* SearchBlacklistRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00600000000000000000004 /* SearchBlacklistRepositoryTests.swift */; };
+		B00600000000000000000005 /* SettingsSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00600000000000000000006 /* SettingsSource.swift */; };
+		B00600000000000000000007 /* SettingsSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00600000000000000000008 /* SettingsSourceTests.swift */; };
+		B00600000000000000000009 /* SearchTextMatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0060000000000000000000A /* SearchTextMatcherTests.swift */; };
+		B00700000000000000000001 /* AppSearchSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00700000000000000000002 /* AppSearchSourceTests.swift */; };
+		B01000000000000000000001 /* SettingsServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01000000000000000000002 /* SettingsServiceTests.swift */; };
+		B01100000000000000000001 /* SearchPanelViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01100000000000000000002 /* SearchPanelViewModel.swift */; };
+		B01100000000000000000003 /* CommandBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01100000000000000000004 /* CommandBarView.swift */; };
+		B01100000000000000000005 /* AssistantClipboardSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01100000000000000000006 /* AssistantClipboardSource.swift */; };
+		B01100000000000000000009 /* SearchPanelViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01100000000000000000008 /* SearchPanelViewModelTests.swift */; };
+		B01300000000000000000001 /* ClipboardListViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01300000000000000000002 /* ClipboardListViewModelTests.swift */; };
+		C011000000000000000000E1 /* CommandBarHomeProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C011000000000000000000E2 /* CommandBarHomeProvider.swift */; };
+		C01400000000000000000001 /* PermissionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000002 /* PermissionService.swift */; };
+		C01400000000000000000003 /* HotkeyValidationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000004 /* HotkeyValidationService.swift */; };
+		C01400000000000000000005 /* LaunchAtLoginService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000006 /* LaunchAtLoginService.swift */; };
+		C01400000000000000000007 /* OnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000008 /* OnboardingViewModel.swift */; };
+		C01400000000000000000009 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0140000000000000000000A /* OnboardingView.swift */; };
+		C0140000000000000000000B /* OnboardingViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0140000000000000000000C /* OnboardingViewModelTests.swift */; };
+		C01400000000000000000021 /* GlobalShortcutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000020 /* GlobalShortcutManager.swift */; };
+		C01400000000000000000023 /* HotkeyConflictDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000022 /* HotkeyConflictDetector.swift */; };
+		C01400000000000000000025 /* HotkeyConflictDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000024 /* HotkeyConflictDetectorTests.swift */; };
+		CF970CC4575FF8B6A203E310 /* UITestSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 196C77B49D5FF71402A7D06A /* UITestSupport.swift */; };
 		D01700000000000000000001 /* AnnotationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D01700000000000000000002 /* AnnotationTests.swift */; };
-			B01200000000000000000001 /* ClipboardMonitorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01200000000000000000002 /* ClipboardMonitorTests.swift */; };
-			B01300000000000000000001 /* ClipboardListViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01300000000000000000002 /* ClipboardListViewModelTests.swift */; };
-		A10001000000000000000001 /* QingniaoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001; };
-		A10001000000000000000002 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002; };
-		A10001000000000000000003 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000003; };
-		A10001000000000000000004 /* DatabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000004; };
-		A10001000000000000000006 /* ClipboardItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000006; };
-		A10001000000000000000007 /* Tag.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000007; };
-		A10001000000000000000008 /* AppSetting.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000008; };
-		A10001000000000000000009 /* SnapVaultError.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000009; };
-		A1000100000000000000000A /* Logger.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000A; };
-		A1000100000000000000000B /* CryptoHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000B; };
-		A1000100000000000000000C /* ClipboardMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000000C; };
-		A10001000000000000000010 /* UpdateService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000010; };
+		D7A3BA8A2388B77F1D1D0728 /* OnboardingUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7B303A41D4CF442EA7C1FC2 /* OnboardingUITests.swift */; };
 		E01801000000000000000001 /* ReleaseInfoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E01800000000000000000001 /* ReleaseInfoService.swift */; };
 		E01801000000000000000002 /* ReleaseInfoServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E01800000000000000000002 /* ReleaseInfoServiceTests.swift */; };
-		A10001000000000000000012 /* ClipboardHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000012; };
-		A10001000000000000000013 /* JadeClipboardRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013; };
-		A10001000000000000000014 /* PreviewPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000014; };
-		A10001000000000000000015 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000015; };
-		A10001000000000000000016 /* ClipboardListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000016; };
-		A10001000000000000000017 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000017; };
-		A10001000000000000000018 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000018; };
-		A10001000000000000000019 /* ToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001C; };
+		F00400000000000000000101 /* JadeColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000001 /* JadeColor.swift */; };
+		F00400000000000000000102 /* JadeRadius.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000002 /* JadeRadius.swift */; };
+		F00400000000000000000103 /* JadeSpace.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000003 /* JadeSpace.swift */; };
+		F00400000000000000000104 /* JadeFont.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000004 /* JadeFont.swift */; };
+		F00400000000000000000105 /* JadeShadow.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000005 /* JadeShadow.swift */; };
+		F00400000000000000000106 /* JadeMaterial.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000006 /* JadeMaterial.swift */; };
+		F00400000000000000000107 /* JadeAccessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000007 /* JadeAccessibility.swift */; };
+		F00500000000000000000101 /* DataDirectoryMigrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00500000000000000000001 /* DataDirectoryMigrator.swift */; };
+		F00500000000000000000102 /* DataManagementService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00500000000000000000002 /* DataManagementService.swift */; };
+		F00500000000000000000201 /* DataDirectoryMigratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00500000000000000000202 /* DataDirectoryMigratorTests.swift */; };
 		F00700000000000000000101 /* JadeButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00700000000000000000001 /* JadeButton.swift */; };
 		F00700000000000000000102 /* JadeTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00700000000000000000002 /* JadeTextField.swift */; };
 		F00700000000000000000103 /* HotkeyRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00700000000000000000003 /* HotkeyRecorder.swift */; };
@@ -40,83 +105,43 @@
 		F00700000000000000000106 /* StatCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00700000000000000000006 /* StatCard.swift */; };
 		F00700000000000000000107 /* PermissionGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00700000000000000000007 /* PermissionGate.swift */; };
 		F00700000000000000000108 /* JadeConfirmationDialog.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00700000000000000000008 /* JadeConfirmationDialog.swift */; };
-		A1000100000000000000001A /* DataCleanupService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001D; };
-		A1000100000000000000001B /* KeyboardShortcuts+Names.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001E; };
-		A10001000000000000000024 /* AppSearchSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000024; };
-		A10001000000000000000025 /* FileSearchSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000025; };
-		A1000100000000000000002D /* SystemCommandSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002D; };
-		A1000100000000000000002E /* CalculatorSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002E; };
-		C011000000000000000000E1 /* CommandBarHomeProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C011000000000000000000E2; };
-		A10001000000000000000026 /* ScreenshotService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000026; };
-		A10001000000000000000027 /* ScreenshotOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000027; };
-		A1000100000000000000002C /* KeyEventHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002C; };
-		A100010000000000000000A1 /* AutoFocusTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000000000000000000A1; };
-		A10001000000000000000030 /* PinyinHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000030; };
-		A10001000000000000000033 /* ScreenshotToolbarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000033; };
-		A10001000000000000000034 /* AnnotationShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000034; };
-		A10001000000000000000035 /* AnnotationCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000035; };
-		A10001000000000000000036 /* AnnotationToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000036; };
-		A10001000000000000000037 /* AnnotationEditorWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000037; };
-		93566319C8B49A482D84E301 /* L10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A83119274E3E3D3FA6D9AB0 /* L10n.swift */; };
-		83FEB8F66657416FBC33566D /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 0CE8DD2E740FFABBB9BFE5BD /* Localizable.xcstrings */; };
-		A10001000000000000000038 /* CalculatorSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000038; };
-		A10001000000000000000039 /* SystemCommandSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000039; };
-		A1000100000000000000003B /* CryptoHelperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003B; };
-		A1000100000000000000003C /* DatabaseManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003C; };
-		A1000100000000000000003D /* PinyinHelperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003D; };
-		A1000100000000000000003F /* PersistenceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000003F; };
-		A10001000000000000000040 /* AssistantFileSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000040; };
-		F00500000000000000000101 /* DataDirectoryMigrator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00500000000000000000001 /* DataDirectoryMigrator.swift */; };
-		F00500000000000000000102 /* DataManagementService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00500000000000000000002 /* DataManagementService.swift */; };
-		A10001000000000000000041 /* PersistenceControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000041; };
-		F00500000000000000000201 /* DataDirectoryMigratorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00500000000000000000202 /* DataDirectoryMigratorTests.swift */; };
-		A10001000000000000000042 /* AssistantClipboardRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000042; };
-		A10001000000000000000043 /* AssistantClipboardRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000043; };
-		A10001000000000000000044 /* InMemorySearchIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000044; };
-		A10001000000000000000045 /* InMemorySearchIndexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000045; };
-		B00500000000000000000001 /* SearchCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00500000000000000000002; };
-		B00500000000000000000003 /* SearchServiceCoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00500000000000000000004; };
-		B00600000000000000000001 /* SearchBlacklistRepository.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00600000000000000000002; };
-		B00600000000000000000003 /* SearchBlacklistRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00600000000000000000004; };
-		B00600000000000000000005 /* SettingsSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00600000000000000000006; };
-		B00600000000000000000007 /* SettingsSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00600000000000000000008; };
-		B00600000000000000000009 /* SearchTextMatcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0060000000000000000000A; };
-		B01000000000000000000001 /* SettingsServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01000000000000000000002; };
-		B00700000000000000000001 /* AppSearchSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B00700000000000000000002; };
-		F00900000000000000000001 /* FileSearchSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00900000000000000000002; };
-					B01100000000000000000001 /* SearchPanelViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01100000000000000000002; };
-			B01100000000000000000003 /* CommandBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01100000000000000000004; };
-			B01100000000000000000005 /* AssistantClipboardSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01100000000000000000006; };
-			B01100000000000000000009 /* SearchPanelViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B01100000000000000000008; };
+		F00900000000000000000001 /* FileSearchSourceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00900000000000000000002 /* FileSearchSourceTests.swift */; };
+		G00100000000000000000002 /* AppContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = G00100000000000000000001 /* AppContainer.swift */; };
+		G00100000000000000000012 /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = G00100000000000000000011 /* StatusItemController.swift */; };
+		G00100000000000000000022 /* CommandBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = G00100000000000000000021 /* CommandBarController.swift */; };
+		G00100000000000000000032 /* ClipboardHistoryWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = G00100000000000000000031 /* ClipboardHistoryWindowController.swift */; };
+		G00100000000000000000042 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = G00100000000000000000041 /* SettingsWindowController.swift */; };
+		G00100000000000000000052 /* ScreenshotWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = G00100000000000000000051 /* ScreenshotWindowController.swift */; };
+		48960A05A2DF71B339FEDE8A /* ClipboardWindowUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A66E86C8A0860C49F8909E51 /* ClipboardWindowUITests.swift */; };
+		FFCF38D76FE02A6D4C0B1C70 /* CommandBarUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10E5A3CFEBC76440DAC25583 /* CommandBarUITests.swift */; };
+		0992D26FCA5F07EF17D275E0 /* MenuDispatchUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8013829E2DF283371786A6C /* MenuDispatchUITests.swift */; };
+		901ADC285239AC71CE273B90 /* SettingsWindowUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BB3DE90C89D68FC58333C60 /* SettingsWindowUITests.swift */; };
+/* End PBXBuildFile section */
 
-			C01400000000000000000001 /* PermissionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000002 /* PermissionService.swift */; };
-			C01400000000000000000003 /* HotkeyValidationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000004 /* HotkeyValidationService.swift */; };
-			C01400000000000000000021 /* GlobalShortcutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000020 /* GlobalShortcutManager.swift */; };
-			C01400000000000000000023 /* HotkeyConflictDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000022 /* HotkeyConflictDetector.swift */; };
-			C01400000000000000000005 /* LaunchAtLoginService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000006 /* LaunchAtLoginService.swift */; };
-			C01400000000000000000007 /* OnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000008 /* OnboardingViewModel.swift */; };
-			C01400000000000000000009 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0140000000000000000000A /* OnboardingView.swift */; };
-			C0140000000000000000000B /* OnboardingViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0140000000000000000000C /* OnboardingViewModelTests.swift */; };
-			C01400000000000000000025 /* HotkeyConflictDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C01400000000000000000024 /* HotkeyConflictDetectorTests.swift */; };
-			F00400000000000000000101 /* JadeColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000001 /* JadeColor.swift */; };
-			F00400000000000000000102 /* JadeRadius.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000002 /* JadeRadius.swift */; };
-			F00400000000000000000103 /* JadeSpace.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000003 /* JadeSpace.swift */; };
-			F00400000000000000000104 /* JadeFont.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000004 /* JadeFont.swift */; };
-			F00400000000000000000105 /* JadeShadow.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000005 /* JadeShadow.swift */; };
-			F00400000000000000000106 /* JadeMaterial.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000006 /* JadeMaterial.swift */; };
-			F00400000000000000000107 /* JadeAccessibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = F00400000000000000000007 /* JadeAccessibility.swift */; };
-			G00100000000000000000002 /* AppContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = G00100000000000000000001 /* AppContainer.swift */; };
-			G00100000000000000000012 /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = G00100000000000000000011 /* StatusItemController.swift */; };
-			G00100000000000000000022 /* CommandBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = G00100000000000000000021 /* CommandBarController.swift */; };
-			G00100000000000000000032 /* ClipboardHistoryWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = G00100000000000000000031 /* ClipboardHistoryWindowController.swift */; };
-			G00100000000000000000042 /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = G00100000000000000000041 /* SettingsWindowController.swift */; };
-			G00100000000000000000052 /* ScreenshotWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = G00100000000000000000051 /* ScreenshotWindowController.swift */; };
-	/* End PBXBuildFile section */
+/* Begin PBXContainerItemProxy section */
+		5805AD60D7C89515629BBD93 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10008000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10004000000000000000001;
+			remoteInfo = Qingniao;
+		};
+		A1000B000000000000000002 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A10008000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10004000000000000000001;
+			remoteInfo = Qingniao;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		D01700000000000000000002 /* AnnotationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationTests.swift; sourceTree = "<group>"; };
-			B01200000000000000000002 /* ClipboardMonitorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardMonitorTests.swift; sourceTree = "<group>"; };
-			B01300000000000000000002 /* ClipboardListViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardListViewModelTests.swift; sourceTree = "<group>"; };
+		0CE8DD2E740FFABBB9BFE5BD /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
+		196C77B49D5FF71402A7D06A /* UITestSupport.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = UITestSupport.swift; sourceTree = "<group>"; };
+		2853372E85C6B0FE9E194765 /* QingniaoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = QingniaoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		342931FCF5D4AB36B533F4B7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		41884CD75E2103FD7C2B56EA /* QingniaoUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = QingniaoUITests.swift; sourceTree = "<group>"; };
+		8A83119274E3E3D3FA6D9AB0 /* L10n.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
 		A10000000000000000000001 /* QingniaoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QingniaoApp.swift; sourceTree = "<group>"; };
 		A10000000000000000000002 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A10000000000000000000003 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
@@ -129,7 +154,6 @@
 		A1000000000000000000000B /* CryptoHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoHelper.swift; sourceTree = "<group>"; };
 		A1000000000000000000000C /* ClipboardMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardMonitor.swift; sourceTree = "<group>"; };
 		A10000000000000000000010 /* UpdateService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateService.swift; sourceTree = "<group>"; };
-		E01800000000000000000001 /* ReleaseInfoService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseInfoService.swift; sourceTree = "<group>"; };
 		A10000000000000000000012 /* ClipboardHistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardHistoryView.swift; sourceTree = "<group>"; };
 		A10000000000000000000013 /* JadeClipboardRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JadeClipboardRow.swift; sourceTree = "<group>"; };
 		A10000000000000000000014 /* PreviewPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewPanel.swift; sourceTree = "<group>"; };
@@ -141,33 +165,21 @@
 		A1000000000000000000001A /* Qingniao.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Qingniao.entitlements; sourceTree = "<group>"; };
 		A1000000000000000000001B /* Qingniao.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Qingniao.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1000000000000000000001C /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
-		F00700000000000000000001 /* JadeButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JadeButton.swift; sourceTree = "<group>"; };
-		F00700000000000000000002 /* JadeTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JadeTextField.swift; sourceTree = "<group>"; };
-		F00700000000000000000003 /* HotkeyRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyRecorder.swift; sourceTree = "<group>"; };
-		F00700000000000000000004 /* JadeListRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JadeListRow.swift; sourceTree = "<group>"; };
-		F00700000000000000000005 /* JadePill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JadePill.swift; sourceTree = "<group>"; };
-		F00700000000000000000006 /* StatCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatCard.swift; sourceTree = "<group>"; };
-		F00700000000000000000007 /* PermissionGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionGate.swift; sourceTree = "<group>"; };
-		F00700000000000000000008 /* JadeConfirmationDialog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JadeConfirmationDialog.swift; sourceTree = "<group>"; };
 		A1000000000000000000001D /* DataCleanupService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataCleanupService.swift; sourceTree = "<group>"; };
 		A1000000000000000000001E /* KeyboardShortcuts+Names.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "KeyboardShortcuts+Names.swift"; sourceTree = "<group>"; };
 		A10000000000000000000024 /* AppSearchSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSearchSource.swift; sourceTree = "<group>"; };
 		A10000000000000000000025 /* FileSearchSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchSource.swift; sourceTree = "<group>"; };
-		A1000000000000000000002D /* SystemCommandSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemCommandSource.swift; sourceTree = "<group>"; };
-		A1000000000000000000002E /* CalculatorSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorSource.swift; sourceTree = "<group>"; };
-		C011000000000000000000E2 /* CommandBarHomeProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandBarHomeProvider.swift; sourceTree = "<group>"; };
 		A10000000000000000000026 /* ScreenshotService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotService.swift; sourceTree = "<group>"; };
 		A10000000000000000000027 /* ScreenshotOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotOverlay.swift; sourceTree = "<group>"; };
 		A1000000000000000000002C /* KeyEventHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyEventHandler.swift; sourceTree = "<group>"; };
-		A100000000000000000000A1 /* AutoFocusTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoFocusTextField.swift; sourceTree = "<group>"; };
+		A1000000000000000000002D /* SystemCommandSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemCommandSource.swift; sourceTree = "<group>"; };
+		A1000000000000000000002E /* CalculatorSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorSource.swift; sourceTree = "<group>"; };
 		A10000000000000000000030 /* PinyinHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinyinHelper.swift; sourceTree = "<group>"; };
 		A10000000000000000000033 /* ScreenshotToolbarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotToolbarController.swift; sourceTree = "<group>"; };
 		A10000000000000000000034 /* AnnotationShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationShape.swift; sourceTree = "<group>"; };
 		A10000000000000000000035 /* AnnotationCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationCanvas.swift; sourceTree = "<group>"; };
 		A10000000000000000000036 /* AnnotationToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationToolbar.swift; sourceTree = "<group>"; };
 		A10000000000000000000037 /* AnnotationEditorWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationEditorWindow.swift; sourceTree = "<group>"; };
-		8A83119274E3E3D3FA6D9AB0 /* L10n.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = L10n.swift; sourceTree = "<group>"; };
-		0CE8DD2E740FFABBB9BFE5BD /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		A10000000000000000000038 /* CalculatorSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalculatorSourceTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000039 /* SystemCommandSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemCommandSourceTests.swift; sourceTree = "<group>"; };
 		A1000000000000000000003B /* CryptoHelperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoHelperTests.swift; sourceTree = "<group>"; };
@@ -176,14 +188,12 @@
 		A1000000000000000000003E /* QingniaoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = QingniaoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1000000000000000000003F /* PersistenceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceController.swift; sourceTree = "<group>"; };
 		A10000000000000000000040 /* AssistantFileSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantFileSystem.swift; sourceTree = "<group>"; };
-		F00500000000000000000001 /* DataDirectoryMigrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Database/DataDirectoryMigrator.swift; sourceTree = SOURCE_ROOT; };
-		F00500000000000000000002 /* DataManagementService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Services/DataManagement/DataManagementService.swift; sourceTree = SOURCE_ROOT; };
 		A10000000000000000000041 /* PersistenceControllerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistenceControllerTests.swift; sourceTree = "<group>"; };
-		F00500000000000000000202 /* DataDirectoryMigratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QingniaoTests/DataDirectoryMigratorTests.swift; sourceTree = SOURCE_ROOT; };
 		A10000000000000000000042 /* AssistantClipboardRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantClipboardRepository.swift; sourceTree = "<group>"; };
 		A10000000000000000000043 /* AssistantClipboardRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantClipboardRepositoryTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000044 /* InMemorySearchIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InMemorySearchIndex.swift; sourceTree = "<group>"; };
 		A10000000000000000000045 /* InMemorySearchIndexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InMemorySearchIndexTests.swift; sourceTree = "<group>"; };
+		A100000000000000000000A1 /* AutoFocusTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoFocusTextField.swift; sourceTree = "<group>"; };
 		B00500000000000000000002 /* SearchCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchCore.swift; sourceTree = "<group>"; };
 		B00500000000000000000004 /* SearchServiceCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchServiceCoreTests.swift; sourceTree = "<group>"; };
 		B00600000000000000000002 /* SearchBlacklistRepository.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchBlacklistRepository.swift; sourceTree = "<group>"; };
@@ -191,36 +201,56 @@
 		B00600000000000000000006 /* SettingsSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSource.swift; sourceTree = "<group>"; };
 		B00600000000000000000008 /* SettingsSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSourceTests.swift; sourceTree = "<group>"; };
 		B0060000000000000000000A /* SearchTextMatcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchTextMatcherTests.swift; sourceTree = "<group>"; };
-		B01000000000000000000002 /* SettingsServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsServiceTests.swift; sourceTree = "<group>"; };
 		B00700000000000000000002 /* AppSearchSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSearchSourceTests.swift; sourceTree = "<group>"; };
-		F00900000000000000000002 /* FileSearchSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchSourceTests.swift; sourceTree = "<group>"; };
+		B01000000000000000000002 /* SettingsServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsServiceTests.swift; sourceTree = "<group>"; };
+		B01100000000000000000002 /* SearchPanelViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanelViewModel.swift; sourceTree = "<group>"; };
+		B01100000000000000000004 /* CommandBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandBarView.swift; sourceTree = "<group>"; };
+		B01100000000000000000006 /* AssistantClipboardSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantClipboardSource.swift; sourceTree = "<group>"; };
+		B01100000000000000000008 /* SearchPanelViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanelViewModelTests.swift; sourceTree = "<group>"; };
+		B01300000000000000000002 /* ClipboardListViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardListViewModelTests.swift; sourceTree = "<group>"; };
+		C011000000000000000000E2 /* CommandBarHomeProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandBarHomeProvider.swift; sourceTree = "<group>"; };
+		C01400000000000000000002 /* PermissionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Services/Permissions/PermissionService.swift; sourceTree = SOURCE_ROOT; };
+		C01400000000000000000004 /* HotkeyValidationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Services/Hotkey/HotkeyValidationService.swift; sourceTree = SOURCE_ROOT; };
+		C01400000000000000000006 /* LaunchAtLoginService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Services/LaunchAtLogin/LaunchAtLoginService.swift; sourceTree = SOURCE_ROOT; };
+		C01400000000000000000008 /* OnboardingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/ViewModels/OnboardingViewModel.swift; sourceTree = SOURCE_ROOT; };
+		C0140000000000000000000A /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Onboarding/OnboardingView.swift; sourceTree = SOURCE_ROOT; };
+		C0140000000000000000000C /* OnboardingViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QingniaoTests/OnboardingViewModelTests.swift; sourceTree = SOURCE_ROOT; };
+		C01400000000000000000020 /* GlobalShortcutManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Services/Hotkey/GlobalShortcutManager.swift; sourceTree = SOURCE_ROOT; };
+		C01400000000000000000022 /* HotkeyConflictDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Services/Hotkey/HotkeyConflictDetector.swift; sourceTree = SOURCE_ROOT; };
+		C01400000000000000000024 /* HotkeyConflictDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QingniaoTests/HotkeyConflictDetectorTests.swift; sourceTree = SOURCE_ROOT; };
+		D01700000000000000000002 /* AnnotationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnotationTests.swift; sourceTree = "<group>"; };
+		D7B303A41D4CF442EA7C1FC2 /* OnboardingUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = OnboardingUITests.swift; sourceTree = "<group>"; };
+		E01800000000000000000001 /* ReleaseInfoService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseInfoService.swift; sourceTree = "<group>"; };
 		E01800000000000000000002 /* ReleaseInfoServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReleaseInfoServiceTests.swift; sourceTree = "<group>"; };
-					B01100000000000000000002 /* SearchPanelViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanelViewModel.swift; sourceTree = "<group>"; };
-			B01100000000000000000004 /* CommandBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandBarView.swift; sourceTree = "<group>"; };
-			B01100000000000000000006 /* AssistantClipboardSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantClipboardSource.swift; sourceTree = "<group>"; };
-			B01100000000000000000008 /* SearchPanelViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanelViewModelTests.swift; sourceTree = "<group>"; };
-			C01400000000000000000002 /* PermissionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Services/Permissions/PermissionService.swift; sourceTree = SOURCE_ROOT; };
-			C01400000000000000000004 /* HotkeyValidationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Services/Hotkey/HotkeyValidationService.swift; sourceTree = SOURCE_ROOT; };
-			C01400000000000000000020 /* GlobalShortcutManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Services/Hotkey/GlobalShortcutManager.swift; sourceTree = SOURCE_ROOT; };
-			C01400000000000000000022 /* HotkeyConflictDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Services/Hotkey/HotkeyConflictDetector.swift; sourceTree = SOURCE_ROOT; };
-			C01400000000000000000006 /* LaunchAtLoginService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Services/LaunchAtLogin/LaunchAtLoginService.swift; sourceTree = SOURCE_ROOT; };
-			C01400000000000000000008 /* OnboardingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/ViewModels/OnboardingViewModel.swift; sourceTree = SOURCE_ROOT; };
-			C0140000000000000000000A /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Onboarding/OnboardingView.swift; sourceTree = SOURCE_ROOT; };
-			C0140000000000000000000C /* OnboardingViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QingniaoTests/OnboardingViewModelTests.swift; sourceTree = SOURCE_ROOT; };
-			C01400000000000000000024 /* HotkeyConflictDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QingniaoTests/HotkeyConflictDetectorTests.swift; sourceTree = SOURCE_ROOT; };
-			F00400000000000000000001 /* JadeColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeColor.swift; sourceTree = SOURCE_ROOT; };
-			F00400000000000000000002 /* JadeRadius.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeRadius.swift; sourceTree = SOURCE_ROOT; };
-			F00400000000000000000003 /* JadeSpace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeSpace.swift; sourceTree = SOURCE_ROOT; };
-			F00400000000000000000004 /* JadeFont.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeFont.swift; sourceTree = SOURCE_ROOT; };
-			F00400000000000000000005 /* JadeShadow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeShadow.swift; sourceTree = SOURCE_ROOT; };
-			F00400000000000000000006 /* JadeMaterial.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeMaterial.swift; sourceTree = SOURCE_ROOT; };
-			F00400000000000000000007 /* JadeAccessibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeAccessibility.swift; sourceTree = SOURCE_ROOT; };
-			G00100000000000000000001 /* AppContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContainer.swift; sourceTree = "<group>"; };
-			G00100000000000000000011 /* StatusItemController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemController.swift; sourceTree = "<group>"; };
-			G00100000000000000000021 /* CommandBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandBarController.swift; sourceTree = "<group>"; };
-			G00100000000000000000031 /* ClipboardHistoryWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardHistoryWindowController.swift; sourceTree = "<group>"; };
-			G00100000000000000000041 /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
-			G00100000000000000000051 /* ScreenshotWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotWindowController.swift; sourceTree = "<group>"; };
+		F00400000000000000000001 /* JadeColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeColor.swift; sourceTree = SOURCE_ROOT; };
+		F00400000000000000000002 /* JadeRadius.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeRadius.swift; sourceTree = SOURCE_ROOT; };
+		F00400000000000000000003 /* JadeSpace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeSpace.swift; sourceTree = SOURCE_ROOT; };
+		F00400000000000000000004 /* JadeFont.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeFont.swift; sourceTree = SOURCE_ROOT; };
+		F00400000000000000000005 /* JadeShadow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeShadow.swift; sourceTree = SOURCE_ROOT; };
+		F00400000000000000000006 /* JadeMaterial.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeMaterial.swift; sourceTree = SOURCE_ROOT; };
+		F00400000000000000000007 /* JadeAccessibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Views/Design/JadeAccessibility.swift; sourceTree = SOURCE_ROOT; };
+		F00500000000000000000001 /* DataDirectoryMigrator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Database/DataDirectoryMigrator.swift; sourceTree = SOURCE_ROOT; };
+		F00500000000000000000002 /* DataManagementService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Qingniao/Services/DataManagement/DataManagementService.swift; sourceTree = SOURCE_ROOT; };
+		F00500000000000000000202 /* DataDirectoryMigratorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QingniaoTests/DataDirectoryMigratorTests.swift; sourceTree = SOURCE_ROOT; };
+		F00700000000000000000001 /* JadeButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JadeButton.swift; sourceTree = "<group>"; };
+		F00700000000000000000002 /* JadeTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JadeTextField.swift; sourceTree = "<group>"; };
+		F00700000000000000000003 /* HotkeyRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyRecorder.swift; sourceTree = "<group>"; };
+		F00700000000000000000004 /* JadeListRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JadeListRow.swift; sourceTree = "<group>"; };
+		F00700000000000000000005 /* JadePill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JadePill.swift; sourceTree = "<group>"; };
+		F00700000000000000000006 /* StatCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatCard.swift; sourceTree = "<group>"; };
+		F00700000000000000000007 /* PermissionGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionGate.swift; sourceTree = "<group>"; };
+		F00700000000000000000008 /* JadeConfirmationDialog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JadeConfirmationDialog.swift; sourceTree = "<group>"; };
+		F00900000000000000000002 /* FileSearchSourceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileSearchSourceTests.swift; sourceTree = "<group>"; };
+		G00100000000000000000001 /* AppContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppContainer.swift; sourceTree = "<group>"; };
+		G00100000000000000000011 /* StatusItemController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemController.swift; sourceTree = "<group>"; };
+		G00100000000000000000021 /* CommandBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandBarController.swift; sourceTree = "<group>"; };
+		G00100000000000000000031 /* ClipboardHistoryWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardHistoryWindowController.swift; sourceTree = "<group>"; };
+		G00100000000000000000041 /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
+		G00100000000000000000051 /* ScreenshotWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenshotWindowController.swift; sourceTree = "<group>"; };
+		A66E86C8A0860C49F8909E51 /* ClipboardWindowUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ClipboardWindowUITests.swift; sourceTree = "<group>"; };
+		10E5A3CFEBC76440DAC25583 /* CommandBarUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CommandBarUITests.swift; sourceTree = "<group>"; };
+		B8013829E2DF283371786A6C /* MenuDispatchUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MenuDispatchUITests.swift; sourceTree = "<group>"; };
+		2BB3DE90C89D68FC58333C60 /* SettingsWindowUITests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsWindowUITests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -238,14 +268,37 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D0D0CF1B4EFCAAFE748BEE52 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		A10003000000000000000001 /* Root */ = {
+		487FE5F5D87D1B9BFD792E7F /* QingniaoUITests */ = {
+			isa = PBXGroup;
+			children = (
+				41884CD75E2103FD7C2B56EA /* QingniaoUITests.swift */,
+				D7B303A41D4CF442EA7C1FC2 /* OnboardingUITests.swift */,
+				A66E86C8A0860C49F8909E51 /* ClipboardWindowUITests.swift */,
+				10E5A3CFEBC76440DAC25583 /* CommandBarUITests.swift */,
+				B8013829E2DF283371786A6C /* MenuDispatchUITests.swift */,
+				2BB3DE90C89D68FC58333C60 /* SettingsWindowUITests.swift */,
+				342931FCF5D4AB36B533F4B7 /* Info.plist */,
+			);
+			name = QingniaoUITests;
+			path = QingniaoUITests;
+			sourceTree = "<group>";
+		};
+		A10003000000000000000001 = {
 			isa = PBXGroup;
 			children = (
 				A10003000000000000000002 /* Qingniao */,
 				A1000300000000000000000B /* QingniaoTests */,
+				487FE5F5D87D1B9BFD792E7F /* QingniaoUITests */,
 				A1000300000000000000000C /* Products */,
 			);
 			sourceTree = "<group>";
@@ -274,21 +327,9 @@
 				A10000000000000000000002 /* AppDelegate.swift */,
 				A10000000000000000000003 /* AppState.swift */,
 				G00100000000000000000010 /* Controllers */,
+				196C77B49D5FF71402A7D06A /* UITestSupport.swift */,
 			);
 			path = App;
-			sourceTree = "<group>";
-		};
-		G00100000000000000000010 /* Controllers */ = {
-			isa = PBXGroup;
-			children = (
-				G00100000000000000000001 /* AppContainer.swift */,
-				G00100000000000000000011 /* StatusItemController.swift */,
-				G00100000000000000000021 /* CommandBarController.swift */,
-				G00100000000000000000031 /* ClipboardHistoryWindowController.swift */,
-				G00100000000000000000041 /* SettingsWindowController.swift */,
-				G00100000000000000000051 /* ScreenshotWindowController.swift */,
-			);
-			path = Controllers;
 			sourceTree = "<group>";
 		};
 		A10003000000000000000004 /* Views */ = {
@@ -311,7 +352,7 @@
 		A10003000000000000000005 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
-					C01400000000000000000008 /* OnboardingViewModel.swift */,
+				C01400000000000000000008 /* OnboardingViewModel.swift */,
 				A10000000000000000000016 /* ClipboardListViewModel.swift */,
 				A10000000000000000000017 /* SettingsViewModel.swift */,
 				B01100000000000000000002 /* SearchPanelViewModel.swift */,
@@ -341,7 +382,7 @@
 				A10003000000000000000019 /* DataCleanup */,
 				F00500000000000000000010 /* DataManagement */,
 				A1000300000000000000001A /* ExportService */,
-			A1000300000000000000001B /* ScreenshotService */,
+				A1000300000000000000001B /* ScreenshotService */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -384,8 +425,8 @@
 			isa = PBXGroup;
 			children = (
 				D01700000000000000000002 /* AnnotationTests.swift */,
-					C0140000000000000000000C /* OnboardingViewModelTests.swift */,
-					C01400000000000000000024 /* HotkeyConflictDetectorTests.swift */,
+				C0140000000000000000000C /* OnboardingViewModelTests.swift */,
+				C01400000000000000000024 /* HotkeyConflictDetectorTests.swift */,
 				A10000000000000000000038 /* CalculatorSourceTests.swift */,
 				A10000000000000000000039 /* SystemCommandSourceTests.swift */,
 				A1000000000000000000003B /* CryptoHelperTests.swift */,
@@ -402,9 +443,9 @@
 				B01000000000000000000002 /* SettingsServiceTests.swift */,
 				B00700000000000000000002 /* AppSearchSourceTests.swift */,
 				F00900000000000000000002 /* FileSearchSourceTests.swift */,
-					E01800000000000000000002 /* ReleaseInfoServiceTests.swift */,
+				E01800000000000000000002 /* ReleaseInfoServiceTests.swift */,
 				B01100000000000000000008 /* SearchPanelViewModelTests.swift */,
-					B01300000000000000000002 /* ClipboardListViewModelTests.swift */,
+				B01300000000000000000002 /* ClipboardListViewModelTests.swift */,
 			);
 			path = QingniaoTests;
 			sourceTree = "<group>";
@@ -414,6 +455,7 @@
 			children = (
 				A1000000000000000000001B /* Qingniao.app */,
 				A1000000000000000000003E /* QingniaoTests.xctest */,
+				2853372E85C6B0FE9E194765 /* QingniaoUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -448,26 +490,6 @@
 				A10000000000000000000015 /* SettingsView.swift */,
 			);
 			path = Settings;
-			sourceTree = "<group>";
-		};
-		A10003000000000000000018 /* Components */ = {
-			isa = PBXGroup;
-			children = (
-				A1000000000000000000001C /* ToastView.swift */,
-				A10000000000000000000027 /* ScreenshotOverlay.swift */,
-				A1000000000000000000002C /* KeyEventHandler.swift */,
-				A100000000000000000000A1 /* AutoFocusTextField.swift */,
-				A10000000000000000000033 /* ScreenshotToolbarController.swift */,
-				F00700000000000000000001 /* JadeButton.swift */,
-				F00700000000000000000002 /* JadeTextField.swift */,
-				F00700000000000000000003 /* HotkeyRecorder.swift */,
-				F00700000000000000000004 /* JadeListRow.swift */,
-				F00700000000000000000005 /* JadePill.swift */,
-				F00700000000000000000006 /* StatCard.swift */,
-				F00700000000000000000007 /* PermissionGate.swift */,
-				F00700000000000000000008 /* JadeConfirmationDialog.swift */,
-			);
-			path = Components;
 			sourceTree = "<group>";
 		};
 		A10003000000000000000011 /* ClipboardMonitor */ = {
@@ -512,7 +534,7 @@
 			isa = PBXGroup;
 			children = (
 				A10000000000000000000010 /* UpdateService.swift */,
-					E01800000000000000000001 /* ReleaseInfoService.swift */,
+				E01800000000000000000001 /* ReleaseInfoService.swift */,
 			);
 			path = UpdateService;
 			sourceTree = "<group>";
@@ -533,20 +555,32 @@
 			path = Repositories;
 			sourceTree = "<group>";
 		};
+		A10003000000000000000018 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				A1000000000000000000001C /* ToastView.swift */,
+				A10000000000000000000027 /* ScreenshotOverlay.swift */,
+				A1000000000000000000002C /* KeyEventHandler.swift */,
+				A100000000000000000000A1 /* AutoFocusTextField.swift */,
+				A10000000000000000000033 /* ScreenshotToolbarController.swift */,
+				F00700000000000000000001 /* JadeButton.swift */,
+				F00700000000000000000002 /* JadeTextField.swift */,
+				F00700000000000000000003 /* HotkeyRecorder.swift */,
+				F00700000000000000000004 /* JadeListRow.swift */,
+				F00700000000000000000005 /* JadePill.swift */,
+				F00700000000000000000006 /* StatCard.swift */,
+				F00700000000000000000007 /* PermissionGate.swift */,
+				F00700000000000000000008 /* JadeConfirmationDialog.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
 		A10003000000000000000019 /* DataCleanup */ = {
 			isa = PBXGroup;
 			children = (
 				A1000000000000000000001D /* DataCleanupService.swift */,
 			);
 			path = DataCleanup;
-			sourceTree = "<group>";
-		};
-		F00500000000000000000010 /* DataManagement */ = {
-			isa = PBXGroup;
-			children = (
-				F00500000000000000000002 /* DataManagementService.swift */,
-			);
-			path = DataManagement;
 			sourceTree = "<group>";
 		};
 		A1000300000000000000001A /* ExportService */ = {
@@ -597,87 +631,44 @@
 			path = SearchPanel;
 			sourceTree = "<group>";
 		};
-
-			C01400000000000000000010 /* Onboarding */ = {
-				isa = PBXGroup;
-				children = (
-					C0140000000000000000000A /* OnboardingView.swift */,
-				);
-				path = Onboarding;
-				sourceTree = "<group>";
-			};
-			C01400000000000000000011 /* Permissions */ = {
-				isa = PBXGroup;
-				children = (
-					C01400000000000000000002 /* PermissionService.swift */,
-				);
-				path = Permissions;
-				sourceTree = "<group>";
-			};
-			C01400000000000000000012 /* Hotkey */ = {
-				isa = PBXGroup;
-				children = (
-					C01400000000000000000004 /* HotkeyValidationService.swift */,
-					C01400000000000000000020 /* GlobalShortcutManager.swift */,
-					C01400000000000000000022 /* HotkeyConflictDetector.swift */,
-				);
-				path = Hotkey;
-				sourceTree = "<group>";
-			};
-			C01400000000000000000013 /* LaunchAtLogin */ = {
-				isa = PBXGroup;
-				children = (
-					C01400000000000000000006 /* LaunchAtLoginService.swift */,
-				);
-				path = LaunchAtLogin;
-				sourceTree = "<group>";
-			};
-			F00400000000000000000010 /* Design */ = {
-				isa = PBXGroup;
-				children = (
-					F00400000000000000000001 /* JadeColor.swift */,
-					F00400000000000000000002 /* JadeRadius.swift */,
-					F00400000000000000000003 /* JadeSpace.swift */,
-					F00400000000000000000004 /* JadeFont.swift */,
-					F00400000000000000000005 /* JadeShadow.swift */,
-					F00400000000000000000006 /* JadeMaterial.swift */,
-					F00400000000000000000007 /* JadeAccessibility.swift */,
-				);
-				path = Design;
-				sourceTree = "<group>";
-			};
-	/* End PBXGroup section */
-
-/* Begin PBXContainerItemProxy section */
-		A1000B000000000000000002 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = A10008000000000000000001 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = A10004000000000000000001;
-			remoteInfo = Qingniao;
+		F00400000000000000000010 /* Design */ = {
+			isa = PBXGroup;
+			children = (
+				F00400000000000000000001 /* JadeColor.swift */,
+				F00400000000000000000002 /* JadeRadius.swift */,
+				F00400000000000000000003 /* JadeSpace.swift */,
+				F00400000000000000000004 /* JadeFont.swift */,
+				F00400000000000000000005 /* JadeShadow.swift */,
+				F00400000000000000000006 /* JadeMaterial.swift */,
+				F00400000000000000000007 /* JadeAccessibility.swift */,
+			);
+			path = Design;
+			sourceTree = "<group>";
 		};
-/* End PBXContainerItemProxy section */
+		F00500000000000000000010 /* DataManagement */ = {
+			isa = PBXGroup;
+			children = (
+				F00500000000000000000002 /* DataManagementService.swift */,
+			);
+			path = DataManagement;
+			sourceTree = "<group>";
+		};
+		G00100000000000000000010 /* Controllers */ = {
+			isa = PBXGroup;
+			children = (
+				G00100000000000000000001 /* AppContainer.swift */,
+				G00100000000000000000011 /* StatusItemController.swift */,
+				G00100000000000000000021 /* CommandBarController.swift */,
+				G00100000000000000000031 /* ClipboardHistoryWindowController.swift */,
+				G00100000000000000000041 /* SettingsWindowController.swift */,
+				G00100000000000000000051 /* ScreenshotWindowController.swift */,
+			);
+			path = Controllers;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		A10004000000000000000002 /* QingniaoTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = A10006000000000000000004 /* Build configuration list for PBXNativeTarget "QingniaoTests" */;
-			buildPhases = (
-				A10005000000000000000003 /* Sources */,
-				A10002000000000000000002 /* Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				A1000B000000000000000001 /* PBXTargetDependency */,
-			);
-			name = QingniaoTests;
-			packageProductDependencies = (
-			);
-			productName = QingniaoTests;
-			productReference = A1000000000000000000003E /* QingniaoTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
 		A10004000000000000000001 /* Qingniao */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = A10006000000000000000001 /* Build configuration list for PBXNativeTarget "Qingniao" */;
@@ -699,15 +690,41 @@
 			productReference = A1000000000000000000001B /* Qingniao.app */;
 			productType = "com.apple.product-type.application";
 		};
-/* End PBXNativeTarget section */
-
-/* Begin PBXTargetDependency section */
-		A1000B000000000000000001 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = A10004000000000000000001 /* Qingniao */;
-			targetProxy = A1000B000000000000000002 /* PBXContainerItemProxy */;
+		A10004000000000000000002 /* QingniaoTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10006000000000000000004 /* Build configuration list for PBXNativeTarget "QingniaoTests" */;
+			buildPhases = (
+				A10005000000000000000003 /* Sources */,
+				A10002000000000000000002 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A1000B000000000000000001 /* PBXTargetDependency */,
+			);
+			name = QingniaoTests;
+			productName = QingniaoTests;
+			productReference = A1000000000000000000003E /* QingniaoTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
-/* End PBXTargetDependency section */
+		C66729BECCA77395DD91EF6F /* QingniaoUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DB55F90FAF10BE9341F33F9E /* Build configuration list for PBXNativeTarget "QingniaoUITests" */;
+			buildPhases = (
+				6CECABB436FEF8338A850D80 /* Sources */,
+				D0D0CF1B4EFCAAFE748BEE52 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				9F9A02B8DE485560C6E72F86 /* PBXTargetDependency */,
+			);
+			name = QingniaoUITests;
+			productName = QingniaoUITests;
+			productReference = 2853372E85C6B0FE9E194765 /* QingniaoUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
 		A10008000000000000000001 /* Project object */ = {
@@ -721,6 +738,10 @@
 						CreatedOnToolsVersion = 15.0;
 					};
 					A10004000000000000000002 = {
+						CreatedOnToolsVersion = 15.0;
+						TestTargetID = A10004000000000000000001;
+					};
+					C66729BECCA77395DD91EF6F = {
 						CreatedOnToolsVersion = 15.0;
 						TestTargetID = A10004000000000000000001;
 					};
@@ -745,6 +766,7 @@
 			targets = (
 				A10004000000000000000001 /* Qingniao */,
 				A10004000000000000000002 /* QingniaoTests */,
+				C66729BECCA77395DD91EF6F /* QingniaoUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -762,32 +784,16 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		A10005000000000000000003 /* Sources */ = {
+		6CECABB436FEF8338A850D80 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D01700000000000000000001 /* AnnotationTests.swift in Sources */,
-				C0140000000000000000000B /* OnboardingViewModelTests.swift in Sources */,
-				C01400000000000000000025 /* HotkeyConflictDetectorTests.swift in Sources */,
-				A10001000000000000000038 /* CalculatorSourceTests.swift in Sources */,
-				A10001000000000000000039 /* SystemCommandSourceTests.swift in Sources */,
-				A1000100000000000000003B /* CryptoHelperTests.swift in Sources */,
-				A1000100000000000000003C /* DatabaseManagerTests.swift in Sources */,
-				A1000100000000000000003D /* PinyinHelperTests.swift in Sources */,
-				A10001000000000000000041 /* PersistenceControllerTests.swift in Sources */,
-				F00500000000000000000201 /* DataDirectoryMigratorTests.swift in Sources */,
-				A10001000000000000000043 /* AssistantClipboardRepositoryTests.swift in Sources */,
-				A10001000000000000000045 /* InMemorySearchIndexTests.swift in Sources */,
-				B00500000000000000000003 /* SearchServiceCoreTests.swift in Sources */,
-				B00600000000000000000003 /* SearchBlacklistRepositoryTests.swift in Sources */,
-				B00600000000000000000007 /* SettingsSourceTests.swift in Sources */,
-				B00600000000000000000009 /* SearchTextMatcherTests.swift in Sources */,
-				B01000000000000000000001 /* SettingsServiceTests.swift in Sources */,
-				B00700000000000000000001 /* AppSearchSourceTests.swift in Sources */,
-				F00900000000000000000001 /* FileSearchSourceTests.swift in Sources */,
-					E01801000000000000000002 /* ReleaseInfoServiceTests.swift in Sources */,
-					B01100000000000000000009 /* SearchPanelViewModelTests.swift in Sources */,
-					B01300000000000000000001 /* ClipboardListViewModelTests.swift in Sources */,
+				AAA28A5DF20569584F97BA6F /* QingniaoUITests.swift in Sources */,
+				D7A3BA8A2388B77F1D1D0728 /* OnboardingUITests.swift in Sources */,
+				48960A05A2DF71B339FEDE8A /* ClipboardWindowUITests.swift in Sources */,
+				FFCF38D76FE02A6D4C0B1C70 /* CommandBarUITests.swift in Sources */,
+				0992D26FCA5F07EF17D275E0 /* MenuDispatchUITests.swift in Sources */,
+				901ADC285239AC71CE273B90 /* SettingsWindowUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -833,7 +839,7 @@
 				A1000100000000000000000B /* CryptoHelper.swift in Sources */,
 				A1000100000000000000000C /* ClipboardMonitor.swift in Sources */,
 				A10001000000000000000010 /* UpdateService.swift in Sources */,
-					E01801000000000000000001 /* ReleaseInfoService.swift in Sources */,
+				E01801000000000000000001 /* ReleaseInfoService.swift in Sources */,
 				A10001000000000000000012 /* ClipboardHistoryView.swift in Sources */,
 				A10001000000000000000013 /* JadeClipboardRow.swift in Sources */,
 				A10001000000000000000014 /* PreviewPanel.swift in Sources */,
@@ -870,15 +876,79 @@
 				A10001000000000000000035 /* AnnotationCanvas.swift in Sources */,
 				A10001000000000000000036 /* AnnotationToolbar.swift in Sources */,
 				A10001000000000000000037 /* AnnotationEditorWindow.swift in Sources */,
-					B01100000000000000000001 /* SearchPanelViewModel.swift in Sources */,
-					B01100000000000000000003 /* CommandBarView.swift in Sources */,
-					B01100000000000000000005 /* AssistantClipboardSource.swift in Sources */,
+				B01100000000000000000001 /* SearchPanelViewModel.swift in Sources */,
+				B01100000000000000000003 /* CommandBarView.swift in Sources */,
+				B01100000000000000000005 /* AssistantClipboardSource.swift in Sources */,
+				A7B2F3F247113109A8BC2C6A /* UITestSupport.swift in Sources */,
+				CF970CC4575FF8B6A203E310 /* UITestSupport.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10005000000000000000003 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D01700000000000000000001 /* AnnotationTests.swift in Sources */,
+				C0140000000000000000000B /* OnboardingViewModelTests.swift in Sources */,
+				C01400000000000000000025 /* HotkeyConflictDetectorTests.swift in Sources */,
+				A10001000000000000000038 /* CalculatorSourceTests.swift in Sources */,
+				A10001000000000000000039 /* SystemCommandSourceTests.swift in Sources */,
+				A1000100000000000000003B /* CryptoHelperTests.swift in Sources */,
+				A1000100000000000000003C /* DatabaseManagerTests.swift in Sources */,
+				A1000100000000000000003D /* PinyinHelperTests.swift in Sources */,
+				A10001000000000000000041 /* PersistenceControllerTests.swift in Sources */,
+				F00500000000000000000201 /* DataDirectoryMigratorTests.swift in Sources */,
+				A10001000000000000000043 /* AssistantClipboardRepositoryTests.swift in Sources */,
+				A10001000000000000000045 /* InMemorySearchIndexTests.swift in Sources */,
+				B00500000000000000000003 /* SearchServiceCoreTests.swift in Sources */,
+				B00600000000000000000003 /* SearchBlacklistRepositoryTests.swift in Sources */,
+				B00600000000000000000007 /* SettingsSourceTests.swift in Sources */,
+				B00600000000000000000009 /* SearchTextMatcherTests.swift in Sources */,
+				B01000000000000000000001 /* SettingsServiceTests.swift in Sources */,
+				B00700000000000000000001 /* AppSearchSourceTests.swift in Sources */,
+				F00900000000000000000001 /* FileSearchSourceTests.swift in Sources */,
+				E01801000000000000000002 /* ReleaseInfoServiceTests.swift in Sources */,
+				B01100000000000000000009 /* SearchPanelViewModelTests.swift in Sources */,
+				B01300000000000000000001 /* ClipboardListViewModelTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		9F9A02B8DE485560C6E72F86 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A10004000000000000000001 /* Qingniao */;
+			targetProxy = 5805AD60D7C89515629BBD93 /* PBXContainerItemProxy */;
+		};
+		A1000B000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A10004000000000000000001 /* Qingniao */;
+			targetProxy = A1000B000000000000000002 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		4EC67E3729378D8CCB881F6E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = QingniaoUITests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.assistant.app.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = Qingniao;
+			};
+			name = Release;
+		};
 		A1000A000000000000000001 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1001,7 +1071,7 @@
 				CODE_SIGN_ENTITLEMENTS = Qingniao/Qingniao.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 120;
+				CURRENT_PROJECT_VERSION = 121;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Qingniao/Info.plist;
@@ -1009,10 +1079,10 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.2.0;
+				MARKETING_VERSION = 1.2.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.assistant.app;
-				PRODUCT_NAME = Qingniao;
 				PRODUCT_MODULE_NAME = Qingniao;
+				PRODUCT_NAME = Qingniao;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
@@ -1025,7 +1095,7 @@
 				CODE_SIGN_ENTITLEMENTS = Qingniao/Qingniao.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 120;
+				CURRENT_PROJECT_VERSION = 121;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Qingniao/Info.plist;
@@ -1033,10 +1103,10 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 1.2.0;
+				MARKETING_VERSION = 1.2.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.assistant.app;
-				PRODUCT_NAME = Qingniao;
 				PRODUCT_MODULE_NAME = Qingniao;
+				PRODUCT_NAME = Qingniao;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
@@ -1082,6 +1152,26 @@
 			};
 			name = Release;
 		};
+		ABC2BD0C10432E72CD7B9879 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = QingniaoUITests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.assistant.app.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = Qingniao;
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1090,6 +1180,15 @@
 			buildConfigurations = (
 				A1000A000000000000000003 /* Debug */,
 				A1000A000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A10006000000000000000003 /* Build configuration list for PBXProject "Qingniao" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1000A000000000000000001 /* Debug */,
+				A1000A000000000000000002 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -1103,11 +1202,11 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A10006000000000000000003 /* Build configuration list for PBXProject "Qingniao" */ = {
+		DB55F90FAF10BE9341F33F9E /* Build configuration list for PBXNativeTarget "QingniaoUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				A1000A000000000000000001 /* Debug */,
-				A1000A000000000000000002 /* Release */,
+				ABC2BD0C10432E72CD7B9879 /* Debug */,
+				4EC67E3729378D8CCB881F6E /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

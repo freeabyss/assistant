@@ -132,7 +132,7 @@ final class SettingsSourceTests: XCTestCase {
 private actor InMemoryManagementSettingsService: SettingsServiceProtocol {
     private var values = AssistantSettingDefaults.values
 
-    func value<T: Decodable>(for key: SettingKey, as type: T.Type) async throws -> T {
+    func value<T: Decodable & Sendable>(for key: SettingKey, as type: T.Type) async throws -> T {
         let raw = try await stringValue(for: key)
         if type == Bool.self, let value = (["true", "1", "yes", "on"].contains(raw.lowercased())) as? T { return value }
         if type == String.self, let value = raw as? T { return value }
@@ -142,7 +142,7 @@ private actor InMemoryManagementSettingsService: SettingsServiceProtocol {
         return try JSONDecoder().decode(type, from: Data(raw.utf8))
     }
 
-    func set<T: Encodable>(_ value: T, for key: SettingKey) async throws {
+    func set<T: Encodable & Sendable>(_ value: T, for key: SettingKey) async throws {
         switch value {
         case let bool as Bool:
             values[key.rawValue] = bool ? "true" : "false"

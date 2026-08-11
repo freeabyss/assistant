@@ -83,6 +83,7 @@ struct CommandBarView: View {
             .focused($isInputFocused)
             .onSubmit { viewModel.confirmSelection() }
             .accessibilityLabel(Text("commandBar.placeholder"))
+            .accessibilityIdentifier("commandBar.searchField")
 
             if viewModel.isLoading {
                 ProgressView()
@@ -139,6 +140,7 @@ struct CommandBarView: View {
                 }
                 .padding(.horizontal, JadeSpace.x2.value)
                 .padding(.vertical, JadeSpace.x2.value)
+                .accessibilityIdentifier("commandBar.resultList")
             }
             .onChange(of: viewModel.selectedIndex) { _ in
                 if let selected = viewModel.selectedResult {

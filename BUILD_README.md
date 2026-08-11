@@ -191,7 +191,7 @@ run_tests() {
 
 ## 相关文档
 
-- [项目架构](doc/architecture.md)
-- [需求文档](doc/prd.md)
-- [测试文档](doc/test.md)
+- [项目架构](docs/architecture/design.md)
+- [需求文档](docs/prd.md)
+- [测试用例](docs/test/cases.md)
 </content>

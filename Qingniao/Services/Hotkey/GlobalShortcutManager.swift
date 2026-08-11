@@ -96,7 +96,7 @@ final class GlobalShortcutManager {
     func registerOpenClipboardHistory() {
         KeyboardShortcuts.onKeyUp(for: .openClipboardHistory) { [weak self] in
             Task { @MainActor in
-                guard let self, self.container.ensureOnboardingReady() else { return }
+                guard let self else { return }
                 self.container.clipboardHistoryWindowController.show()
             }
         }
@@ -105,7 +105,7 @@ final class GlobalShortcutManager {
     func registerOpenSettings() {
         KeyboardShortcuts.onKeyUp(for: .openSettings) { [weak self] in
             Task { @MainActor in
-                guard let self, self.container.ensureOnboardingReady() else { return }
+                guard let self else { return }
                 self.container.settingsWindowController.show(route: .settings)
             }
         }

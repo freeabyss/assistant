@@ -340,7 +340,7 @@ final class SearchPanelActionExecutor: SearchActionExecutorProtocol {
             await startScreenshot(mode)
         case .openFile(let url):
             await MainActor.run {
-                NSWorkspace.shared.open(url)
+                _ = NSWorkspace.shared.open(url)
             }
         case .revealInFinder(let url):
             await MainActor.run {

@@ -16,12 +16,20 @@ struct OnboardingView: View {
     }
 
     var body: some View {
+        // 布局（v1.2.1 Bug 2 修复，PRD §4.2 方案① / AC-06/07/10）：
+        // header 与 footer 固定吸顶/吸底，中部可变内容用 ScrollView 包裹，
+        // 保证任意字号 / 明暗模式下 footer（开始使用 / 跳过设置）恒定可见可点，
+        // 不再被固定 520pt 高度裁剪。窗口尺寸仍保持 P-06 的 720×520。
         VStack(spacing: JadeSpace.x6.value) {
             header
-            configCards
-            screenRecordingSection
-            accessibilitySection
-            Spacer(minLength: 0)
+            ScrollView {
+                VStack(spacing: JadeSpace.x6.value) {
+                    configCards
+                    screenRecordingSection
+                    accessibilitySection
+                }
+                .frame(maxWidth: .infinity)
+            }
             footer
         }
         .jadePadding(.x8)
@@ -80,6 +88,7 @@ struct OnboardingView: View {
                     .onChange(of: KeyboardShortcuts.getShortcut(for: .togglePanel)) { _ in
                         viewModel.validateHotkey()
                     }
+                    .accessibilityIdentifier("onboarding.hotkeyRecorder")
                 }
             }
 
@@ -93,6 +102,7 @@ struct OnboardingView: View {
                 }
                 .toggleStyle(.switch)
                 .tint(JadeColor.primary)
+                .accessibilityIdentifier("onboarding.clipboardToggle")
             }
 
             configCard {
@@ -105,6 +115,7 @@ struct OnboardingView: View {
                 }
                 .toggleStyle(.switch)
                 .tint(JadeColor.primary)
+                .accessibilityIdentifier("onboarding.launchAtLoginToggle")
             }
         }
     }
@@ -130,11 +141,13 @@ struct OnboardingView: View {
                         viewModel.requestScreenRecording()
                     }
                     .buttonStyle(.jadePrimary)
+                    .accessibilityIdentifier("onboarding.screenRecording.grant")
 
                     Button(L10n.localized("onboarding.screenRecording.skip")) {
                         viewModel.skipScreenshot()
                     }
                     .buttonStyle(.jadeGhost)
+                    .accessibilityIdentifier("onboarding.screenRecording.skip")
 
                     if viewModel.screenshotSkipped {
                         Text(L10n.localized("onboarding.screenRecording.skipped"))
@@ -181,6 +194,7 @@ struct OnboardingView: View {
                     showSkipConfirmation = true
                 }
                 .buttonStyle(.jadeGhost)
+                .accessibilityIdentifier("onboarding.skipButton")
 
                 Spacer()
 
@@ -190,6 +204,7 @@ struct OnboardingView: View {
                 .buttonStyle(.jadePrimary)
                 .disabled(!viewModel.canStart)
                 .keyboardShortcut(.defaultAction)
+                .accessibilityIdentifier("onboarding.startButton")
 
                 Spacer()
 

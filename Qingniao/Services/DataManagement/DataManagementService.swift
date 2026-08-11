@@ -28,7 +28,7 @@ extension Notification.Name {
 
 /// Service backing the settings "Data" page (T-013 UI binds to this).
 ///
-/// Provides three capabilities (doc/architecture/db.md §11.5, design §3.6):
+/// Provides three capabilities (docs/architecture/db.md §11.5, design §3.6):
 /// - `resetAllData()`: fully wipes the Core Data store, file resource
 ///   directories, and the app's `UserDefaults` domain, then posts `.dataDidReset`.
 /// - `openDataDirectory()`: reveals `~/Library/Application Support/Qingniao/` in

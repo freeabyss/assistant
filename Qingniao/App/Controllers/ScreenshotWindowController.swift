@@ -34,9 +34,18 @@ final class ScreenshotWindowController {
     // MARK: - Shared capture flow
 
     private func performCapture(kind: String, _ capture: @escaping () async throws -> ScreenshotResult) {
-        guard container.ensureOnboardingReady() else { return }
         logger.info("\(kind, privacy: .public) capture triggered")
         guard ensureScreenRecordingPermission() else { return }
+
+        #if DEBUG
+        // TC-UI-013：跳过真实屏幕捕获（不弹全屏 overlay、不依赖屏幕录制权限），
+        // 仅发通知标记"截图入口可达"，供 UI 测试断言。无 flag 时行为不变。
+        if ProcessInfo.processInfo.arguments.contains(UITestLaunchArg.skipScreenshotCapture) {
+            logger.info("UITest: skipping \(kind, privacy: .public) capture, posting notification")
+            NotificationCenter.default.post(name: .uitestScreenshotTriggered, object: nil)
+            return
+        }
+        #endif
 
         // Hide the command bar so it doesn't appear in the screenshot.
         let wasCommandBarVisible = container.commandBarController.isVisible

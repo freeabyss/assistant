@@ -48,7 +48,7 @@ protocol SearchBlacklistRepositoryProtocol: SearchBlacklistCheckingProtocol {
 /// This repository deliberately stores stable `(sourceID, resultID)` pairs only.
 /// It does not implement keyword/path/source rules, preserving the MVP boundary
 /// that the blacklist hides concrete results and nothing broader.
-final class SearchBlacklistRepository: SearchBlacklistRepositoryProtocol {
+final class SearchBlacklistRepository: SearchBlacklistRepositoryProtocol, @unchecked Sendable {
     private let persistence: PersistenceController
 
     init(persistence: PersistenceController = .shared) {

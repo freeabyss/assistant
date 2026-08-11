@@ -224,12 +224,12 @@ private final class MockSettingsService: SettingsServiceProtocol {
         .clipboardRetention: "30d"
     ]
 
-    func value<T: Decodable>(for key: SettingKey, as type: T.Type) async throws -> T {
+    func value<T: Decodable & Sendable>(for key: SettingKey, as type: T.Type) async throws -> T {
         let raw = storage[key] ?? ""
         if type == Bool.self { return (raw == "true") as! T }
         return raw as! T
     }
-    func set<T: Encodable>(_ value: T, for key: SettingKey) async throws {
+    func set<T: Encodable & Sendable>(_ value: T, for key: SettingKey) async throws {
         if let bool = value as? Bool { storage[key] = bool ? "true" : "false" }
         else { storage[key] = "\(value)" }
     }

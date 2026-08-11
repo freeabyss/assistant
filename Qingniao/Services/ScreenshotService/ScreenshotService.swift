@@ -58,7 +58,10 @@ extension CGImage {
 /// - Region: User selects a rectangular area via a transparent overlay
 /// - Window: Captures the window under the mouse cursor
 /// - Screen: Captures the entire screen
-final class ScreenshotService: ScreenshotServiceProtocol {
+/// ScreenshotService 的可变 overlay 状态仅在主队列访问（`DispatchQueue.main.async`
+/// / `MainActor.run`），耗时捕获（CGDisplayCreateImage 等）在后台 Task 执行；
+/// 因此以 `@unchecked Sendable` 显式声明这一既有的线程安全约定。
+final class ScreenshotService: ScreenshotServiceProtocol, @unchecked Sendable {
     private let logger = Logger.screenshot
     private var activeRegionCaptureOverlay: ScreenshotOverlayController?
     private var activeWindowCaptureOverlay: WindowCaptureOverlayController?

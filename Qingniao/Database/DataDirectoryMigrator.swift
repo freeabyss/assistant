@@ -4,7 +4,7 @@ import os.log
 /// Migrates the Application Support data directory from the pre-v1.2 brand name
 /// (`Assistant/`) to the current brand name (`Qingniao/`).
 ///
-/// Strategy (see doc/architecture/db.md §8.4):
+/// Strategy (see docs/architecture/db.md §8.4):
 /// - If the new `Qingniao/` directory already exists → no-op (already migrated or
 ///   fresh install).
 /// - Else if the legacy `Assistant/` directory exists → `moveItem` (rename, not

@@ -8,7 +8,31 @@ import os.log
 /// SwiftPM and the Xcode app target without relying on a generated .xcdatamodel
 /// during the MVP migration away from the legacy GRDB store.
 final class PersistenceController {
-    static let shared = PersistenceController()
+    /// Shared instance used throughout the app. In DEBUG builds a test override
+    /// (set via `setDebugShared` before first access) takes precedence, enabling
+    /// `--uitest-data-dir` data isolation. In Release the override mechanism is
+    /// compiled out and `shared` always returns the default singleton.
+    static var shared: PersistenceController {
+        #if DEBUG
+        if let override = _debugOverride {
+            return override
+        }
+        #endif
+        return _defaultShared
+    }
+
+    private static let _defaultShared = PersistenceController()
+
+    #if DEBUG
+    /// DEBUG-only override for UITest data isolation. Must be set before any code
+    /// accesses `shared` (i.e. at the very start of `applicationDidFinishLaunching`).
+    private static var _debugOverride: PersistenceController?
+
+    /// Replace the shared instance for `--uitest-data-dir` data isolation (DEBUG only).
+    static func setDebugShared(_ controller: PersistenceController) {
+        _debugOverride = controller
+    }
+    #endif
 
     let container: NSPersistentContainer
     let fileSystem: AssistantFileSystem
