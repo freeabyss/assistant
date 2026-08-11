@@ -5,7 +5,7 @@ All notable changes to Qingniao (青鸟) are documented here. The format is base
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html). Public downloads are published on
 [GitHub Releases](https://github.com/freeabyss/assistant/releases).
 
-## [1.2.1] - 2026-08-07
+## [1.2.1] - 2026-08-11
 
 Patch release fixing two first-run onboarding bugs that blocked all app entry
 points for new users (issue #7).
